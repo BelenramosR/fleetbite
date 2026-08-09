@@ -6,6 +6,9 @@ import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.OrderNotDeletableException;
 import com.fleetbite.order.domain.exception.OrderNotEditableException;
+import com.fleetbite.vehicle.domain.exception.DuplicateVehiclePlateException;
+import com.fleetbite.vehicle.domain.exception.InvalidVehicleDataException;
+import com.fleetbite.vehicle.domain.exception.VehicleNotDeletableException;
 import com.fleetbite.shared.application.exception.ApplicationException;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.exception.DomainException;
@@ -35,7 +38,11 @@ public class GlobalExceptionHandler {
 		return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message, request.getRequestURI());
 	}
 
-	@ExceptionHandler({InvalidOrderDataException.class, InvalidDriverDataException.class})
+	@ExceptionHandler({
+			InvalidOrderDataException.class,
+			InvalidDriverDataException.class,
+			InvalidVehicleDataException.class
+	})
 	public ResponseEntity<ApiErrorResponse> handleInvalidDomainData(
 			DomainException exception,
 			HttpServletRequest request) {
@@ -46,7 +53,9 @@ public class GlobalExceptionHandler {
 			OrderNotEditableException.class,
 			OrderNotDeletableException.class,
 			DriverNotDeletableException.class,
-			DuplicateDriverPhoneException.class
+			DuplicateDriverPhoneException.class,
+			VehicleNotDeletableException.class,
+			DuplicateVehiclePlateException.class
 	})
 	public ResponseEntity<ApiErrorResponse> handleConflict(
 			DomainException exception,
