@@ -3,12 +3,14 @@ package com.fleetbite.identity.application.service;
 import com.fleetbite.identity.application.dto.CreateUserCommand;
 import com.fleetbite.identity.application.dto.UserResult;
 import com.fleetbite.identity.application.port.in.CreateUserUseCase;
+import com.fleetbite.identity.application.port.out.DriverProfileProvisionerPort;
 import com.fleetbite.identity.application.port.out.PasswordEncoderPort;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.exception.DuplicateUserEmailException;
 import com.fleetbite.identity.domain.exception.InvalidUserDataException;
 import com.fleetbite.identity.domain.model.User;
 import com.fleetbite.identity.domain.model.UserId;
+import com.fleetbite.identity.domain.model.UserRole;
 import com.fleetbite.shared.domain.time.BusinessTime;
 
 import java.time.Clock;
@@ -20,14 +22,17 @@ public final class CreateUserService implements CreateUserUseCase {
 
 	private final UserRepositoryPort userRepositoryPort;
 	private final PasswordEncoderPort passwordEncoderPort;
+	private final DriverProfileProvisionerPort driverProfileProvisionerPort;
 	private final Clock clock;
 
 	public CreateUserService(
 			UserRepositoryPort userRepositoryPort,
 			PasswordEncoderPort passwordEncoderPort,
+			DriverProfileProvisionerPort driverProfileProvisionerPort,
 			Clock clock) {
 		this.userRepositoryPort = Objects.requireNonNull(userRepositoryPort);
 		this.passwordEncoderPort = Objects.requireNonNull(passwordEncoderPort);
+		this.driverProfileProvisionerPort = Objects.requireNonNull(driverProfileProvisionerPort);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -56,6 +61,9 @@ public final class CreateUserService implements CreateUserUseCase {
 				now);
 
 		User saved = userRepositoryPort.save(user);
+		if (saved.role() == UserRole.DRIVER) {
+			driverProfileProvisionerPort.provisionForDriverUser(saved.id());
+		}
 		return UserResult.from(saved);
 	}
 

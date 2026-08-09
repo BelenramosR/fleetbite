@@ -9,6 +9,7 @@ import com.fleetbite.identity.application.port.in.LoginUseCase;
 import com.fleetbite.identity.application.port.in.LogoutUseCase;
 import com.fleetbite.identity.application.port.in.RefreshAccessTokenUseCase;
 import com.fleetbite.identity.application.port.in.UpdateUserUseCase;
+import com.fleetbite.identity.application.port.out.DriverProfileProvisionerPort;
 import com.fleetbite.identity.application.port.out.PasswordEncoderPort;
 import com.fleetbite.identity.application.port.out.RefreshTokenRepositoryPort;
 import com.fleetbite.identity.application.port.out.TokenProviderPort;
@@ -24,6 +25,7 @@ import com.fleetbite.identity.application.service.LogoutService;
 import com.fleetbite.identity.application.service.RefreshAccessTokenService;
 import com.fleetbite.identity.application.service.UpdateUserService;
 import com.fleetbite.identity.infrastructure.security.JwtProperties;
+import com.fleetbite.identity.infrastructure.transaction.TransactionalCreateUserUseCase;
 import com.fleetbite.identity.infrastructure.transaction.TransactionalLoginUseCase;
 import com.fleetbite.identity.infrastructure.transaction.TransactionalRefreshAccessTokenUseCase;
 import org.springframework.context.annotation.Bean;
@@ -79,8 +81,14 @@ public class IdentityApplicationConfig {
 	CreateUserUseCase createUserUseCase(
 			UserRepositoryPort userRepositoryPort,
 			PasswordEncoderPort passwordEncoderPort,
+			DriverProfileProvisionerPort driverProfileProvisionerPort,
 			Clock clock) {
-		return new CreateUserService(userRepositoryPort, passwordEncoderPort, clock);
+		return new TransactionalCreateUserUseCase(
+				new CreateUserService(
+						userRepositoryPort,
+						passwordEncoderPort,
+						driverProfileProvisionerPort,
+						clock));
 	}
 
 	@Bean

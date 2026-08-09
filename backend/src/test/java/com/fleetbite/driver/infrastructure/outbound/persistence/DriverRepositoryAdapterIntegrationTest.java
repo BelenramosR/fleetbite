@@ -75,6 +75,7 @@ class DriverRepositoryAdapterIntegrationTest {
 
 	@Test
 	void findAll_shouldReturnDriversOrderedByCreatedAt() {
+		long baseline = springDataDriverRepository.count();
 		Driver first = driverRepositoryPort.save(sampleDriver("111111111", null));
 		Driver second = Driver.create(
 				DriverId.generate(),
@@ -86,13 +87,16 @@ class DriverRepositoryAdapterIntegrationTest {
 
 		List<Driver> all = driverRepositoryPort.findAll();
 
-		assertEquals(2, all.size());
-		assertEquals(first.id(), all.get(0).id());
-		assertEquals(second.id(), all.get(1).id());
+		assertEquals(baseline + 2, all.size());
+		int firstIndex = indexOf(all, first.id());
+		int secondIndex = indexOf(all, second.id());
+		assertTrue(firstIndex >= 0);
+		assertTrue(secondIndex > firstIndex);
 	}
 
 	@Test
 	void update_shouldModifyExistingRowAndIncrementVersion() {
+		long baseline = springDataDriverRepository.count();
 		Driver saved = driverRepositoryPort.save(sampleDriver("333333333", new Location(-12.10, -77.03)));
 		Long versionBefore = springDataDriverRepository.findById(saved.id().value()).orElseThrow().getVersion();
 
@@ -102,19 +106,20 @@ class DriverRepositoryAdapterIntegrationTest {
 
 		assertEquals("333333333", updated.phone());
 		assertEquals(DriverStatus.AVAILABLE, updated.status());
-		assertEquals(1, springDataDriverRepository.count());
+		assertEquals(baseline + 1, springDataDriverRepository.count());
 		Long versionAfter = springDataDriverRepository.findById(saved.id().value()).orElseThrow().getVersion();
 		assertEquals(versionBefore + 1, versionAfter);
 	}
 
 	@Test
 	void deleteById_shouldRemoveRow() {
+		long baseline = springDataDriverRepository.count();
 		Driver saved = driverRepositoryPort.save(sampleDriver("444444444", null));
 
 		driverRepositoryPort.deleteById(saved.id());
 
 		assertTrue(driverRepositoryPort.findById(saved.id()).isEmpty());
-		assertEquals(0, springDataDriverRepository.count());
+		assertEquals(baseline, springDataDriverRepository.count());
 	}
 
 	@Test
@@ -166,6 +171,15 @@ class DriverRepositoryAdapterIntegrationTest {
 
 	private Driver sampleDriver(String phone, Location location) {
 		return Driver.create(DriverId.generate(), insertDriverUser(), phone, location, CREATED_AT);
+	}
+
+	private static int indexOf(List<Driver> drivers, DriverId id) {
+		for (int i = 0; i < drivers.size(); i++) {
+			if (drivers.get(i).id().equals(id)) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	private UserId insertDriverUser() {

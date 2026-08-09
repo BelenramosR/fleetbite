@@ -165,7 +165,6 @@ Relación: `User (role=DRIVER) 1 — 0..1 Driver 0..1 — 0..1 Vehicle`.
 
 ```text
 GET    /api/v1/drivers
-POST   /api/v1/drivers
 GET    /api/v1/drivers/{id}
 PUT    /api/v1/drivers/{id}
 DELETE /api/v1/drivers/{id}
@@ -178,17 +177,20 @@ DELETE /api/v1/drivers/{id}/vehicle
 
 Estados driver: `OFFLINE`, `AVAILABLE`, `BUSY`.
 
-Flujo: primero `POST /users` con `role=DRIVER`, luego `POST /drivers` con ese `userId`.
+Flujo operativo:
 
-## POST /drivers
+1. `POST /users` con `role=DRIVER` → crea el User y provisiona el perfil Driver (sin phone/vehículo/ubicación).
+2. `PUT /drivers/{id}` → asigna celular.
+3. `PUT /drivers/{id}/vehicle` → asigna vehículo.
+4. `PATCH /drivers/{id}/location` → ubicación.
+5. `POST /drivers/{id}/online` → requiere phone + ubicación.
+
+No existe `POST /drivers`: el perfil se crea con el usuario.
+
+## PUT /drivers/{id}
 
 ```json
-{
-  "userId": "uuid",
-  "phone": "988000111",
-  "currentLatitude": -12.102,
-  "currentLongitude": -77.028
-}
+{ "phone": "988000111" }
 ```
 
 `name` en la response viene de `User.fullName` (no se almacena en Driver).
@@ -316,6 +318,8 @@ PUT  /api/v1/users/{id}
 POST /api/v1/users/{id}/activate
 POST /api/v1/users/{id}/deactivate
 ```
+
+Cuando `role=DRIVER`, además del User se provisiona automáticamente el perfil Driver (sin phone/vehículo/ubicación). Completar con los endpoints de Drivers.
 
 No hay `PATCH /users/{id}/status`.
 
@@ -461,9 +465,10 @@ GET  /api/v1/orders/{id}/history
 POST /api/v1/orders/{id}/assign
 POST /api/v1/orders/{id}/auto-assign
 
-GET/POST/PUT/DELETE /api/v1/drivers
+GET/PUT/DELETE /api/v1/drivers
 PATCH /api/v1/drivers/{id}/location
 POST /api/v1/drivers/{id}/online|offline
+PUT/DELETE /api/v1/drivers/{id}/vehicle
 
 GET/POST/PUT/DELETE /api/v1/vehicles
 POST /api/v1/vehicles/{id}/maintenance|activate|deactivate

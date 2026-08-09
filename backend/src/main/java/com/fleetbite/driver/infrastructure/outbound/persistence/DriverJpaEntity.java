@@ -24,7 +24,7 @@ public class DriverJpaEntity {
 	@Column(name = "user_id", nullable = false, unique = true)
 	private UUID userId;
 
-	@Column(name = "phone", nullable = false, unique = true, length = 32)
+	@Column(name = "phone", unique = true, length = 32)
 	private String phone;
 
 	@Enumerated(EnumType.STRING)

@@ -58,7 +58,7 @@ public final class Driver {
 		return new Driver(
 				id,
 				userId,
-				requireText(phone, "phone"),
+				normalizeOptionalPhone(phone),
 				DriverStatus.OFFLINE,
 				currentLocation,
 				null,
@@ -93,7 +93,7 @@ public final class Driver {
 		return new Driver(
 				id,
 				userId,
-				requireText(phone, "phone"),
+				normalizeOptionalPhone(phone),
 				status,
 				currentLocation,
 				vehicleId,
@@ -136,6 +136,10 @@ public final class Driver {
 
 	public void goOnline(OffsetDateTime now) {
 		requireTimestamp(now);
+		if (phone == null || phone.isBlank()) {
+			throw new InvalidDriverTransitionException(
+					"Driver cannot go online without a phone number");
+		}
 		if (currentLocation == null) {
 			throw new InvalidDriverTransitionException(
 					"Driver cannot go online without a valid currentLocation");
@@ -201,6 +205,13 @@ public final class Driver {
 			throw new InvalidDriverDataException(fieldName + " is required");
 		}
 		return value.trim();
+	}
+
+	private static String normalizeOptionalPhone(String phone) {
+		if (phone == null || phone.isBlank()) {
+			return null;
+		}
+		return phone.trim();
 	}
 
 	public DriverId id() {

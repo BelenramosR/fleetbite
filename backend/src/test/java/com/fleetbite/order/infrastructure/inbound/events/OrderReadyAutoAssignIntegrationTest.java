@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -184,6 +185,19 @@ class OrderReadyAutoAssignIntegrationTest {
 				.andReturn();
 		UUID userId = UUID.fromString(readJson(userCreated).get("id").asString());
 
+		MvcResult driversListed = mockMvc.perform(get("/api/v1/drivers")
+						.header("Authorization", "Bearer " + dispatcherToken))
+				.andExpect(status().isOk())
+				.andReturn();
+		UUID driverId = null;
+		for (JsonNode node : readJson(driversListed)) {
+			if (userId.toString().equals(node.get("userId").asString())) {
+				driverId = UUID.fromString(node.get("id").asString());
+				break;
+			}
+		}
+		assertThat(driverId).as("driver profile provisioned for user").isNotNull();
+
 		MvcResult vehicleCreated = mockMvc.perform(post("/api/v1/vehicles")
 						.header("Authorization", "Bearer " + dispatcherToken)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -197,20 +211,15 @@ class OrderReadyAutoAssignIntegrationTest {
 				.andReturn();
 		UUID vehicleId = UUID.fromString(readJson(vehicleCreated).get("id").asString());
 
-		MvcResult driverCreated = mockMvc.perform(post("/api/v1/drivers")
+		mockMvc.perform(put("/api/v1/drivers/{id}", driverId)
 						.header("Authorization", "Bearer " + dispatcherToken)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
-								  "userId": "%s",
-								  "phone": "%s",
-								  "currentLatitude": %s,
-								  "currentLongitude": %s
+								  "phone": "%s"
 								}
-								""".formatted(userId, phone, lat, lon)))
-				.andExpect(status().isCreated())
-				.andReturn();
-		UUID driverId = UUID.fromString(readJson(driverCreated).get("id").asString());
+								""".formatted(phone)))
+				.andExpect(status().isOk());
 
 		mockMvc.perform(put("/api/v1/drivers/{id}/vehicle", driverId)
 						.header("Authorization", "Bearer " + dispatcherToken)
@@ -220,6 +229,17 @@ class OrderReadyAutoAssignIntegrationTest {
 								  "vehicleId": "%s"
 								}
 								""".formatted(vehicleId)))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(patch("/api/v1/drivers/{id}/location", driverId)
+						.header("Authorization", "Bearer " + dispatcherToken)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "latitude": %s,
+								  "longitude": %s
+								}
+								""".formatted(lat, lon)))
 				.andExpect(status().isOk());
 
 		mockMvc.perform(post("/api/v1/drivers/{id}/online", driverId)

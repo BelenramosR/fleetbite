@@ -1,13 +1,11 @@
 package com.fleetbite.driver.infrastructure.inbound.rest;
 
 import com.fleetbite.driver.application.dto.AssignVehicleToDriverCommand;
-import com.fleetbite.driver.application.dto.CreateDriverCommand;
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.dto.UpdateDriverCommand;
 import com.fleetbite.driver.application.dto.UpdateDriverLocationCommand;
 import com.fleetbite.driver.application.dto.VehicleSummary;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.AssignVehicleRequest;
-import com.fleetbite.driver.infrastructure.inbound.rest.request.CreateDriverRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.UpdateDriverLocationRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.UpdateDriverRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.response.DriverResponse;
@@ -16,14 +14,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DriverHttpMapper {
-
-	public CreateDriverCommand toCommand(CreateDriverRequest request) {
-		return new CreateDriverCommand(
-				request.userId(),
-				request.phone(),
-				request.currentLatitude(),
-				request.currentLongitude());
-	}
 
 	public UpdateDriverCommand toCommand(UpdateDriverRequest request) {
 		return new UpdateDriverCommand(request.phone());

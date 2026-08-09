@@ -83,7 +83,9 @@ public class UserController {
 	}
 
 	@PostMapping
-	@Operation(summary = "Create user", description = "ADMIN only. Password is hashed; never returned.")
+	@Operation(summary = "Create user",
+			description = "ADMIN only. Password is hashed; never returned. "
+					+ "When role=DRIVER, a Driver profile is provisioned automatically (phone/vehicle/location set later).")
 	@ApiResponses({
 			@ApiResponse(responseCode = "201", description = "User created"),
 			@ApiResponse(responseCode = "400", description = "Validation error",

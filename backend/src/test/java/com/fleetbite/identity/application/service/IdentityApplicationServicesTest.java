@@ -3,6 +3,7 @@ package com.fleetbite.identity.application.service;
 import com.fleetbite.identity.application.dto.CreateUserCommand;
 import com.fleetbite.identity.application.dto.LoginCommand;
 import com.fleetbite.identity.application.dto.RefreshTokenCommand;
+import com.fleetbite.identity.application.port.out.DriverProfileProvisionerPort;
 import com.fleetbite.identity.application.port.out.PasswordEncoderPort;
 import com.fleetbite.identity.application.port.out.RefreshTokenRepositoryPort;
 import com.fleetbite.identity.application.port.out.TokenProviderPort;
@@ -52,6 +53,8 @@ class IdentityApplicationServicesTest {
 	@Mock
 	private PasswordEncoderPort passwordEncoderPort;
 	@Mock
+	private DriverProfileProvisionerPort driverProfileProvisionerPort;
+	@Mock
 	private TokenProviderPort tokenProviderPort;
 	@Mock
 	private RefreshTokenRepositoryPort refreshTokenRepositoryPort;
@@ -66,7 +69,8 @@ class IdentityApplicationServicesTest {
 	void setUp() {
 		authTokenIssuer = new AuthTokenIssuer(
 				tokenProviderPort, refreshTokenRepositoryPort, 604800L, FIXED_CLOCK);
-		createUserService = new CreateUserService(userRepositoryPort, passwordEncoderPort, FIXED_CLOCK);
+		createUserService = new CreateUserService(
+				userRepositoryPort, passwordEncoderPort, driverProfileProvisionerPort, FIXED_CLOCK);
 		loginService = new LoginService(userRepositoryPort, passwordEncoderPort, authTokenIssuer);
 		refreshAccessTokenService = new RefreshAccessTokenService(
 				refreshTokenRepositoryPort, userRepositoryPort, authTokenIssuer, FIXED_CLOCK);
@@ -85,6 +89,20 @@ class IdentityApplicationServicesTest {
 		assertEquals(UserStatus.ACTIVE, result.status());
 		assertEquals("admin@fleetbite.local", result.email());
 		verify(passwordEncoderPort).hash("Fleetbite1!");
+		verify(driverProfileProvisionerPort, never()).provisionForDriverUser(any());
+	}
+
+	@Test
+	void create_shouldProvisionDriverProfileWhenRoleIsDriver() {
+		when(userRepositoryPort.existsByEmail("driver@fleetbite.local")).thenReturn(false);
+		when(passwordEncoderPort.hash("Fleetbite1!")).thenReturn("$2b$hashed");
+		when(userRepositoryPort.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		var result = createUserService.execute(
+				new CreateUserCommand("driver@fleetbite.local", "Fleetbite1!", "Driver", UserRole.DRIVER));
+
+		assertEquals(UserRole.DRIVER, result.role());
+		verify(driverProfileProvisionerPort).provisionForDriverUser(UserId.of(result.id()));
 	}
 
 	@Test

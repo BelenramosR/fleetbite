@@ -28,10 +28,11 @@ class DriverTest {
 	private static final UserId USER_ID = UserId.of(UUID.fromString("11111111-1111-1111-1111-111111111111"));
 
 	@Test
-	void create_shouldStartOfflineWithoutLocation() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, "999888777", null, CREATED_AT);
+	void create_shouldStartOfflineWithoutPhoneOrLocation() {
+		Driver driver = Driver.create(DriverId.generate(), USER_ID, null, null, CREATED_AT);
 
 		assertEquals(DriverStatus.OFFLINE, driver.status());
+		assertNull(driver.phone());
 		assertNull(driver.currentLocation());
 		assertNull(driver.vehicleId());
 		assertEquals(USER_ID, driver.userId());
@@ -56,12 +57,19 @@ class DriverTest {
 
 	@Test
 	void updatePhone_shouldChangePhone() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, "999888777", null, CREATED_AT);
+		Driver driver = Driver.create(DriverId.generate(), USER_ID, null, null, CREATED_AT);
 
 		driver.updatePhone("988000111", LATER);
 
 		assertEquals("988000111", driver.phone());
 		assertEquals(LATER, driver.updatedAt());
+	}
+
+	@Test
+	void goOnline_shouldRequirePhone() {
+		Driver driver = Driver.create(DriverId.generate(), USER_ID, null, LOCATION, CREATED_AT);
+
+		assertThrows(InvalidDriverTransitionException.class, () -> driver.goOnline(LATER));
 	}
 
 	@Test

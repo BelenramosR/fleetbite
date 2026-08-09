@@ -1,7 +1,6 @@
 package com.fleetbite.driver.infrastructure.config;
 
 import com.fleetbite.driver.application.port.in.AssignVehicleToDriverUseCase;
-import com.fleetbite.driver.application.port.in.CreateDriverUseCase;
 import com.fleetbite.driver.application.port.in.DeleteDriverUseCase;
 import com.fleetbite.driver.application.port.in.GetDriverByIdUseCase;
 import com.fleetbite.driver.application.port.in.ListDriversUseCase;
@@ -12,8 +11,8 @@ import com.fleetbite.driver.application.port.in.UpdateDriverLocationUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverUseCase;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.application.service.AssignVehicleToDriverService;
-import com.fleetbite.driver.application.service.CreateDriverService;
 import com.fleetbite.driver.application.service.DeleteDriverService;
+import com.fleetbite.driver.application.service.ProvisionDriverProfileService;
 import com.fleetbite.driver.application.service.GetDriverByIdService;
 import com.fleetbite.driver.application.service.ListDriversService;
 import com.fleetbite.driver.application.service.SetDriverOfflineService;
@@ -23,6 +22,7 @@ import com.fleetbite.driver.application.service.UpdateDriverLocationService;
 import com.fleetbite.driver.application.service.UpdateDriverService;
 import com.fleetbite.driver.infrastructure.transaction.TransactionalAssignVehicleToDriverUseCase;
 import com.fleetbite.driver.infrastructure.transaction.TransactionalUnassignVehicleFromDriverUseCase;
+import com.fleetbite.identity.application.port.out.DriverProfileProvisionerPort;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import org.springframework.context.annotation.Bean;
@@ -34,11 +34,10 @@ import java.time.Clock;
 public class DriverApplicationConfig {
 
 	@Bean
-	CreateDriverUseCase createDriverUseCase(
-			UserRepositoryPort userRepositoryPort,
+	DriverProfileProvisionerPort driverProfileProvisionerPort(
 			DriverRepositoryPort driverRepositoryPort,
 			Clock clock) {
-		return new CreateDriverService(userRepositoryPort, driverRepositoryPort, clock);
+		return new ProvisionDriverProfileService(driverRepositoryPort, clock);
 	}
 
 	@Bean

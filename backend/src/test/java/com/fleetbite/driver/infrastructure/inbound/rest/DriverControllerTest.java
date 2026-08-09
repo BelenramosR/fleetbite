@@ -1,11 +1,9 @@
 package com.fleetbite.driver.infrastructure.inbound.rest;
 
-import com.fleetbite.driver.application.dto.CreateDriverCommand;
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.dto.UpdateDriverCommand;
 import com.fleetbite.driver.application.dto.UpdateDriverLocationCommand;
 import com.fleetbite.driver.application.port.in.AssignVehicleToDriverUseCase;
-import com.fleetbite.driver.application.port.in.CreateDriverUseCase;
 import com.fleetbite.driver.application.port.in.DeleteDriverUseCase;
 import com.fleetbite.driver.application.port.in.GetDriverByIdUseCase;
 import com.fleetbite.driver.application.port.in.ListDriversUseCase;
@@ -15,7 +13,6 @@ import com.fleetbite.driver.application.port.in.UnassignVehicleFromDriverUseCase
 import com.fleetbite.driver.application.port.in.UpdateDriverLocationUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverUseCase;
 import com.fleetbite.driver.domain.exception.DriverNotDeletableException;
-import com.fleetbite.driver.domain.exception.DuplicateDriverPhoneException;
 import com.fleetbite.driver.domain.exception.InvalidDriverTransitionException;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
@@ -38,7 +35,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -53,7 +49,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,9 +63,6 @@ class DriverControllerTest {
 
 	@Autowired
 	private MockMvc mockMvc;
-
-	@MockitoBean
-	private CreateDriverUseCase createDriverUseCase;
 
 	@MockitoBean
 	private GetDriverByIdUseCase getDriverByIdUseCase;
@@ -98,42 +90,6 @@ class DriverControllerTest {
 
 	@MockitoBean
 	private UnassignVehicleFromDriverUseCase unassignVehicleFromDriverUseCase;
-
-	@Test
-	void createDriver_shouldReturn201WithLocationHeader() throws Exception {
-		DriverResult result = sampleResult(null);
-		when(createDriverUseCase.execute(any(CreateDriverCommand.class))).thenReturn(result);
-
-		mockMvc.perform(post("/api/v1/drivers")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "userId": "%s",
-								  "phone": "999888777"
-								}
-								""".formatted(USER_UUID)))
-				.andExpect(status().isCreated())
-				.andExpect(header().string("Location", containsString("/api/v1/drivers/" + result.id())))
-				.andExpect(jsonPath("$.status").value("OFFLINE"))
-				.andExpect(jsonPath("$.createdAt").value("2026-08-08T22:00:00-05:00"));
-	}
-
-	@Test
-	void createDriver_shouldReturn409OnDuplicatePhone() throws Exception {
-		when(createDriverUseCase.execute(any(CreateDriverCommand.class)))
-				.thenThrow(new DuplicateDriverPhoneException("999888777"));
-
-		mockMvc.perform(post("/api/v1/drivers")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "userId": "%s",
-								  "phone": "999888777"
-								}
-								""".formatted(USER_UUID)))
-				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.code").value("DUPLICATE_DRIVER_PHONE"));
-	}
 
 	@Test
 	void listDrivers_shouldReturn200WithItems() throws Exception {
