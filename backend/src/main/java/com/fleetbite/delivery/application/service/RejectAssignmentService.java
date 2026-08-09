@@ -9,7 +9,10 @@ import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
+import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.domain.model.Order;
+import com.fleetbite.order.domain.model.OrderHistoryEventType;
+import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 
@@ -22,16 +25,19 @@ public final class RejectAssignmentService implements RejectAssignmentUseCase {
 	private final DeliveryAssignmentRepositoryPort assignmentRepositoryPort;
 	private final OrderRepositoryPort orderRepositoryPort;
 	private final DriverRepositoryPort driverRepositoryPort;
+	private final OrderHistoryRecorder orderHistoryRecorder;
 	private final Clock clock;
 
 	public RejectAssignmentService(
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
 			OrderRepositoryPort orderRepositoryPort,
 			DriverRepositoryPort driverRepositoryPort,
+			OrderHistoryRecorder orderHistoryRecorder,
 			Clock clock) {
 		this.assignmentRepositoryPort = Objects.requireNonNull(assignmentRepositoryPort);
 		this.orderRepositoryPort = Objects.requireNonNull(orderRepositoryPort);
 		this.driverRepositoryPort = Objects.requireNonNull(driverRepositoryPort);
+		this.orderHistoryRecorder = Objects.requireNonNull(orderHistoryRecorder);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -47,6 +53,7 @@ public final class RejectAssignmentService implements RejectAssignmentUseCase {
 		Driver driver = driverRepositoryPort.findById(assignment.driverId())
 				.orElseThrow(() -> new ResourceNotFoundException("Driver", assignment.driverId().value()));
 
+		OrderStatus previous = order.status();
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		assignment.reject(command.reason(), now);
 		order.markWaitingForDriver();
@@ -55,6 +62,13 @@ public final class RejectAssignmentService implements RejectAssignmentUseCase {
 		DeliveryAssignment updated = assignmentRepositoryPort.update(assignment);
 		orderRepositoryPort.update(order);
 		driverRepositoryPort.update(driver);
+		orderHistoryRecorder.record(
+				order.id(),
+				OrderHistoryEventType.ASSIGNMENT_REJECTED,
+				previous,
+				order.status(),
+				command.reason(),
+				now);
 
 		return AssignmentResult.from(updated);
 	}

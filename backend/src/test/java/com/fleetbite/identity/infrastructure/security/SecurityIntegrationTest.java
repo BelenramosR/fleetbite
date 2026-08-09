@@ -232,6 +232,16 @@ class SecurityIntegrationTest {
 				.andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
 	}
 
+	@Test
+	void driver_shouldBeDeniedOrderHistory() throws Exception {
+		String token = login("driver@fleetbite.local");
+
+		mockMvc.perform(get("/api/v1/orders/{id}/history", FAKE_ORDER_ID)
+						.header("Authorization", "Bearer " + token))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+	}
+
 	private String login(String email) throws Exception {
 		MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)

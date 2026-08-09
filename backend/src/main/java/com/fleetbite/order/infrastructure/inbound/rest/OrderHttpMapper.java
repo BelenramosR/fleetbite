@@ -1,10 +1,14 @@
 package com.fleetbite.order.infrastructure.inbound.rest;
 
+import com.fleetbite.order.application.dto.CancelOrderCommand;
 import com.fleetbite.order.application.dto.CreateOrderCommand;
+import com.fleetbite.order.application.dto.OrderHistoryResult;
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.dto.UpdateOrderCommand;
+import com.fleetbite.order.infrastructure.inbound.rest.request.CancelOrderRequest;
 import com.fleetbite.order.infrastructure.inbound.rest.request.CreateOrderRequest;
 import com.fleetbite.order.infrastructure.inbound.rest.request.UpdateOrderRequest;
+import com.fleetbite.order.infrastructure.inbound.rest.response.OrderHistoryResponse;
 import com.fleetbite.order.infrastructure.inbound.rest.response.OrderResponse;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +35,13 @@ public class OrderHttpMapper {
 				request.totalAmount());
 	}
 
+	public CancelOrderCommand toCommand(CancelOrderRequest request) {
+		if (request == null) {
+			return new CancelOrderCommand(null);
+		}
+		return new CancelOrderCommand(request.reason());
+	}
+
 	public OrderResponse toResponse(OrderResult result) {
 		return new OrderResponse(
 				result.id(),
@@ -54,5 +65,15 @@ public class OrderHttpMapper {
 				result.deliveredAt(),
 				result.cancelledAt(),
 				result.failedDeliveryAt());
+	}
+
+	public OrderHistoryResponse toResponse(OrderHistoryResult result) {
+		return new OrderHistoryResponse(
+				result.id(),
+				result.eventType().name(),
+				result.previousStatus() == null ? null : result.previousStatus().name(),
+				result.newStatus().name(),
+				result.description(),
+				result.createdAt());
 	}
 }

@@ -32,6 +32,7 @@ import com.fleetbite.delivery.infrastructure.transaction.TransactionalRejectAssi
 import com.fleetbite.delivery.infrastructure.transaction.TransactionalStartDeliveryAssignmentUseCase;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
+import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -45,11 +46,13 @@ public class DeliveryAssignmentApplicationConfig {
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
 			OrderRepositoryPort orderRepositoryPort,
 			DriverRepositoryPort driverRepositoryPort,
+			OrderHistoryRecorder orderHistoryRecorder,
 			Clock clock) {
 		return new CreateAssignmentOperation(
 				assignmentRepositoryPort,
 				orderRepositoryPort,
 				driverRepositoryPort,
+				orderHistoryRecorder,
 				clock);
 	}
 
@@ -76,14 +79,18 @@ public class DeliveryAssignmentApplicationConfig {
 			DriverRepositoryPort driverRepositoryPort,
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
 			DriverSelectionPolicy driverSelectionPolicy,
-			CreateAssignmentOperation createAssignmentOperation) {
+			CreateAssignmentOperation createAssignmentOperation,
+			OrderHistoryRecorder orderHistoryRecorder,
+			Clock clock) {
 		return new TransactionalAutoAssignOrderUseCase(
 				new AutoAssignOrderService(
 						orderRepositoryPort,
 						driverRepositoryPort,
 						assignmentRepositoryPort,
 						driverSelectionPolicy,
-						createAssignmentOperation));
+						createAssignmentOperation,
+						orderHistoryRecorder,
+						clock));
 	}
 
 	@Bean
@@ -99,9 +106,10 @@ public class DeliveryAssignmentApplicationConfig {
 	@Bean
 	AcceptAssignmentUseCase acceptAssignmentUseCase(
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
+			OrderHistoryRecorder orderHistoryRecorder,
 			Clock clock) {
 		return new TransactionalAcceptAssignmentUseCase(
-				new AcceptAssignmentService(assignmentRepositoryPort, clock));
+				new AcceptAssignmentService(assignmentRepositoryPort, orderHistoryRecorder, clock));
 	}
 
 	@Bean
@@ -109,12 +117,14 @@ public class DeliveryAssignmentApplicationConfig {
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
 			OrderRepositoryPort orderRepositoryPort,
 			DriverRepositoryPort driverRepositoryPort,
+			OrderHistoryRecorder orderHistoryRecorder,
 			Clock clock) {
 		return new TransactionalRejectAssignmentUseCase(
 				new RejectAssignmentService(
 						assignmentRepositoryPort,
 						orderRepositoryPort,
 						driverRepositoryPort,
+						orderHistoryRecorder,
 						clock));
 	}
 
@@ -122,18 +132,28 @@ public class DeliveryAssignmentApplicationConfig {
 	PickupAssignmentUseCase pickupAssignmentUseCase(
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
 			OrderRepositoryPort orderRepositoryPort,
+			OrderHistoryRecorder orderHistoryRecorder,
 			Clock clock) {
 		return new TransactionalPickupAssignmentUseCase(
-				new PickupAssignmentService(assignmentRepositoryPort, orderRepositoryPort, clock));
+				new PickupAssignmentService(
+						assignmentRepositoryPort,
+						orderRepositoryPort,
+						orderHistoryRecorder,
+						clock));
 	}
 
 	@Bean
 	StartDeliveryAssignmentUseCase startDeliveryAssignmentUseCase(
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
 			OrderRepositoryPort orderRepositoryPort,
+			OrderHistoryRecorder orderHistoryRecorder,
 			Clock clock) {
 		return new TransactionalStartDeliveryAssignmentUseCase(
-				new StartDeliveryAssignmentService(assignmentRepositoryPort, orderRepositoryPort, clock));
+				new StartDeliveryAssignmentService(
+						assignmentRepositoryPort,
+						orderRepositoryPort,
+						orderHistoryRecorder,
+						clock));
 	}
 
 	@Bean
@@ -141,12 +161,14 @@ public class DeliveryAssignmentApplicationConfig {
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
 			OrderRepositoryPort orderRepositoryPort,
 			DriverRepositoryPort driverRepositoryPort,
+			OrderHistoryRecorder orderHistoryRecorder,
 			Clock clock) {
 		return new TransactionalCompleteAssignmentUseCase(
 				new CompleteAssignmentService(
 						assignmentRepositoryPort,
 						orderRepositoryPort,
 						driverRepositoryPort,
+						orderHistoryRecorder,
 						clock));
 	}
 }

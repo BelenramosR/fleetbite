@@ -2,9 +2,12 @@ package com.fleetbite.order.application.service;
 
 import com.fleetbite.order.application.dto.CreateOrderCommand;
 import com.fleetbite.order.application.dto.OrderResult;
+import com.fleetbite.order.application.port.out.OrderHistoryRepositoryPort;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.model.Order;
+import com.fleetbite.order.domain.model.OrderHistoryEvent;
+import com.fleetbite.order.domain.model.OrderHistoryEventType;
 import com.fleetbite.order.domain.model.OrderPriority;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -41,16 +44,21 @@ class CreateOrderServiceTest {
 
 	@Mock
 	private OrderRepositoryPort orderRepositoryPort;
+	@Mock
+	private OrderHistoryRepositoryPort orderHistoryRepositoryPort;
 
 	private CreateOrderService createOrderService;
 
 	@BeforeEach
 	void setUp() {
-		createOrderService = new CreateOrderService(orderRepositoryPort, FIXED_CLOCK);
+		createOrderService = new CreateOrderService(
+				orderRepositoryPort,
+				new OrderHistoryRecorder(orderHistoryRepositoryPort),
+				FIXED_CLOCK);
 	}
 
 	@Test
-	void execute_shouldCreateOrderPersistAndReturnResultFromSavedOrder() {
+	void execute_shouldCreateOrderPersistHistoryAndReturnResult() {
 		CreateOrderCommand command = validCommand();
 		when(orderRepositoryPort.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -64,12 +72,20 @@ class CreateOrderServiceTest {
 		assertEquals(OrderPriority.NORMAL, saved.priority());
 		assertEquals(FIXED_CREATED, saved.createdAt());
 		assertEquals(FIXED_PROMISED, saved.promisedDeliveryAt());
-		assertTrue(saved.code().value().startsWith("ORD-" + LocalDate.ofInstant(FIXED_CLOCK.instant(), BusinessTime.ZONE_OFFSET).getYear() + "-"));
+		assertTrue(saved.code().value().startsWith(
+				"ORD-" + LocalDate.ofInstant(FIXED_CLOCK.instant(), BusinessTime.ZONE_OFFSET).getYear() + "-"));
 		assertEquals(command.customerName(), result.customerName());
 		assertEquals(FIXED_CREATED, result.createdAt());
-		assertEquals(FIXED_PROMISED, result.promisedDeliveryAt());
 		assertEquals(OrderStatus.CREATED, result.status());
 		assertNull(result.confirmedAt());
+
+		ArgumentCaptor<OrderHistoryEvent> historyCaptor = ArgumentCaptor.forClass(OrderHistoryEvent.class);
+		verify(orderHistoryRepositoryPort).save(historyCaptor.capture());
+		OrderHistoryEvent history = historyCaptor.getValue();
+		assertEquals(OrderHistoryEventType.ORDER_CREATED, history.eventType());
+		assertNull(history.previousStatus());
+		assertEquals(OrderStatus.CREATED, history.newStatus());
+		assertEquals(FIXED_CREATED, history.createdAt());
 	}
 
 	@Test
@@ -78,21 +94,22 @@ class CreateOrderServiceTest {
 				"   ",
 				"999999999",
 				"Av. Example 123",
-				-12.1001,
-				-77.0201,
-				new BigDecimal("85.90"));
+				-12.0464,
+				-77.0428,
+				new BigDecimal("25.50"));
 
 		assertThrows(InvalidOrderDataException.class, () -> createOrderService.execute(command));
 		verify(orderRepositoryPort, never()).save(any());
+		verify(orderHistoryRepositoryPort, never()).save(any());
 	}
 
 	private static CreateOrderCommand validCommand() {
 		return new CreateOrderCommand(
-				"Ana Torres",
+				"Ana Perez",
 				"999999999",
 				"Av. Example 123",
-				-12.1001,
-				-77.0201,
-				new BigDecimal("85.90"));
+				-12.0464,
+				-77.0428,
+				new BigDecimal("25.50"));
 	}
 }

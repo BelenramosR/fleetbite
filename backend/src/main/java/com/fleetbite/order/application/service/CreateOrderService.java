@@ -7,7 +7,9 @@ import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
+import com.fleetbite.order.domain.model.OrderHistoryEventType;
 import com.fleetbite.order.domain.model.OrderId;
+import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 
@@ -21,10 +23,15 @@ import java.util.UUID;
 public final class CreateOrderService implements CreateOrderUseCase {
 
 	private final OrderRepositoryPort orderRepositoryPort;
+	private final OrderHistoryRecorder orderHistoryRecorder;
 	private final Clock clock;
 
-	public CreateOrderService(OrderRepositoryPort orderRepositoryPort, Clock clock) {
+	public CreateOrderService(
+			OrderRepositoryPort orderRepositoryPort,
+			OrderHistoryRecorder orderHistoryRecorder,
+			Clock clock) {
 		this.orderRepositoryPort = Objects.requireNonNull(orderRepositoryPort, "orderRepositoryPort");
+		this.orderHistoryRecorder = Objects.requireNonNull(orderHistoryRecorder, "orderHistoryRecorder");
 		this.clock = Objects.requireNonNull(clock, "clock");
 	}
 
@@ -48,6 +55,13 @@ public final class CreateOrderService implements CreateOrderUseCase {
 				promisedDeliveryAt);
 
 		Order savedOrder = orderRepositoryPort.save(order);
+		orderHistoryRecorder.record(
+				savedOrder.id(),
+				OrderHistoryEventType.ORDER_CREATED,
+				null,
+				OrderStatus.CREATED,
+				null,
+				createdAt);
 		return OrderResult.from(savedOrder);
 	}
 

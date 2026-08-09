@@ -1,19 +1,28 @@
 package com.fleetbite.order.infrastructure.inbound.rest;
 
+import com.fleetbite.order.application.dto.CancelOrderCommand;
 import com.fleetbite.order.application.dto.CreateOrderCommand;
+import com.fleetbite.order.application.dto.OrderHistoryResult;
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.dto.UpdateOrderCommand;
+import com.fleetbite.order.application.port.in.CancelOrderUseCase;
+import com.fleetbite.order.application.port.in.ConfirmOrderUseCase;
 import com.fleetbite.order.application.port.in.CreateOrderUseCase;
 import com.fleetbite.order.application.port.in.DeleteOrderUseCase;
 import com.fleetbite.order.application.port.in.GetOrderByIdUseCase;
+import com.fleetbite.order.application.port.in.GetOrderHistoryUseCase;
 import com.fleetbite.order.application.port.in.ListOrdersUseCase;
+import com.fleetbite.order.application.port.in.MarkOrderReadyUseCase;
+import com.fleetbite.order.application.port.in.StartOrderPreparationUseCase;
 import com.fleetbite.order.application.port.in.UpdateOrderUseCase;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
+import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
 import com.fleetbite.order.domain.exception.OrderNotDeletableException;
 import com.fleetbite.order.domain.exception.OrderNotEditableException;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
+import com.fleetbite.order.domain.model.OrderHistoryEventType;
 import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
@@ -79,6 +88,16 @@ class OrderControllerTest {
 
 	@MockitoBean
 	private DeleteOrderUseCase deleteOrderUseCase;
+	@MockitoBean
+	private ConfirmOrderUseCase confirmOrderUseCase;
+	@MockitoBean
+	private StartOrderPreparationUseCase startOrderPreparationUseCase;
+	@MockitoBean
+	private MarkOrderReadyUseCase markOrderReadyUseCase;
+	@MockitoBean
+	private CancelOrderUseCase cancelOrderUseCase;
+	@MockitoBean
+	private GetOrderHistoryUseCase getOrderHistoryUseCase;
 
 	@Test
 	void createOrder_shouldReturn201WithLocationAndBusinessOffsetTimestamps() throws Exception {
@@ -227,6 +246,93 @@ class OrderControllerTest {
 		mockMvc.perform(get("/api/v1/orders/{id}", result.id()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").value(result.id().toString()));
+	}
+
+	@Test
+	void confirm_shouldReturn200() throws Exception {
+		OrderResult result = sampleResult();
+		when(confirmOrderUseCase.execute(any(OrderId.class))).thenReturn(result);
+
+		mockMvc.perform(post("/api/v1/orders/{id}/confirm", result.id()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(result.id().toString()));
+	}
+
+	@Test
+	void confirm_shouldReturn409OnInvalidTransition() throws Exception {
+		UUID id = UUID.randomUUID();
+		when(confirmOrderUseCase.execute(any(OrderId.class)))
+				.thenThrow(new InvalidOrderTransitionException(OrderStatus.CONFIRMED, OrderStatus.CONFIRMED));
+
+		mockMvc.perform(post("/api/v1/orders/{id}/confirm", id))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("INVALID_ORDER_TRANSITION"));
+	}
+
+	@Test
+	void ready_shouldReturn200() throws Exception {
+		OrderResult result = sampleResult();
+		when(markOrderReadyUseCase.execute(any(OrderId.class))).thenReturn(result);
+
+		mockMvc.perform(post("/api/v1/orders/{id}/ready", result.id()))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void cancel_shouldReturn200WithOptionalReason() throws Exception {
+		OrderResult result = sampleResult();
+		when(cancelOrderUseCase.execute(any(OrderId.class), any(CancelOrderCommand.class))).thenReturn(result);
+
+		mockMvc.perform(post("/api/v1/orders/{id}/cancel", result.id())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "reason": "Customer requested cancellation" }
+								"""))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void cancel_shouldReturn400WhenReasonBlank() throws Exception {
+		UUID id = UUID.randomUUID();
+		when(cancelOrderUseCase.execute(any(OrderId.class), any(CancelOrderCommand.class)))
+				.thenThrow(new InvalidOrderDataException("reason must not be blank when provided"));
+
+		mockMvc.perform(post("/api/v1/orders/{id}/cancel", id)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "reason": "   " }
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("INVALID_ORDER_DATA"));
+	}
+
+	@Test
+	void history_shouldReturn200() throws Exception {
+		UUID orderId = UUID.randomUUID();
+		when(getOrderHistoryUseCase.execute(OrderId.of(orderId))).thenReturn(List.of(
+				new OrderHistoryResult(
+						UUID.randomUUID(),
+						OrderHistoryEventType.ORDER_CREATED,
+						null,
+						OrderStatus.CREATED,
+						null,
+						CREATED_AT)));
+
+		mockMvc.perform(get("/api/v1/orders/{id}/history", orderId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].eventType").value("ORDER_CREATED"))
+				.andExpect(jsonPath("$[0].createdAt").value("2026-08-08T22:00:00-05:00"));
+	}
+
+	@Test
+	void history_shouldReturn404WhenOrderMissing() throws Exception {
+		UUID orderId = UUID.randomUUID();
+		when(getOrderHistoryUseCase.execute(OrderId.of(orderId)))
+				.thenThrow(new ResourceNotFoundException("Order", orderId));
+
+		mockMvc.perform(get("/api/v1/orders/{id}/history", orderId))
+				.andExpect(status().isNotFound());
 	}
 
 	private static String validBody() {

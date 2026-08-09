@@ -12,6 +12,7 @@ import com.fleetbite.identity.domain.exception.DuplicateUserEmailException;
 import com.fleetbite.identity.domain.exception.InvalidUserDataException;
 import com.fleetbite.identity.domain.exception.UserInactiveException;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
+import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
 import com.fleetbite.order.domain.exception.OrderNotDeletableException;
 import com.fleetbite.order.domain.exception.OrderNotEditableException;
 import com.fleetbite.shared.application.exception.ApplicationException;
@@ -78,6 +79,7 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler({
 			OrderNotEditableException.class,
 			OrderNotDeletableException.class,
+			InvalidOrderTransitionException.class,
 			DriverNotDeletableException.class,
 			DuplicateDriverPhoneException.class,
 			VehicleNotDeletableException.class,

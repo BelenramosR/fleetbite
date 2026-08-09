@@ -1,14 +1,21 @@
 package com.fleetbite.order.infrastructure.inbound.rest;
 
 import com.fleetbite.order.application.dto.OrderResult;
+import com.fleetbite.order.application.port.in.CancelOrderUseCase;
+import com.fleetbite.order.application.port.in.ConfirmOrderUseCase;
 import com.fleetbite.order.application.port.in.CreateOrderUseCase;
 import com.fleetbite.order.application.port.in.DeleteOrderUseCase;
 import com.fleetbite.order.application.port.in.GetOrderByIdUseCase;
+import com.fleetbite.order.application.port.in.GetOrderHistoryUseCase;
 import com.fleetbite.order.application.port.in.ListOrdersUseCase;
+import com.fleetbite.order.application.port.in.MarkOrderReadyUseCase;
+import com.fleetbite.order.application.port.in.StartOrderPreparationUseCase;
 import com.fleetbite.order.application.port.in.UpdateOrderUseCase;
 import com.fleetbite.order.domain.model.OrderId;
+import com.fleetbite.order.infrastructure.inbound.rest.request.CancelOrderRequest;
 import com.fleetbite.order.infrastructure.inbound.rest.request.CreateOrderRequest;
 import com.fleetbite.order.infrastructure.inbound.rest.request.UpdateOrderRequest;
+import com.fleetbite.order.infrastructure.inbound.rest.response.OrderHistoryResponse;
 import com.fleetbite.order.infrastructure.inbound.rest.response.OrderResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -38,6 +45,11 @@ public class OrderController {
 	private final ListOrdersUseCase listOrdersUseCase;
 	private final UpdateOrderUseCase updateOrderUseCase;
 	private final DeleteOrderUseCase deleteOrderUseCase;
+	private final ConfirmOrderUseCase confirmOrderUseCase;
+	private final StartOrderPreparationUseCase startOrderPreparationUseCase;
+	private final MarkOrderReadyUseCase markOrderReadyUseCase;
+	private final CancelOrderUseCase cancelOrderUseCase;
+	private final GetOrderHistoryUseCase getOrderHistoryUseCase;
 	private final OrderHttpMapper orderHttpMapper;
 
 	public OrderController(
@@ -46,12 +58,22 @@ public class OrderController {
 			ListOrdersUseCase listOrdersUseCase,
 			UpdateOrderUseCase updateOrderUseCase,
 			DeleteOrderUseCase deleteOrderUseCase,
+			ConfirmOrderUseCase confirmOrderUseCase,
+			StartOrderPreparationUseCase startOrderPreparationUseCase,
+			MarkOrderReadyUseCase markOrderReadyUseCase,
+			CancelOrderUseCase cancelOrderUseCase,
+			GetOrderHistoryUseCase getOrderHistoryUseCase,
 			OrderHttpMapper orderHttpMapper) {
 		this.createOrderUseCase = Objects.requireNonNull(createOrderUseCase);
 		this.getOrderByIdUseCase = Objects.requireNonNull(getOrderByIdUseCase);
 		this.listOrdersUseCase = Objects.requireNonNull(listOrdersUseCase);
 		this.updateOrderUseCase = Objects.requireNonNull(updateOrderUseCase);
 		this.deleteOrderUseCase = Objects.requireNonNull(deleteOrderUseCase);
+		this.confirmOrderUseCase = Objects.requireNonNull(confirmOrderUseCase);
+		this.startOrderPreparationUseCase = Objects.requireNonNull(startOrderPreparationUseCase);
+		this.markOrderReadyUseCase = Objects.requireNonNull(markOrderReadyUseCase);
+		this.cancelOrderUseCase = Objects.requireNonNull(cancelOrderUseCase);
+		this.getOrderHistoryUseCase = Objects.requireNonNull(getOrderHistoryUseCase);
 		this.orderHttpMapper = Objects.requireNonNull(orderHttpMapper);
 	}
 
@@ -91,5 +113,35 @@ public class OrderController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void deleteOrder(@PathVariable UUID id) {
 		deleteOrderUseCase.execute(OrderId.of(id));
+	}
+
+	@PostMapping("/{id}/confirm")
+	public OrderResponse confirm(@PathVariable UUID id) {
+		return orderHttpMapper.toResponse(confirmOrderUseCase.execute(OrderId.of(id)));
+	}
+
+	@PostMapping("/{id}/start-preparation")
+	public OrderResponse startPreparation(@PathVariable UUID id) {
+		return orderHttpMapper.toResponse(startOrderPreparationUseCase.execute(OrderId.of(id)));
+	}
+
+	@PostMapping("/{id}/ready")
+	public OrderResponse markReady(@PathVariable UUID id) {
+		return orderHttpMapper.toResponse(markOrderReadyUseCase.execute(OrderId.of(id)));
+	}
+
+	@PostMapping("/{id}/cancel")
+	public OrderResponse cancel(
+			@PathVariable UUID id,
+			@Valid @RequestBody(required = false) CancelOrderRequest request) {
+		return orderHttpMapper.toResponse(
+				cancelOrderUseCase.execute(OrderId.of(id), orderHttpMapper.toCommand(request)));
+	}
+
+	@GetMapping("/{id}/history")
+	public List<OrderHistoryResponse> history(@PathVariable UUID id) {
+		return getOrderHistoryUseCase.execute(OrderId.of(id)).stream()
+				.map(orderHttpMapper::toResponse)
+				.toList();
 	}
 }

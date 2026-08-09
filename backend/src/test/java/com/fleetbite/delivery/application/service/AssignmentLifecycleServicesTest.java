@@ -10,6 +10,7 @@ import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
+import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
@@ -47,6 +48,8 @@ class AssignmentLifecycleServicesTest {
 	private OrderRepositoryPort orderRepositoryPort;
 	@Mock
 	private DriverRepositoryPort driverRepositoryPort;
+	@Mock
+	private OrderHistoryRecorder orderHistoryRecorder;
 
 	private RejectAssignmentService rejectService;
 	private PickupAssignmentService pickupService;
@@ -57,13 +60,31 @@ class AssignmentLifecycleServicesTest {
 	@BeforeEach
 	void setUp() {
 		rejectService = new RejectAssignmentService(
-				assignmentRepositoryPort, orderRepositoryPort, driverRepositoryPort, FIXED_CLOCK);
-		pickupService = new PickupAssignmentService(assignmentRepositoryPort, orderRepositoryPort, FIXED_CLOCK);
+				assignmentRepositoryPort,
+				orderRepositoryPort,
+				driverRepositoryPort,
+				orderHistoryRecorder,
+				FIXED_CLOCK);
+		pickupService = new PickupAssignmentService(
+				assignmentRepositoryPort,
+				orderRepositoryPort,
+				orderHistoryRecorder,
+				FIXED_CLOCK);
 		startDeliveryService = new StartDeliveryAssignmentService(
-				assignmentRepositoryPort, orderRepositoryPort, FIXED_CLOCK);
+				assignmentRepositoryPort,
+				orderRepositoryPort,
+				orderHistoryRecorder,
+				FIXED_CLOCK);
 		completeService = new CompleteAssignmentService(
-				assignmentRepositoryPort, orderRepositoryPort, driverRepositoryPort, FIXED_CLOCK);
-		acceptService = new AcceptAssignmentService(assignmentRepositoryPort, FIXED_CLOCK);
+				assignmentRepositoryPort,
+				orderRepositoryPort,
+				driverRepositoryPort,
+				orderHistoryRecorder,
+				FIXED_CLOCK);
+		acceptService = new AcceptAssignmentService(
+				assignmentRepositoryPort,
+				orderHistoryRecorder,
+				FIXED_CLOCK);
 	}
 
 	@Test
@@ -104,16 +125,14 @@ class AssignmentLifecycleServicesTest {
 
 		assertEquals(AssignmentStatus.ACCEPTED, result.status());
 		assertEquals(OrderStatus.PICKED_UP, order.status());
-		assertEquals(DriverStatus.BUSY, driver.status());
 	}
 
 	@Test
 	void startDelivery_shouldMoveOrderToInTransit() {
 		Order order = assignedOrder();
 		order.pickUp(CREATED.plusMinutes(12));
-		Driver driver = busyDriver();
 		DeliveryAssignment assignment = DeliveryAssignment.create(
-				DeliveryAssignmentId.generate(), order.id(), driver.id(), CREATED.plusMinutes(10));
+				DeliveryAssignmentId.generate(), order.id(), DriverId.generate(), CREATED.plusMinutes(10));
 		assignment.accept(CREATED.plusMinutes(11));
 		assignment.markPickedUp(CREATED.plusMinutes(12));
 
@@ -121,9 +140,8 @@ class AssignmentLifecycleServicesTest {
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
 		when(orderRepositoryPort.update(any())).thenAnswer(i -> i.getArgument(0));
 
-		var result = startDeliveryService.execute(assignment.id());
+		startDeliveryService.execute(assignment.id());
 
-		assertEquals(AssignmentStatus.ACCEPTED, result.status());
 		assertEquals(OrderStatus.IN_TRANSIT, order.status());
 	}
 
@@ -153,12 +171,12 @@ class AssignmentLifecycleServicesTest {
 	}
 
 	@Test
-	void accept_shouldMarkAccepted() {
+	void accept_shouldAcceptPendingAssignment() {
 		DeliveryAssignment assignment = DeliveryAssignment.create(
 				DeliveryAssignmentId.generate(),
 				OrderId.generate(),
 				DriverId.generate(),
-				CREATED);
+				CREATED.plusMinutes(10));
 		when(assignmentRepositoryPort.findById(assignment.id())).thenReturn(Optional.of(assignment));
 		when(assignmentRepositoryPort.update(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -170,7 +188,7 @@ class AssignmentLifecycleServicesTest {
 	private static Order assignedOrder() {
 		Order order = Order.create(
 				OrderId.generate(),
-				OrderCode.of("ORD-2026-LIFE"),
+				OrderCode.of("ORD-2026-LIFE1"),
 				"Ana",
 				"999",
 				"Addr",

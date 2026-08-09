@@ -9,7 +9,9 @@ import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
+import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.domain.model.Order;
+import com.fleetbite.order.domain.model.OrderHistoryEventType;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -23,16 +25,19 @@ public final class CompleteAssignmentService implements CompleteAssignmentUseCas
 	private final DeliveryAssignmentRepositoryPort assignmentRepositoryPort;
 	private final OrderRepositoryPort orderRepositoryPort;
 	private final DriverRepositoryPort driverRepositoryPort;
+	private final OrderHistoryRecorder orderHistoryRecorder;
 	private final Clock clock;
 
 	public CompleteAssignmentService(
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
 			OrderRepositoryPort orderRepositoryPort,
 			DriverRepositoryPort driverRepositoryPort,
+			OrderHistoryRecorder orderHistoryRecorder,
 			Clock clock) {
 		this.assignmentRepositoryPort = Objects.requireNonNull(assignmentRepositoryPort);
 		this.orderRepositoryPort = Objects.requireNonNull(orderRepositoryPort);
 		this.driverRepositoryPort = Objects.requireNonNull(driverRepositoryPort);
+		this.orderHistoryRecorder = Objects.requireNonNull(orderHistoryRecorder);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -52,6 +57,7 @@ public final class CompleteAssignmentService implements CompleteAssignmentUseCas
 					"Complete requires order status IN_TRANSIT");
 		}
 
+		OrderStatus previous = order.status();
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		assignment.complete(now);
 		order.deliver(now);
@@ -60,6 +66,13 @@ public final class CompleteAssignmentService implements CompleteAssignmentUseCas
 		DeliveryAssignment updated = assignmentRepositoryPort.update(assignment);
 		orderRepositoryPort.update(order);
 		driverRepositoryPort.update(driver);
+		orderHistoryRecorder.record(
+				order.id(),
+				OrderHistoryEventType.ORDER_DELIVERED,
+				previous,
+				order.status(),
+				null,
+				now);
 
 		return AssignmentResult.from(updated);
 	}

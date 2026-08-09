@@ -12,10 +12,12 @@ import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
+import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
+import com.fleetbite.order.domain.model.OrderHistoryEventType;
 import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
@@ -40,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,6 +63,8 @@ class AutoAssignOrderServiceTest {
 	private DriverRepositoryPort driverRepositoryPort;
 	@Mock
 	private DeliveryAssignmentRepositoryPort assignmentRepositoryPort;
+	@Mock
+	private com.fleetbite.order.application.service.OrderHistoryRecorder orderHistoryRecorder;
 
 	private AutoAssignOrderService service;
 
@@ -71,13 +76,16 @@ class AutoAssignOrderServiceTest {
 				assignmentRepositoryPort,
 				orderRepositoryPort,
 				driverRepositoryPort,
+				orderHistoryRecorder,
 				FIXED_CLOCK);
 		service = new AutoAssignOrderService(
 				orderRepositoryPort,
 				driverRepositoryPort,
 				assignmentRepositoryPort,
 				policy,
-				operation);
+				operation,
+				orderHistoryRecorder,
+				FIXED_CLOCK);
 	}
 
 	@Test
@@ -143,6 +151,13 @@ class AutoAssignOrderServiceTest {
 		assertEquals(OrderStatus.WAITING_FOR_DRIVER, order.status());
 		verify(orderRepositoryPort).update(order);
 		verify(assignmentRepositoryPort, never()).save(any());
+		verify(orderHistoryRecorder).record(
+				eq(order.id()),
+				eq(OrderHistoryEventType.ORDER_WAITING_FOR_DRIVER),
+				eq(OrderStatus.READY),
+				eq(OrderStatus.WAITING_FOR_DRIVER),
+				eq(null),
+				any());
 	}
 
 	@Test
@@ -158,6 +173,7 @@ class AutoAssignOrderServiceTest {
 		assertFalse(result.assigned());
 		assertEquals(OrderStatus.WAITING_FOR_DRIVER, order.status());
 		verify(orderRepositoryPort, never()).update(any());
+		verify(orderHistoryRecorder, never()).record(any(), any(), any(), any(), any(), any());
 	}
 
 	@Test

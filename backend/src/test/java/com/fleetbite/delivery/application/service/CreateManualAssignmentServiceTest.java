@@ -53,6 +53,8 @@ class CreateManualAssignmentServiceTest {
 	private OrderRepositoryPort orderRepositoryPort;
 	@Mock
 	private DriverRepositoryPort driverRepositoryPort;
+	@Mock
+	private com.fleetbite.order.application.service.OrderHistoryRecorder orderHistoryRecorder;
 
 	private CreateManualAssignmentService service;
 
@@ -62,6 +64,7 @@ class CreateManualAssignmentServiceTest {
 				assignmentRepositoryPort,
 				orderRepositoryPort,
 				driverRepositoryPort,
+				orderHistoryRecorder,
 				FIXED_CLOCK);
 		service = new CreateManualAssignmentService(
 				orderRepositoryPort,

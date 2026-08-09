@@ -8,7 +8,9 @@ import com.fleetbite.delivery.domain.model.AssignmentStatus;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
 import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
+import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.domain.model.Order;
+import com.fleetbite.order.domain.model.OrderHistoryEventType;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -21,14 +23,17 @@ public final class StartDeliveryAssignmentService implements StartDeliveryAssign
 
 	private final DeliveryAssignmentRepositoryPort assignmentRepositoryPort;
 	private final OrderRepositoryPort orderRepositoryPort;
+	private final OrderHistoryRecorder orderHistoryRecorder;
 	private final Clock clock;
 
 	public StartDeliveryAssignmentService(
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
 			OrderRepositoryPort orderRepositoryPort,
+			OrderHistoryRecorder orderHistoryRecorder,
 			Clock clock) {
 		this.assignmentRepositoryPort = Objects.requireNonNull(assignmentRepositoryPort);
 		this.orderRepositoryPort = Objects.requireNonNull(orderRepositoryPort);
+		this.orderHistoryRecorder = Objects.requireNonNull(orderHistoryRecorder);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -54,9 +59,17 @@ public final class StartDeliveryAssignmentService implements StartDeliveryAssign
 					"Start delivery requires order status PICKED_UP");
 		}
 
+		OrderStatus previous = order.status();
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		order.startDelivery(now);
 		orderRepositoryPort.update(order);
+		orderHistoryRecorder.record(
+				order.id(),
+				OrderHistoryEventType.ORDER_IN_TRANSIT,
+				previous,
+				order.status(),
+				null,
+				now);
 
 		return AssignmentResult.from(assignment);
 	}
