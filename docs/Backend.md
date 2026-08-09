@@ -611,7 +611,7 @@ La reasignación manual debe guardar quién la realizó y el motivo.
 
 La primera versión debe ser determinística y explicable.
 
-No se recomienda usar machine learning para el examen.
+No usar machine learning.
 
 ### Datos considerados
 
@@ -1121,8 +1121,6 @@ para entornos compartidos.
 ## 25. Seguridad
 
 ### Autenticación
-
-Para el examen se recomienda:
 
 ```text
 Spring Security + JWT

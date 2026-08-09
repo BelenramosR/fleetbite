@@ -17,6 +17,15 @@ import com.fleetbite.delivery.infrastructure.inbound.rest.request.RejectAssignme
 import com.fleetbite.delivery.infrastructure.inbound.rest.response.AssignmentResponse;
 import com.fleetbite.delivery.infrastructure.inbound.rest.response.AutoAssignmentResponse;
 import com.fleetbite.order.domain.model.OrderId;
+import com.fleetbite.shared.infrastructure.config.OpenApiConfig;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +43,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class AssignmentController {
 
 	private final CreateManualAssignmentUseCase createManualAssignmentUseCase;
@@ -71,6 +81,23 @@ public class AssignmentController {
 	}
 
 	@PostMapping("/orders/{orderId}/assign")
+	@Tag(name = "Orders")
+	@Operation(summary = "Assign driver manually",
+			description = "ADMIN/DISPATCHER. Creates assignment for a READY or WAITING_FOR_DRIVER order.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "201", description = "Assignment created",
+					content = @Content(schema = @Schema(implementation = AssignmentResponse.class))),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Conflict",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public ResponseEntity<AssignmentResponse> assign(
 			@PathVariable UUID orderId,
 			@Valid @RequestBody CreateManualAssignmentRequest request) {
@@ -85,12 +112,43 @@ public class AssignmentController {
 	}
 
 	@PostMapping("/orders/{orderId}/auto-assign")
+	@Tag(name = "Orders")
+	@Operation(summary = "Auto-assign nearest available driver",
+			description = """
+					ADMIN/DISPATCHER only.
+					Candidates: drivers with status AVAILABLE and a known location.
+					Distance uses Haversine (km); nearest wins (UUID tie-break).
+					assignmentScore currently equals distanceKm.
+					If no driver is found: HTTP 200 with assigned=false, reason=NO_AVAILABLE_DRIVER,
+					and the order transitions to WAITING_FOR_DRIVER.
+					""")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Assignment attempted (assigned true or false)",
+					content = @Content(schema = @Schema(implementation = AutoAssignmentResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Order not assignable",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public AutoAssignmentResponse autoAssign(@PathVariable UUID orderId) {
 		AutoAssignmentResult result = autoAssignOrderUseCase.execute(OrderId.of(orderId));
 		return assignmentHttpMapper.toResponse(result);
 	}
 
 	@GetMapping("/assignments")
+	@Tag(name = "Assignments")
+	@Operation(summary = "List assignments")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Assignments returned"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public List<AssignmentResponse> listAssignments() {
 		return listAssignmentsUseCase.execute().stream()
 				.map(assignmentHttpMapper::toResponse)
@@ -98,18 +156,57 @@ public class AssignmentController {
 	}
 
 	@GetMapping("/assignments/{id}")
+	@Tag(name = "Assignments")
+	@Operation(summary = "Get assignment by id")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Assignment found"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public AssignmentResponse getAssignmentById(@PathVariable UUID id) {
 		AssignmentResult result = getAssignmentByIdUseCase.execute(DeliveryAssignmentId.of(id));
 		return assignmentHttpMapper.toResponse(result);
 	}
 
 	@PostMapping("/assignments/{id}/accept")
+	@Tag(name = "Assignments")
+	@Operation(summary = "Accept assignment", description = "Assignment PENDING → ACCEPTED")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Assignment accepted"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public AssignmentResponse accept(@PathVariable UUID id) {
 		AssignmentResult result = acceptAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
 		return assignmentHttpMapper.toResponse(result);
 	}
 
 	@PostMapping("/assignments/{id}/reject")
+	@Tag(name = "Assignments")
+	@Operation(summary = "Reject assignment", description = "Requires reason. Order returns to WAITING_FOR_DRIVER.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Assignment rejected"),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public AssignmentResponse reject(
 			@PathVariable UUID id,
 			@Valid @RequestBody RejectAssignmentRequest request) {
@@ -120,18 +217,60 @@ public class AssignmentController {
 	}
 
 	@PostMapping("/assignments/{id}/pickup")
+	@Tag(name = "Assignments")
+	@Operation(summary = "Mark picked up",
+			description = "Requires ACCEPTED assignment. Sets pickedUpAt; order moves to PICKED_UP.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Pickup recorded"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public AssignmentResponse pickup(@PathVariable UUID id) {
 		AssignmentResult result = pickupAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
 		return assignmentHttpMapper.toResponse(result);
 	}
 
 	@PostMapping("/assignments/{id}/start-delivery")
+	@Tag(name = "Assignments")
+	@Operation(summary = "Start delivery",
+			description = "Order PICKED_UP → IN_TRANSIT. Assignment remains ACCEPTED until complete.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Delivery started"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public AssignmentResponse startDelivery(@PathVariable UUID id) {
 		AssignmentResult result = startDeliveryAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
 		return assignmentHttpMapper.toResponse(result);
 	}
 
 	@PostMapping("/assignments/{id}/complete")
+	@Tag(name = "Assignments")
+	@Operation(summary = "Complete assignment",
+			description = "Assignment ACCEPTED → COMPLETED after pickup; order IN_TRANSIT → DELIVERED.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Assignment completed"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public AssignmentResponse complete(@PathVariable UUID id) {
 		AssignmentResult result = completeAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
 		return assignmentHttpMapper.toResponse(result);

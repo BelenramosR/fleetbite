@@ -24,10 +24,10 @@ application/json
 
 ### Fechas
 
-ISO 8601:
+ISO 8601 con offset de negocio `-05:00` (no UTC `Z`):
 
 ```text
-2026-08-10T18:30:00Z
+2026-08-10T18:30:00-05:00
 ```
 
 ### IDs
@@ -45,34 +45,36 @@ DRV-0001
 
 ## 3. Respuesta de error
 
-Formato sugerido:
+Formato real (`ApiErrorResponse`):
 
 ```json
 {
-  "timestamp": "2026-08-10T18:30:00Z",
+  "timestamp": "2026-08-10T23:30:00Z",
   "status": 409,
   "code": "INVALID_ORDER_TRANSITION",
   "message": "The order cannot transition from DELIVERED to PREPARING",
-  "path": "/api/v1/orders/123/status",
-  "correlationId": "f3c..."
+  "path": "/api/v1/orders/11111111-1111-1111-1111-111111111111/confirm"
 }
 ```
+
+Campos: `timestamp`, `status`, `code`, `message`, `path`. No hay `correlationId`.
 
 ---
 
 ## 4. Autenticación
 
 ```text
-POST /auth/login
-POST /auth/refresh
+POST /api/v1/auth/login
 ```
+
+Público (sin JWT). No existe refresh token en esta implementación.
 
 Ejemplo:
 
 ```json
 {
   "email": "dispatcher@fleetbite.local",
-  "password": "..."
+  "password": "Fleetbite1!"
 }
 ```
 
@@ -81,47 +83,32 @@ Respuesta:
 ```json
 {
   "accessToken": "...",
-  "refreshToken": "...",
+  "tokenType": "Bearer",
   "expiresIn": 3600
 }
 ```
 
-Si no se implementa refresh token dentro del MVP, documentarlo claramente.
+Usar header `Authorization: Bearer <accessToken>` en el resto de endpoints.
 
 ---
 
 # 5. Orders
 
-## GET /orders
-
-Filtros:
+Roles: ADMIN, RESTAURANT_OPERATOR, DISPATCHER.
 
 ```text
-status
-priority
-driverId
-from
-to
-page
-size
-sort
+GET    /api/v1/orders
+POST   /api/v1/orders
+GET    /api/v1/orders/{id}
+PUT    /api/v1/orders/{id}
+DELETE /api/v1/orders/{id}
 ```
 
-Ejemplo:
-
-```text
-GET /api/v1/orders?status=READY&priority=HIGH&page=0&size=20
-```
-
----
-
-## GET /orders/{id}
-
-Devuelve detalle completo.
-
----
+No hay filtros/paginación en el listado actual.
 
 ## POST /orders
+
+`promisedDeliveryAt` lo calcula el backend; no se envía en el request.
 
 ```json
 {
@@ -130,136 +117,95 @@ Devuelve detalle completo.
   "deliveryAddress": "Av. Example 123",
   "deliveryLatitude": -12.1001,
   "deliveryLongitude": -77.0201,
-  "totalAmount": 85.90,
-  "promisedDeliveryAt": "2026-08-10T19:15:00Z"
+  "totalAmount": 85.90
 }
 ```
 
----
+## PUT / DELETE
 
-## PUT /orders/{id}
+Solo mientras el pedido está en `CREATED` (si no, 409).
 
-Solo para campos permitidos por estado.
+## Workflow (comandos explícitos)
 
----
-
-## DELETE /orders/{id}
-
-Debe restringirse.
-
-Por ejemplo:
+No existe `PATCH /orders/{id}/status`. Transiciones vía:
 
 ```text
-solo CREATED
+POST /api/v1/orders/{id}/confirm
+POST /api/v1/orders/{id}/start-preparation
+POST /api/v1/orders/{id}/ready
+POST /api/v1/orders/{id}/cancel
 ```
 
-Si el pedido inició el proceso operativo:
-
-```text
-409 Conflict
-```
-
----
-
-## PATCH /orders/{id}/status
-
-```json
-{
-  "status": "READY"
-}
-```
-
-La transición debe ser validada en backend.
-
----
+`ready` no dispara auto-assign.
 
 ## GET /orders/{id}/history
 
-Devuelve eventos del pedido.
-
----
-
-## GET /orders/{id}/assignments
-
-Devuelve intentos de asignación.
+Historial append-only real (`order_history`).
 
 ---
 
 # 6. Drivers
 
-## GET /drivers
-
-Filtros:
+Roles: ADMIN, DISPATCHER.
 
 ```text
-status
-vehicleType
-page
-size
+GET    /api/v1/drivers
+POST   /api/v1/drivers
+GET    /api/v1/drivers/{id}
+PUT    /api/v1/drivers/{id}
+DELETE /api/v1/drivers/{id}
+PATCH  /api/v1/drivers/{id}/location
+POST   /api/v1/drivers/{id}/online
+POST   /api/v1/drivers/{id}/offline
 ```
 
----
-
-## GET /drivers/{id}
-
----
+Estados: `OFFLINE`, `AVAILABLE`, `BUSY`.
 
 ## POST /drivers
 
 ```json
 {
-  "fullName": "Luis Gómez",
+  "name": "Luis Gómez",
   "phone": "988000111",
-  "vehicleId": "uuid"
+  "currentLatitude": -12.102,
+  "currentLongitude": -77.028
 }
 ```
-
----
-
-## PUT /drivers/{id}
-
----
-
-## PATCH /drivers/{id}/status
-
-```json
-{
-  "status": "AVAILABLE"
-}
-```
-
----
 
 ## PATCH /drivers/{id}/location
 
 ```json
 {
   "latitude": -12.102,
-  "longitude": -77.028,
-  "timestamp": "2026-08-10T18:20:00Z"
+  "longitude": -77.028
 }
 ```
+
+Disponibilidad vía `online` / `offline` (no hay `PATCH .../status`).
 
 ---
 
 # 7. Vehicles
 
+Roles: ADMIN, DISPATCHER.
+
 ```text
-GET    /vehicles
-GET    /vehicles/{id}
-POST   /vehicles
-PUT    /vehicles/{id}
-DELETE /vehicles/{id}
+GET    /api/v1/vehicles
+POST   /api/v1/vehicles
+GET    /api/v1/vehicles/{id}
+PUT    /api/v1/vehicles/{id}
+DELETE /api/v1/vehicles/{id}
+POST   /api/v1/vehicles/{id}/maintenance
+POST   /api/v1/vehicles/{id}/activate
+POST   /api/v1/vehicles/{id}/deactivate
 ```
 
-Ejemplo:
+Estados: `ACTIVE`, `MAINTENANCE`, `INACTIVE`.
 
 ```json
 {
-  "plate": "1234-AB",
-  "type": "MOTORCYCLE",
-  "brand": "Honda",
-  "model": "CB125"
+  "plate": "ABC-123",
+  "type": "MOTORCYCLE"
 }
 ```
 
@@ -267,9 +213,28 @@ Ejemplo:
 
 # 8. Assignments
 
-## POST /orders/{orderId}/assign
+Asignación (entry points bajo Orders; ADMIN/DISPATCHER):
 
-Asignación manual.
+```text
+POST /api/v1/orders/{orderId}/assign
+POST /api/v1/orders/{orderId}/auto-assign
+```
+
+Ciclo de vida (ADMIN/DISPATCHER):
+
+```text
+GET  /api/v1/assignments
+GET  /api/v1/assignments/{id}
+POST /api/v1/assignments/{id}/accept
+POST /api/v1/assignments/{id}/reject
+POST /api/v1/assignments/{id}/pickup
+POST /api/v1/assignments/{id}/start-delivery
+POST /api/v1/assignments/{id}/complete
+```
+
+Estados de assignment: `PENDING`, `ACCEPTED`, `REJECTED`, `CANCELLED`, `COMPLETED`.
+
+## POST /orders/{orderId}/assign
 
 ```json
 {
@@ -277,21 +242,13 @@ Asignación manual.
 }
 ```
 
----
-
 ## POST /orders/{orderId}/auto-assign
 
-Puede existir para pruebas o modo manual.
-
-En arquitectura event-driven, normalmente `ORDER_READY` disparará la asignación automáticamente.
-
----
-
-## POST /assignments/{id}/accept
-
-Solo conductor correspondiente.
-
----
+- Candidatos: drivers `AVAILABLE` con ubicación.
+- Distancia Haversine (km); menor distancia gana.
+- `assignmentScore` actualmente equivale a `distanceKm`.
+- Sin driver: HTTP 200, `assigned=false`, `reason=NO_AVAILABLE_DRIVER`; order → `WAITING_FOR_DRIVER`.
+- No se dispara automáticamente desde `ready`.
 
 ## POST /assignments/{id}/reject
 
@@ -301,115 +258,42 @@ Solo conductor correspondiente.
 }
 ```
 
----
-
-## POST /assignments/{id}/pickup
-
-Marca pedido recogido.
-
----
-
-## POST /assignments/{id}/complete
-
-```json
-{
-  "deliveredAt": "2026-08-10T18:55:00Z"
-}
-```
-
----
-
-## POST /assignments/{id}/fail
-
-```json
-{
-  "reason": "CUSTOMER_NOT_AVAILABLE"
-}
-```
+`complete` no recibe body. No existe endpoint `fail` en la implementación actual.
 
 ---
 
 # 9. Dispatch
 
-Endpoints orientados al panel operativo.
-
-## GET /dispatch/board
-
-Puede devolver:
-
-```json
-{
-  "readyOrders": [],
-  "waitingOrders": [],
-  "activeDeliveries": [],
-  "availableDrivers": [],
-  "atRiskOrders": []
-}
-```
-
-Debe usarse con cautela para no duplicar toda la API. Puede ser un read model optimizado para la vista.
-
----
-
-## POST /dispatch/orders/{orderId}/reassign
-
-```json
-{
-  "driverId": "uuid",
-  "reason": "Previous driver unavailable"
-}
-```
+No implementado en el core actual. El panel operativo usa los endpoints de orders/drivers/assignments.
 
 ---
 
 # 10. Dashboard
 
-## GET /dashboard/summary
-
-Ejemplo:
-
-```json
-{
-  "activeOrders": 18,
-  "waitingForDriver": 3,
-  "inTransit": 9,
-  "atRisk": 2,
-  "availableDrivers": 5,
-  "averageAssignmentMinutes": 3.4,
-  "averageDeliveryMinutes": 31.2,
-  "onTimeRate": 0.94
-}
-```
+No implementado (`GET /dashboard/summary` no existe aún).
 
 ---
 
 # 11. Users
 
-Solo Admin.
+Solo ADMIN.
 
 ```text
-GET    /users
-GET    /users/{id}
-POST   /users
-PUT    /users/{id}
-PATCH  /users/{id}/status
+GET  /api/v1/users
+POST /api/v1/users
+GET  /api/v1/users/{id}
+PUT  /api/v1/users/{id}
+POST /api/v1/users/{id}/activate
+POST /api/v1/users/{id}/deactivate
 ```
+
+No hay `PATCH /users/{id}/status`.
 
 ---
 
 # 12. Paginación
 
-Formato sugerido:
-
-```json
-{
-  "content": [],
-  "page": 0,
-  "size": 20,
-  "totalElements": 84,
-  "totalPages": 5
-}
-```
+No implementada en los listados actuales (devuelven arrays completos).
 
 ---
 
@@ -417,7 +301,7 @@ Formato sugerido:
 
 ### 200
 
-Consulta o actualización exitosa.
+Consulta o actualización exitosa (incluye auto-assign con `assigned=false`).
 
 ### 201
 
@@ -433,11 +317,11 @@ Validación.
 
 ### 401
 
-No autenticado.
+No autenticado (`AUTHENTICATION_FAILED`).
 
 ### 403
 
-No autorizado.
+No autorizado (`ACCESS_DENIED` / `USER_INACTIVE` en login).
 
 ### 404
 
@@ -445,20 +329,7 @@ No encontrado.
 
 ### 409
 
-Conflicto de dominio.
-
-Ejemplos:
-
-```text
-driver already assigned
-invalid order transition
-order already delivered
-optimistic locking conflict
-```
-
-### 422
-
-Puede utilizarse para ciertas reglas funcionales, aunque se recomienda mantener una política consistente.
+Conflicto de dominio (transición inválida, duplicados, locking, etc.).
 
 ### 500
 
@@ -475,104 +346,67 @@ customerName required
 totalAmount >= 0
 valid coordinates
 valid phone
-promisedDeliveryAt > createdAt
 ```
 
-El frontend puede validar por UX.
+`promisedDeliveryAt` lo calcula el backend.
 
-El backend siempre debe validar nuevamente.
+El frontend puede validar por UX. El backend siempre valida nuevamente.
 
 ---
 
 # 15. Seguridad por endpoint
 
-Ejemplo:
+Implementado con `requestMatchers` (no `@PreAuthorize`):
 
 ```text
-/orders/**
-ADMIN
-RESTAURANT_OPERATOR
-DISPATCHER
+POST /api/v1/auth/login                         permitAll
+GET  /actuator/health                           permitAll
+/swagger-ui/**, /v3/api-docs/**                 permitAll
 
-/dispatch/**
-ADMIN
-DISPATCHER
-
-/drivers/{id}/location
-DRIVER correspondiente
-
-/assignments/{id}/accept
-DRIVER correspondiente
-
-/users/**
-ADMIN
+/api/v1/users/**                                ADMIN
+POST /api/v1/orders/*/assign|auto-assign        ADMIN, DISPATCHER
+/api/v1/orders/**                               ADMIN, RESTAURANT_OPERATOR, DISPATCHER
+/api/v1/drivers/**                              ADMIN, DISPATCHER
+/api/v1/vehicles/**                             ADMIN, DISPATCHER
+/api/v1/assignments/**                          ADMIN, DISPATCHER
 ```
 
 ---
 
 # 16. Versionado
 
-Se recomienda:
-
 ```text
 /api/v1
 ```
-
-No es necesario implementar múltiples versiones dentro del examen.
 
 ---
 
 # 17. OpenAPI
 
-La implementación debe exponer Swagger.
+Expuesto con springdoc-openapi:
 
-Objetivos:
+```text
+Swagger UI: http://localhost:8080/swagger-ui/index.html
+OpenAPI JSON: http://localhost:8080/v3/api-docs
+```
 
-- probar endpoints;
-- visualizar schemas;
-- documentar seguridad;
-- facilitar revisión técnica.
+Security scheme global: `bearerAuth` (JWT). Login está excluido explícitamente.
 
-Cada endpoint importante debe tener:
+Tags: Authentication, Users, Orders, Drivers, Vehicles, Assignments.
 
-- summary;
-- response codes;
-- request schema;
-- response schema.
+Health actuator queda fuera del documento OpenAPI.
 
 ---
 
 # 18. Correlation ID
 
-El backend puede aceptar:
-
-```text
-X-Correlation-Id
-```
-
-Si no existe, genera uno.
-
-Respuesta:
-
-```text
-X-Correlation-Id: uuid
-```
-
-Esto ayuda a correlacionar logs y eventos.
+No implementado en el contrato de error actual.
 
 ---
 
 # 19. Idempotency Key
 
-Para operaciones donde duplicados sean peligrosos puede admitirse:
-
-```text
-Idempotency-Key
-```
-
-Especialmente útil en creación de pedidos desde integraciones externas.
-
-No es imprescindible para el MVP.
+No implementado en el MVP.
 
 ---
 
@@ -582,68 +416,39 @@ No es imprescindible para el MVP.
 GET /actuator/health
 ```
 
-No debe requerir autenticación si solo expone estado básico.
+Público. No documentado en OpenAPI.
 
 ---
 
-# 21. Contrato mínimo para el examen
-
-Endpoints imprescindibles:
+# 21. Contrato mínimo implementado
 
 ```text
-POST /auth/login
+POST /api/v1/auth/login
 
-GET  /orders
-POST /orders
-GET  /orders/{id}
-PUT  /orders/{id}
-DELETE /orders/{id}
-PATCH /orders/{id}/status
+GET/POST/PUT/DELETE /api/v1/orders
+POST /api/v1/orders/{id}/confirm|start-preparation|ready|cancel
+GET  /api/v1/orders/{id}/history
+POST /api/v1/orders/{id}/assign
+POST /api/v1/orders/{id}/auto-assign
 
-GET  /drivers
-POST /drivers
-PUT  /drivers/{id}
-PATCH /drivers/{id}/status
+GET/POST/PUT/DELETE /api/v1/drivers
+PATCH /api/v1/drivers/{id}/location
+POST /api/v1/drivers/{id}/online|offline
 
-GET  /vehicles
-POST /vehicles
-PUT  /vehicles/{id}
+GET/POST/PUT/DELETE /api/v1/vehicles
+POST /api/v1/vehicles/{id}/maintenance|activate|deactivate
 
-POST /orders/{id}/assign
-GET  /orders/{id}/history
+GET /api/v1/assignments
+POST /api/v1/assignments/{id}/accept|reject|pickup|start-delivery|complete
 
-GET /dashboard/summary
+GET/POST/PUT /api/v1/users
+POST /api/v1/users/{id}/activate|deactivate
 ```
-
-El resto puede añadirse progresivamente.
 
 ---
 
 # 22. Resumen
 
-La API debe reflejar dos tipos de operaciones:
+La API distingue CRUD y comandos de negocio (`confirm`, `ready`, `assign`, `accept`, `pickup`, `complete`, etc.).
 
-### CRUD
-
-```text
-orders
-drivers
-vehicles
-users
-```
-
-### Comandos de negocio
-
-```text
-ready
-assign
-accept
-reject
-pickup
-complete
-reassign
-```
-
-Esta diferencia es importante.
-
-No todos los procesos de negocio deberían disfrazarse como un `PUT` genérico sobre una entidad.
+No todos los procesos de negocio se disfrazan como un `PUT`/`PATCH` genérico sobre una entidad.

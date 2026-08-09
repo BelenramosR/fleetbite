@@ -1,8 +1,12 @@
 package com.fleetbite.delivery.infrastructure.inbound.rest.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
-public record CreateManualAssignmentRequest(@NotNull UUID driverId) {
+@Schema(description = "Manual assignment request")
+public record CreateManualAssignmentRequest(
+		@Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+		@NotNull UUID driverId) {
 }

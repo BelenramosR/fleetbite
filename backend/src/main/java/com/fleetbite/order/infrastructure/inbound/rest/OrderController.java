@@ -17,6 +17,15 @@ import com.fleetbite.order.infrastructure.inbound.rest.request.CreateOrderReques
 import com.fleetbite.order.infrastructure.inbound.rest.request.UpdateOrderRequest;
 import com.fleetbite.order.infrastructure.inbound.rest.response.OrderHistoryResponse;
 import com.fleetbite.order.infrastructure.inbound.rest.response.OrderResponse;
+import com.fleetbite.shared.infrastructure.config.OpenApiConfig;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +47,8 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/orders")
+@Tag(name = "Orders")
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class OrderController {
 
 	private final CreateOrderUseCase createOrderUseCase;
@@ -78,6 +89,14 @@ public class OrderController {
 	}
 
 	@GetMapping
+	@Operation(summary = "List orders")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Orders returned"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public List<OrderResponse> listOrders() {
 		return listOrdersUseCase.execute().stream()
 				.map(orderHttpMapper::toResponse)
@@ -85,6 +104,18 @@ public class OrderController {
 	}
 
 	@PostMapping
+	@Operation(summary = "Create order",
+			description = "Creates order in CREATED status. promisedDeliveryAt is calculated by the backend.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "201", description = "Order created",
+					content = @Content(schema = @Schema(implementation = OrderResponse.class))),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
 		OrderResult result = createOrderUseCase.execute(orderHttpMapper.toCommand(request));
 		URI location = ServletUriComponentsBuilder
@@ -96,12 +127,36 @@ public class OrderController {
 	}
 
 	@GetMapping("/{id}")
+	@Operation(summary = "Get order by id")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Order found"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public OrderResponse getOrderById(@PathVariable UUID id) {
 		OrderResult result = getOrderByIdUseCase.execute(OrderId.of(id));
 		return orderHttpMapper.toResponse(result);
 	}
 
 	@PutMapping("/{id}")
+	@Operation(summary = "Update order", description = "Allowed only while order is in CREATED status.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Order updated"),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Conflict",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public OrderResponse updateOrder(
 			@PathVariable UUID id,
 			@Valid @RequestBody UpdateOrderRequest request) {
@@ -111,26 +166,90 @@ public class OrderController {
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
+	@Operation(summary = "Delete order", description = "Allowed only while order is in CREATED status.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "204", description = "Order deleted"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Conflict",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public void deleteOrder(@PathVariable UUID id) {
 		deleteOrderUseCase.execute(OrderId.of(id));
 	}
 
 	@PostMapping("/{id}/confirm")
+	@Operation(summary = "Confirm order", description = "CREATED → CONFIRMED")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Order confirmed"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public OrderResponse confirm(@PathVariable UUID id) {
 		return orderHttpMapper.toResponse(confirmOrderUseCase.execute(OrderId.of(id)));
 	}
 
 	@PostMapping("/{id}/start-preparation")
+	@Operation(summary = "Start preparation", description = "CONFIRMED → PREPARING")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Preparation started"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public OrderResponse startPreparation(@PathVariable UUID id) {
 		return orderHttpMapper.toResponse(startOrderPreparationUseCase.execute(OrderId.of(id)));
 	}
 
 	@PostMapping("/{id}/ready")
+	@Operation(summary = "Mark order ready",
+			description = "PREPARING → READY. Does not trigger auto-assignment.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Order ready"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public OrderResponse markReady(@PathVariable UUID id) {
 		return orderHttpMapper.toResponse(markOrderReadyUseCase.execute(OrderId.of(id)));
 	}
 
 	@PostMapping("/{id}/cancel")
+	@Operation(summary = "Cancel order",
+			description = "Cancels when allowed by domain rules. Optional reason is stored in order history only.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Order cancelled"),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public OrderResponse cancel(
 			@PathVariable UUID id,
 			@Valid @RequestBody(required = false) CancelOrderRequest request) {
@@ -139,6 +258,16 @@ public class OrderController {
 	}
 
 	@GetMapping("/{id}/history")
+	@Operation(summary = "Get order history", description = "Append-only status/history events for the order.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "History returned"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public List<OrderHistoryResponse> history(@PathVariable UUID id) {
 		return getOrderHistoryUseCase.execute(OrderId.of(id)).stream()
 				.map(orderHttpMapper::toResponse)

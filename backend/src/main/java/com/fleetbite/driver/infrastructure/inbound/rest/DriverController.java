@@ -14,6 +14,15 @@ import com.fleetbite.driver.infrastructure.inbound.rest.request.CreateDriverRequ
 import com.fleetbite.driver.infrastructure.inbound.rest.request.UpdateDriverLocationRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.UpdateDriverRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.response.DriverResponse;
+import com.fleetbite.shared.infrastructure.config.OpenApiConfig;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +45,8 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/drivers")
+@Tag(name = "Drivers")
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class DriverController {
 
 	private final CreateDriverUseCase createDriverUseCase;
@@ -70,6 +81,14 @@ public class DriverController {
 	}
 
 	@GetMapping
+	@Operation(summary = "List drivers")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Drivers returned"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public List<DriverResponse> listDrivers() {
 		return listDriversUseCase.execute().stream()
 				.map(driverHttpMapper::toResponse)
@@ -77,6 +96,17 @@ public class DriverController {
 	}
 
 	@PostMapping
+	@Operation(summary = "Create driver")
+	@ApiResponses({
+			@ApiResponse(responseCode = "201", description = "Driver created",
+					content = @Content(schema = @Schema(implementation = DriverResponse.class))),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public ResponseEntity<DriverResponse> createDriver(@Valid @RequestBody CreateDriverRequest request) {
 		DriverResult result = createDriverUseCase.execute(driverHttpMapper.toCommand(request));
 		URI location = ServletUriComponentsBuilder
@@ -88,12 +118,34 @@ public class DriverController {
 	}
 
 	@GetMapping("/{id}")
+	@Operation(summary = "Get driver by id")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Driver found"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public DriverResponse getDriverById(@PathVariable UUID id) {
 		DriverResult result = getDriverByIdUseCase.execute(DriverId.of(id));
 		return driverHttpMapper.toResponse(result);
 	}
 
 	@PutMapping("/{id}")
+	@Operation(summary = "Update driver profile")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Driver updated"),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public DriverResponse updateDriver(
 			@PathVariable UUID id,
 			@Valid @RequestBody UpdateDriverRequest request) {
@@ -103,11 +155,35 @@ public class DriverController {
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
+	@Operation(summary = "Delete driver")
+	@ApiResponses({
+			@ApiResponse(responseCode = "204", description = "Driver deleted"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Conflict",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public void deleteDriver(@PathVariable UUID id) {
 		deleteDriverUseCase.execute(DriverId.of(id));
 	}
 
 	@PatchMapping("/{id}/location")
+	@Operation(summary = "Update driver location")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Location updated"),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public DriverResponse updateLocation(
 			@PathVariable UUID id,
 			@Valid @RequestBody UpdateDriverLocationRequest request) {
@@ -118,12 +194,36 @@ public class DriverController {
 	}
 
 	@PostMapping("/{id}/online")
+	@Operation(summary = "Set driver online", description = "Transitions driver toward AVAILABLE when rules allow.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Driver online"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public DriverResponse goOnline(@PathVariable UUID id) {
 		DriverResult result = setDriverOnlineUseCase.execute(DriverId.of(id));
 		return driverHttpMapper.toResponse(result);
 	}
 
 	@PostMapping("/{id}/offline")
+	@Operation(summary = "Set driver offline")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Driver offline"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Invalid transition",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public DriverResponse goOffline(@PathVariable UUID id) {
 		DriverResult result = setDriverOfflineUseCase.execute(DriverId.of(id));
 		return driverHttpMapper.toResponse(result);

@@ -11,6 +11,15 @@ import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.infrastructure.inbound.rest.request.CreateUserRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.request.UpdateUserRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.response.UserResponse;
+import com.fleetbite.shared.infrastructure.config.OpenApiConfig;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +38,8 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users")
+@Tag(name = "Users")
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class UserController {
 
 	private final CreateUserUseCase createUserUseCase;
@@ -57,6 +68,14 @@ public class UserController {
 	}
 
 	@GetMapping
+	@Operation(summary = "List users", description = "ADMIN only")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Users returned"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public List<UserResponse> listUsers() {
 		return listUsersUseCase.execute().stream()
 				.map(identityHttpMapper::toResponse)
@@ -64,6 +83,18 @@ public class UserController {
 	}
 
 	@PostMapping
+	@Operation(summary = "Create user", description = "ADMIN only. Password is hashed; never returned.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "201", description = "User created"),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Duplicate email",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
 		UserResult result = createUserUseCase.execute(identityHttpMapper.toCommand(request));
 		URI location = ServletUriComponentsBuilder
@@ -75,11 +106,33 @@ public class UserController {
 	}
 
 	@GetMapping("/{id}")
+	@Operation(summary = "Get user by id", description = "ADMIN only")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "User found"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public UserResponse getUserById(@PathVariable UUID id) {
 		return identityHttpMapper.toResponse(getUserByIdUseCase.execute(UserId.of(id)));
 	}
 
 	@PutMapping("/{id}")
+	@Operation(summary = "Update user profile", description = "ADMIN only. Does not change password.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "User updated"),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public UserResponse updateUser(
 			@PathVariable UUID id,
 			@Valid @RequestBody UpdateUserRequest request) {
@@ -88,11 +141,31 @@ public class UserController {
 	}
 
 	@PostMapping("/{id}/activate")
+	@Operation(summary = "Activate user", description = "ADMIN only")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "User activated"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public UserResponse activate(@PathVariable UUID id) {
 		return identityHttpMapper.toResponse(activateUserUseCase.execute(UserId.of(id)));
 	}
 
 	@PostMapping("/{id}/deactivate")
+	@Operation(summary = "Deactivate user", description = "ADMIN only")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "User deactivated"),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
 	public UserResponse deactivate(@PathVariable UUID id) {
 		return identityHttpMapper.toResponse(deactivateUserUseCase.execute(UserId.of(id)));
 	}
