@@ -6,6 +6,7 @@ import com.fleetbite.identity.application.port.in.LogoutUseCase;
 import com.fleetbite.identity.application.port.in.RefreshAccessTokenUseCase;
 import com.fleetbite.identity.domain.exception.AuthenticationFailedException;
 import com.fleetbite.identity.domain.exception.UserInactiveException;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
 import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({IdentityHttpMapper.class, GlobalExceptionHandler.class})
+@Import({IdentityHttpMapper.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
 class AuthControllerTest {
 
 	@Autowired
@@ -54,10 +55,10 @@ class AuthControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.accessToken").value("jwt-token"))
-				.andExpect(jsonPath("$.tokenType").value("Bearer"))
-				.andExpect(jsonPath("$.expiresIn").value(3600))
-				.andExpect(jsonPath("$.refreshToken").value("refresh-token-uuid"));
+				.andExpect(jsonPath("$.data.accessToken").value("jwt-token"))
+				.andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+				.andExpect(jsonPath("$.data.expiresIn").value(3600))
+				.andExpect(jsonPath("$.data.refreshToken").value("refresh-token-uuid"));
 	}
 
 	@Test
@@ -105,8 +106,8 @@ class AuthControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.accessToken").value("new-jwt"))
-				.andExpect(jsonPath("$.refreshToken").value("new-refresh"));
+				.andExpect(jsonPath("$.data.accessToken").value("new-jwt"))
+				.andExpect(jsonPath("$.data.refreshToken").value("new-refresh"));
 	}
 
 	@Test

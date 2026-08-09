@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 		"spring.flyway.enabled=true"
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({UserRepositoryAdapter.class, UserPersistenceMapper.class})
+@Import({UserRepositoryAdapter.class, UserPersistenceMapperImpl.class})
 @Testcontainers
 class UserRepositoryAdapterIntegrationTest {
 

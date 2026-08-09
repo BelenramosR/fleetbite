@@ -2,6 +2,7 @@ package com.fleetbite.vehicle.infrastructure.inbound.rest;
 
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
 import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
 import com.fleetbite.vehicle.application.dto.CreateVehicleCommand;
 import com.fleetbite.vehicle.application.dto.UpdateVehicleCommand;
@@ -47,14 +48,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = VehicleController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({VehicleHttpMapper.class, GlobalExceptionHandler.class})
+@Import({VehicleHttpMapper.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
 class VehicleControllerTest {
 
 	private static final OffsetDateTime CREATED_AT =
@@ -102,8 +102,8 @@ class VehicleControllerTest {
 								"""))
 				.andExpect(status().isCreated())
 				.andExpect(header().string("Location", containsString("/api/v1/vehicles/" + result.id())))
-				.andExpect(jsonPath("$.status").value("AVAILABLE"))
-				.andExpect(jsonPath("$.createdAt").value("2026-08-08T22:00:00-05:00"));
+				.andExpect(jsonPath("$.data.status").value("AVAILABLE"))
+				.andExpect(jsonPath("$.data.createdAt").value("2026-08-08T22:00:00-05:00"));
 	}
 
 	@Test
@@ -129,8 +129,8 @@ class VehicleControllerTest {
 
 		mockMvc.perform(get("/api/v1/vehicles"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)))
-				.andExpect(jsonPath("$[0].plate").value("ABC-123"));
+				.andExpect(jsonPath("$.data", hasSize(1)))
+				.andExpect(jsonPath("$.data[0].plate").value("ABC-123"));
 	}
 
 	@Test
@@ -139,7 +139,7 @@ class VehicleControllerTest {
 
 		mockMvc.perform(get("/api/v1/vehicles"))
 				.andExpect(status().isOk())
-				.andExpect(content().json("[]"));
+				.andExpect(jsonPath("$.data", hasSize(0)));
 	}
 
 	@Test
@@ -149,7 +149,7 @@ class VehicleControllerTest {
 
 		mockMvc.perform(get("/api/v1/vehicles/{id}", result.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(result.id().toString()));
+				.andExpect(jsonPath("$.data.id").value(result.id().toString()));
 	}
 
 	@Test
@@ -227,7 +227,7 @@ class VehicleControllerTest {
 
 		mockMvc.perform(post("/api/v1/vehicles/{id}/maintenance", result.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("MAINTENANCE"));
+				.andExpect(jsonPath("$.data.status").value("MAINTENANCE"));
 	}
 
 	@Test
@@ -237,7 +237,7 @@ class VehicleControllerTest {
 
 		mockMvc.perform(post("/api/v1/vehicles/{id}/activate", result.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("AVAILABLE"));
+				.andExpect(jsonPath("$.data.status").value("AVAILABLE"));
 	}
 
 	@Test
@@ -247,7 +247,7 @@ class VehicleControllerTest {
 
 		mockMvc.perform(post("/api/v1/vehicles/{id}/deactivate", result.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("INACTIVE"));
+				.andExpect(jsonPath("$.data.status").value("INACTIVE"));
 	}
 
 	@Test

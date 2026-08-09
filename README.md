@@ -102,6 +102,8 @@ cd backend
 .\mvnw.cmd clean test
 ```
 
+Incluye `HexagonalArchitectureTest` (jMolecules + ArchUnit): verifica estereotipos hexagonales y que `domain` / `application` no dependan de `infrastructure` ni de Spring.
+
 ---
 
 ## Usuarios seed (login)

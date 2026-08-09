@@ -3,13 +3,13 @@ package com.fleetbite.identity.infrastructure.outbound.persistence;
 import com.fleetbite.identity.domain.model.RefreshToken;
 import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Component
-public class RefreshTokenPersistenceMapper {
+@Mapper(componentModel = "spring")
+public abstract class RefreshTokenPersistenceMapper {
 
 	public RefreshTokenJpaEntity toEntity(RefreshToken refreshToken) {
 		Objects.requireNonNull(refreshToken, "refreshToken is required");
@@ -34,7 +34,7 @@ public class RefreshTokenPersistenceMapper {
 				toBusinessOffset(entity.getRevokedAt()));
 	}
 
-	private static OffsetDateTime toBusinessOffset(OffsetDateTime value) {
+	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
 		if (value == null) {
 			return null;
 		}

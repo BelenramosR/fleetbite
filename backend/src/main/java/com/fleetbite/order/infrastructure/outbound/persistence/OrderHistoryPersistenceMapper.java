@@ -4,13 +4,13 @@ import com.fleetbite.order.domain.model.OrderHistoryEvent;
 import com.fleetbite.order.domain.model.OrderHistoryEventId;
 import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Component
-public class OrderHistoryPersistenceMapper {
+@Mapper(componentModel = "spring")
+public abstract class OrderHistoryPersistenceMapper {
 
 	public OrderHistoryJpaEntity toEntity(OrderHistoryEvent event) {
 		Objects.requireNonNull(event, "event is required");
@@ -39,7 +39,7 @@ public class OrderHistoryPersistenceMapper {
 				toBusinessOffset(entity.getCreatedAt()));
 	}
 
-	private static OffsetDateTime toBusinessOffset(OffsetDateTime value) {
+	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
 		if (value == null) {
 			return null;
 		}

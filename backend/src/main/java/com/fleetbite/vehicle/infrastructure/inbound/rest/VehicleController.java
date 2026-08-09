@@ -1,7 +1,6 @@
 package com.fleetbite.vehicle.infrastructure.inbound.rest;
 
 import com.fleetbite.shared.infrastructure.config.OpenApiConfig;
-import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorResponse;
 import com.fleetbite.vehicle.application.dto.VehicleResult;
 import com.fleetbite.vehicle.application.port.in.ActivateVehicleUseCase;
 import com.fleetbite.vehicle.application.port.in.CreateVehicleUseCase;
@@ -83,9 +82,9 @@ public class VehicleController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Vehicles returned"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<VehicleResponse> listVehicles() {
 		return listVehiclesUseCase.execute().stream()
@@ -99,13 +98,13 @@ public class VehicleController {
 			@ApiResponse(responseCode = "201", description = "Vehicle created",
 					content = @Content(schema = @Schema(implementation = VehicleResponse.class))),
 			@ApiResponse(responseCode = "400", description = "Validation error",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Duplicate plate",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public ResponseEntity<VehicleResponse> createVehicle(@Valid @RequestBody CreateVehicleRequest request) {
 		VehicleResult result = createVehicleUseCase.execute(vehicleHttpMapper.toCommand(request));
@@ -122,11 +121,11 @@ public class VehicleController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Vehicle found"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public VehicleResponse getVehicleById(@PathVariable UUID id) {
 		VehicleResult result = getVehicleByIdUseCase.execute(VehicleId.of(id));
@@ -138,15 +137,15 @@ public class VehicleController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Vehicle updated"),
 			@ApiResponse(responseCode = "400", description = "Validation error",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public VehicleResponse updateVehicle(
 			@PathVariable UUID id,
@@ -161,13 +160,13 @@ public class VehicleController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "204", description = "Vehicle deleted"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public void deleteVehicle(@PathVariable UUID id) {
 		deleteVehicleUseCase.execute(VehicleId.of(id));
@@ -178,13 +177,13 @@ public class VehicleController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Vehicle in maintenance"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public VehicleResponse sendToMaintenance(@PathVariable UUID id) {
 		VehicleResult result = sendVehicleToMaintenanceUseCase.execute(VehicleId.of(id));
@@ -196,13 +195,13 @@ public class VehicleController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Vehicle activated"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public VehicleResponse activate(@PathVariable UUID id) {
 		VehicleResult result = activateVehicleUseCase.execute(VehicleId.of(id));
@@ -214,13 +213,13 @@ public class VehicleController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Vehicle deactivated"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public VehicleResponse deactivate(@PathVariable UUID id) {
 		VehicleResult result = deactivateVehicleUseCase.execute(VehicleId.of(id));

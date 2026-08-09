@@ -18,7 +18,6 @@ import com.fleetbite.delivery.infrastructure.inbound.rest.response.AssignmentRes
 import com.fleetbite.delivery.infrastructure.inbound.rest.response.AutoAssignmentResponse;
 import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.infrastructure.config.OpenApiConfig;
-import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -88,15 +87,15 @@ public class AssignmentController {
 			@ApiResponse(responseCode = "201", description = "Assignment created",
 					content = @Content(schema = @Schema(implementation = AssignmentResponse.class))),
 			@ApiResponse(responseCode = "400", description = "Validation error",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public ResponseEntity<AssignmentResponse> assign(
 			@PathVariable UUID orderId,
@@ -126,13 +125,13 @@ public class AssignmentController {
 			@ApiResponse(responseCode = "200", description = "Assignment attempted (assigned true or false)",
 					content = @Content(schema = @Schema(implementation = AutoAssignmentResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Order not assignable",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AutoAssignmentResponse autoAssign(@PathVariable UUID orderId) {
 		AutoAssignmentResult result = autoAssignOrderUseCase.execute(OrderId.of(orderId));
@@ -145,9 +144,9 @@ public class AssignmentController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Assignments returned"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<AssignmentResponse> listAssignments() {
 		return listAssignmentsUseCase.execute().stream()
@@ -161,11 +160,11 @@ public class AssignmentController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Assignment found"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse getAssignmentById(@PathVariable UUID id) {
 		AssignmentResult result = getAssignmentByIdUseCase.execute(DeliveryAssignmentId.of(id));
@@ -178,13 +177,13 @@ public class AssignmentController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Assignment accepted"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse accept(@PathVariable UUID id) {
 		AssignmentResult result = acceptAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
@@ -197,15 +196,15 @@ public class AssignmentController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Assignment rejected"),
 			@ApiResponse(responseCode = "400", description = "Validation error",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse reject(
 			@PathVariable UUID id,
@@ -223,13 +222,13 @@ public class AssignmentController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Pickup recorded"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse pickup(@PathVariable UUID id) {
 		AssignmentResult result = pickupAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
@@ -243,13 +242,13 @@ public class AssignmentController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Delivery started"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse startDelivery(@PathVariable UUID id) {
 		AssignmentResult result = startDeliveryAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
@@ -263,13 +262,13 @@ public class AssignmentController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Assignment completed"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse complete(@PathVariable UUID id) {
 		AssignmentResult result = completeAssignmentUseCase.execute(DeliveryAssignmentId.of(id));

@@ -3,13 +3,13 @@ package com.fleetbite.identity.infrastructure.outbound.persistence;
 import com.fleetbite.identity.domain.model.User;
 import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Component
-public class UserPersistenceMapper {
+@Mapper(componentModel = "spring")
+public abstract class UserPersistenceMapper {
 
 	public UserJpaEntity toEntity(User user) {
 		Objects.requireNonNull(user, "user is required");
@@ -28,7 +28,7 @@ public class UserPersistenceMapper {
 		copyPersistableState(user, existingEntity);
 	}
 
-	private void copyPersistableState(User user, UserJpaEntity entity) {
+	protected void copyPersistableState(User user, UserJpaEntity entity) {
 		entity.setEmail(user.email());
 		entity.setPasswordHash(user.passwordHash());
 		entity.setFullName(user.fullName());
@@ -51,7 +51,7 @@ public class UserPersistenceMapper {
 				toBusinessOffset(entity.getUpdatedAt()));
 	}
 
-	private static OffsetDateTime toBusinessOffset(OffsetDateTime value) {
+	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
 		if (value == null) {
 			return null;
 		}

@@ -22,6 +22,7 @@ import com.fleetbite.driver.domain.model.DriverStatus;
 import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
 import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = AssignmentController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({AssignmentHttpMapper.class, GlobalExceptionHandler.class})
+@Import({AssignmentHttpMapper.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
 class AssignmentControllerTest {
 
 	private static final OffsetDateTime ASSIGNED_AT =
@@ -90,7 +91,7 @@ class AssignmentControllerTest {
 								""".formatted(result.driverId())))
 				.andExpect(status().isCreated())
 				.andExpect(header().string("Location", containsString("/api/v1/assignments/" + result.id())))
-				.andExpect(jsonPath("$.status").value("PENDING"));
+				.andExpect(jsonPath("$.data.status").value("PENDING"));
 	}
 
 	@Test
@@ -108,12 +109,12 @@ class AssignmentControllerTest {
 
 		mockMvc.perform(post("/api/v1/orders/{orderId}/auto-assign", orderId))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.assigned").value(true))
-				.andExpect(jsonPath("$.orderId").value(orderId.toString()))
-				.andExpect(jsonPath("$.assignmentId").value(assignmentId.toString()))
-				.andExpect(jsonPath("$.driverId").value(driverId.toString()))
-				.andExpect(jsonPath("$.orderStatus").value("ASSIGNED"))
-				.andExpect(jsonPath("$.score").value(1.4200));
+				.andExpect(jsonPath("$.data.assigned").value(true))
+				.andExpect(jsonPath("$.data.orderId").value(orderId.toString()))
+				.andExpect(jsonPath("$.data.assignmentId").value(assignmentId.toString()))
+				.andExpect(jsonPath("$.data.driverId").value(driverId.toString()))
+				.andExpect(jsonPath("$.data.orderStatus").value("ASSIGNED"))
+				.andExpect(jsonPath("$.data.score").value(1.4200));
 	}
 
 	@Test
@@ -124,10 +125,10 @@ class AssignmentControllerTest {
 
 		mockMvc.perform(post("/api/v1/orders/{orderId}/auto-assign", orderId))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.assigned").value(false))
-				.andExpect(jsonPath("$.orderStatus").value("WAITING_FOR_DRIVER"))
-				.andExpect(jsonPath("$.reason").value("NO_AVAILABLE_DRIVER"))
-				.andExpect(jsonPath("$.assignmentId").value(org.hamcrest.Matchers.nullValue()));
+				.andExpect(jsonPath("$.data.assigned").value(false))
+				.andExpect(jsonPath("$.data.orderStatus").value("WAITING_FOR_DRIVER"))
+				.andExpect(jsonPath("$.data.reason").value("NO_AVAILABLE_DRIVER"))
+				.andExpect(jsonPath("$.data.assignmentId").value(org.hamcrest.Matchers.nullValue()));
 	}
 
 	@Test
@@ -166,7 +167,7 @@ class AssignmentControllerTest {
 
 		mockMvc.perform(get("/api/v1/assignments"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)));
+				.andExpect(jsonPath("$.data", hasSize(1)));
 	}
 
 	@Test
@@ -204,7 +205,7 @@ class AssignmentControllerTest {
 								{ "reason": "Vehicle problem" }
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("REJECTED"));
+				.andExpect(jsonPath("$.data.status").value("REJECTED"));
 	}
 
 	@Test

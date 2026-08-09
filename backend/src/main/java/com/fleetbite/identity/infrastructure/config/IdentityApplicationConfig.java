@@ -24,7 +24,7 @@ import com.fleetbite.identity.application.service.LoginService;
 import com.fleetbite.identity.application.service.LogoutService;
 import com.fleetbite.identity.application.service.RefreshAccessTokenService;
 import com.fleetbite.identity.application.service.UpdateUserService;
-import com.fleetbite.identity.infrastructure.security.JwtProperties;
+import com.fleetbite.identity.infrastructure.jwt.JwtProperties;
 import com.fleetbite.identity.infrastructure.transaction.TransactionalCreateUserUseCase;
 import com.fleetbite.identity.infrastructure.transaction.TransactionalLoginUseCase;
 import com.fleetbite.identity.infrastructure.transaction.TransactionalRefreshAccessTokenUseCase;

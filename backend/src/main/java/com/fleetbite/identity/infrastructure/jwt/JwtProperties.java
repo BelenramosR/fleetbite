@@ -1,7 +1,11 @@
-package com.fleetbite.identity.infrastructure.security;
+package com.fleetbite.identity.infrastructure.jwt;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * Propiedades JWT (paquete sin estereotipo hexagonal = Unannotated).
+ * Compartido por filtro (primary) y TokenProvider (secondary) sin cruzar adapters.
+ */
 @ConfigurationProperties(prefix = "fleetbite.security.jwt")
 public class JwtProperties {
 

@@ -6,15 +6,15 @@ import com.fleetbite.order.domain.model.OrderCode;
 import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Component
-public class OrderPersistenceMapper {
+@Mapper(componentModel = "spring")
+public abstract class OrderPersistenceMapper {
 
 	private static final int COORDINATE_SCALE = 7;
 
@@ -41,7 +41,7 @@ public class OrderPersistenceMapper {
 		copyPersistableState(order, existingEntity);
 	}
 
-	private void copyPersistableState(Order order, OrderJpaEntity entity) {
+	protected void copyPersistableState(Order order, OrderJpaEntity entity) {
 		entity.setCode(order.code().value());
 		entity.setCustomerName(order.customerName());
 		entity.setCustomerPhone(order.customerPhone());
@@ -92,14 +92,14 @@ public class OrderPersistenceMapper {
 				toBusinessOffset(entity.getFailedDeliveryAt()));
 	}
 
-	private static OffsetDateTime toBusinessOffset(OffsetDateTime value) {
+	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
 		if (value == null) {
 			return null;
 		}
 		return value.withOffsetSameInstant(BusinessTime.ZONE_OFFSET);
 	}
 
-	private static BigDecimal toCoordinate(double value) {
+	protected BigDecimal toCoordinate(double value) {
 		return BigDecimal.valueOf(value).setScale(COORDINATE_SCALE, RoundingMode.HALF_UP);
 	}
 }

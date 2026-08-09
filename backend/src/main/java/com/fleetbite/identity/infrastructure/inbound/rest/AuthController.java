@@ -7,7 +7,6 @@ import com.fleetbite.identity.application.port.in.RefreshAccessTokenUseCase;
 import com.fleetbite.identity.infrastructure.inbound.rest.request.LoginRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.request.RefreshTokenRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.response.LoginResponse;
-import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -54,11 +53,11 @@ public class AuthController {
 			@ApiResponse(responseCode = "200", description = "Login successful",
 					content = @Content(schema = @Schema(implementation = LoginResponse.class))),
 			@ApiResponse(responseCode = "400", description = "Invalid request",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Invalid credentials (AUTHENTICATION_FAILED)",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "User inactive (USER_INACTIVE)",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public LoginResponse login(@Valid @RequestBody LoginRequest request) {
 		LoginResult result = loginUseCase.execute(identityHttpMapper.toCommand(request));
@@ -73,11 +72,11 @@ public class AuthController {
 			@ApiResponse(responseCode = "200", description = "Tokens refreshed",
 					content = @Content(schema = @Schema(implementation = LoginResponse.class))),
 			@ApiResponse(responseCode = "400", description = "Invalid request",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Invalid or revoked refresh token (AUTHENTICATION_FAILED)",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "User inactive (USER_INACTIVE)",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public LoginResponse refresh(@Valid @RequestBody RefreshTokenRequest request) {
 		LoginResult result = refreshAccessTokenUseCase.execute(identityHttpMapper.toCommand(request));
@@ -92,7 +91,7 @@ public class AuthController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "204", description = "Refresh token revoked (or already invalid)"),
 			@ApiResponse(responseCode = "400", description = "Invalid request",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public void logout(@Valid @RequestBody RefreshTokenRequest request) {
 		logoutUseCase.execute(identityHttpMapper.toCommand(request));

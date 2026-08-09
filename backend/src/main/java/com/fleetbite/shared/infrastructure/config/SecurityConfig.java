@@ -2,14 +2,15 @@ package com.fleetbite.shared.infrastructure.config;
 
 import com.fleetbite.identity.application.port.out.TokenProviderPort;
 import com.fleetbite.identity.infrastructure.security.JwtAuthenticationFilter;
-import com.fleetbite.identity.infrastructure.security.JwtProperties;
-import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorResponse;
+import com.fleetbite.identity.infrastructure.jwt.JwtProperties;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,10 +20,9 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.Instant;
-
 @Configuration
 @EnableConfigurationProperties(JwtProperties.class)
+@EnableMethodSecurity
 public class SecurityConfig {
 
 	@Bean
@@ -70,8 +70,7 @@ public class SecurityConfig {
 				response,
 				HttpServletResponse.SC_UNAUTHORIZED,
 				"AUTHENTICATION_FAILED",
-				"Authentication is required",
-				request.getRequestURI());
+				"Authentication is required");
 	}
 
 	private AccessDeniedHandler accessDeniedHandler(JsonMapper jsonMapper) {
@@ -80,8 +79,7 @@ public class SecurityConfig {
 				response,
 				HttpServletResponse.SC_FORBIDDEN,
 				"ACCESS_DENIED",
-				"Access is denied",
-				request.getRequestURI());
+				"Access is denied");
 	}
 
 	private void writeError(
@@ -89,11 +87,10 @@ public class SecurityConfig {
 			HttpServletResponse response,
 			int status,
 			String code,
-			String message,
-			String path) throws java.io.IOException {
+			String message) throws java.io.IOException {
 		response.setStatus(status);
 		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-		ApiErrorResponse body = new ApiErrorResponse(Instant.now(), status, code, message, path);
+		ApiResponse<Void> body = ApiResponse.failure(code, message);
 		jsonMapper.writeValue(response.getOutputStream(), body);
 	}
 }

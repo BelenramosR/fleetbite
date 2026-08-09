@@ -8,12 +8,19 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "order_history")
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OrderHistoryJpaEntity {
 
 	@Id
@@ -43,71 +50,4 @@ public class OrderHistoryJpaEntity {
 
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private OffsetDateTime createdAt;
-
-	protected OrderHistoryJpaEntity() {
-	}
-
-	public UUID getId() {
-		return id;
-	}
-
-	public void setId(UUID id) {
-		this.id = id;
-	}
-
-	public UUID getOrderId() {
-		return orderId;
-	}
-
-	public void setOrderId(UUID orderId) {
-		this.orderId = orderId;
-	}
-
-	public OrderHistoryEventType getEventType() {
-		return eventType;
-	}
-
-	public void setEventType(OrderHistoryEventType eventType) {
-		this.eventType = eventType;
-	}
-
-	public OrderStatus getPreviousStatus() {
-		return previousStatus;
-	}
-
-	public void setPreviousStatus(OrderStatus previousStatus) {
-		this.previousStatus = previousStatus;
-	}
-
-	public OrderStatus getNewStatus() {
-		return newStatus;
-	}
-
-	public void setNewStatus(OrderStatus newStatus) {
-		this.newStatus = newStatus;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public UUID getPerformedBy() {
-		return performedBy;
-	}
-
-	public void setPerformedBy(UUID performedBy) {
-		this.performedBy = performedBy;
-	}
-
-	public OffsetDateTime getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(OffsetDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
 }

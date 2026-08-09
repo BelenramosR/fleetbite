@@ -64,17 +64,17 @@ class OrderReadyAutoAssignIntegrationTest {
 		mockMvc.perform(post("/api/v1/orders/{id}/ready", orderId)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("READY"));
+				.andExpect(jsonPath("$.data.status").value("READY"));
 
 		mockMvc.perform(get("/api/v1/orders/{id}", orderId)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value(OrderStatus.ASSIGNED.name()));
+				.andExpect(jsonPath("$.data.status").value(OrderStatus.ASSIGNED.name()));
 
 		mockMvc.perform(get("/api/v1/drivers/{id}", driverId)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("BUSY"));
+				.andExpect(jsonPath("$.data.status").value("BUSY"));
 
 		assertThat(assignmentRepositoryPort.findActiveByOrderId(OrderId.of(orderId)))
 				.isPresent()
@@ -85,8 +85,8 @@ class OrderReadyAutoAssignIntegrationTest {
 		mockMvc.perform(get("/api/v1/orders/{id}/history", orderId)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[*].eventType", hasItem("ORDER_READY")))
-				.andExpect(jsonPath("$[*].eventType", hasItem("DRIVER_ASSIGNED")));
+				.andExpect(jsonPath("$.data[*].eventType", hasItem("ORDER_READY")))
+				.andExpect(jsonPath("$.data[*].eventType", hasItem("DRIVER_ASSIGNED")));
 	}
 
 	@Test
@@ -97,18 +97,18 @@ class OrderReadyAutoAssignIntegrationTest {
 		mockMvc.perform(post("/api/v1/orders/{id}/ready", orderId)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("READY"));
+				.andExpect(jsonPath("$.data.status").value("READY"));
 
 		mockMvc.perform(get("/api/v1/orders/{id}", orderId)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value(OrderStatus.WAITING_FOR_DRIVER.name()));
+				.andExpect(jsonPath("$.data.status").value(OrderStatus.WAITING_FOR_DRIVER.name()));
 
 		mockMvc.perform(get("/api/v1/orders/{id}/history", orderId)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[*].eventType", hasItem("ORDER_READY")))
-				.andExpect(jsonPath("$[*].eventType", hasItem("ORDER_WAITING_FOR_DRIVER")));
+				.andExpect(jsonPath("$.data[*].eventType", hasItem("ORDER_READY")))
+				.andExpect(jsonPath("$.data[*].eventType", hasItem("ORDER_WAITING_FOR_DRIVER")));
 	}
 
 	@Test
@@ -154,7 +154,7 @@ class OrderReadyAutoAssignIntegrationTest {
 								"""))
 				.andExpect(status().isCreated())
 				.andReturn();
-		UUID orderId = UUID.fromString(readJson(created).get("id").asString());
+		UUID orderId = UUID.fromString(readJson(created).path("data").get("id").asString());
 
 		mockMvc.perform(post("/api/v1/orders/{id}/confirm", orderId)
 						.header("Authorization", "Bearer " + token))
@@ -162,7 +162,7 @@ class OrderReadyAutoAssignIntegrationTest {
 		mockMvc.perform(post("/api/v1/orders/{id}/start-preparation", orderId)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("PREPARING"));
+				.andExpect(jsonPath("$.data.status").value("PREPARING"));
 		return orderId;
 	}
 
@@ -183,14 +183,14 @@ class OrderReadyAutoAssignIntegrationTest {
 								""".formatted(email, PASSWORD, phone)))
 				.andExpect(status().isCreated())
 				.andReturn();
-		UUID userId = UUID.fromString(readJson(userCreated).get("id").asString());
+		UUID userId = UUID.fromString(readJson(userCreated).path("data").get("id").asString());
 
 		MvcResult driversListed = mockMvc.perform(get("/api/v1/drivers")
 						.header("Authorization", "Bearer " + dispatcherToken))
 				.andExpect(status().isOk())
 				.andReturn();
 		UUID driverId = null;
-		for (JsonNode node : readJson(driversListed)) {
+		for (JsonNode node : readJson(driversListed).path("data")) {
 			if (userId.toString().equals(node.get("userId").asString())) {
 				driverId = UUID.fromString(node.get("id").asString());
 				break;
@@ -209,7 +209,7 @@ class OrderReadyAutoAssignIntegrationTest {
 								""".formatted(phone.substring(phone.length() - 4))))
 				.andExpect(status().isCreated())
 				.andReturn();
-		UUID vehicleId = UUID.fromString(readJson(vehicleCreated).get("id").asString());
+		UUID vehicleId = UUID.fromString(readJson(vehicleCreated).path("data").get("id").asString());
 
 		mockMvc.perform(put("/api/v1/drivers/{id}", driverId)
 						.header("Authorization", "Bearer " + dispatcherToken)
@@ -245,7 +245,7 @@ class OrderReadyAutoAssignIntegrationTest {
 		mockMvc.perform(post("/api/v1/drivers/{id}/online", driverId)
 						.header("Authorization", "Bearer " + dispatcherToken))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("AVAILABLE"));
+				.andExpect(jsonPath("$.data.status").value("AVAILABLE"));
 		return driverId;
 	}
 
@@ -260,7 +260,7 @@ class OrderReadyAutoAssignIntegrationTest {
 								""".formatted(email, PASSWORD)))
 				.andExpect(status().isOk())
 				.andReturn();
-		return readJson(result).get("accessToken").asString();
+		return readJson(result).path("data").get("accessToken").asString();
 	}
 
 	private JsonNode readJson(MvcResult result) throws Exception {

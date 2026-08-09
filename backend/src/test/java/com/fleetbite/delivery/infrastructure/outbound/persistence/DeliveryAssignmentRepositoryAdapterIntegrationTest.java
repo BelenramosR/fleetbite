@@ -7,7 +7,7 @@ import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
-import com.fleetbite.driver.infrastructure.outbound.persistence.DriverPersistenceMapper;
+import com.fleetbite.driver.infrastructure.outbound.persistence.DriverPersistenceMapperImpl;
 import com.fleetbite.driver.infrastructure.outbound.persistence.DriverRepositoryAdapter;
 import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
@@ -15,7 +15,7 @@ import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
 import com.fleetbite.order.domain.model.OrderId;
-import com.fleetbite.order.infrastructure.outbound.persistence.OrderPersistenceMapper;
+import com.fleetbite.order.infrastructure.outbound.persistence.OrderPersistenceMapperImpl;
 import com.fleetbite.order.infrastructure.outbound.persistence.OrderRepositoryAdapter;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -46,11 +46,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({
 		DeliveryAssignmentRepositoryAdapter.class,
-		DeliveryAssignmentPersistenceMapper.class,
+		DeliveryAssignmentPersistenceMapperImpl.class,
 		OrderRepositoryAdapter.class,
-		OrderPersistenceMapper.class,
+		OrderPersistenceMapperImpl.class,
 		DriverRepositoryAdapter.class,
-		DriverPersistenceMapper.class
+		DriverPersistenceMapperImpl.class
 })
 @Testcontainers
 class DeliveryAssignmentRepositoryAdapterIntegrationTest {

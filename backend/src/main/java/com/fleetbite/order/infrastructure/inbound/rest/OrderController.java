@@ -18,7 +18,6 @@ import com.fleetbite.order.infrastructure.inbound.rest.request.UpdateOrderReques
 import com.fleetbite.order.infrastructure.inbound.rest.response.OrderHistoryResponse;
 import com.fleetbite.order.infrastructure.inbound.rest.response.OrderResponse;
 import com.fleetbite.shared.infrastructure.config.OpenApiConfig;
-import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -93,9 +92,9 @@ public class OrderController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Orders returned"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<OrderResponse> listOrders() {
 		return listOrdersUseCase.execute().stream()
@@ -110,11 +109,11 @@ public class OrderController {
 			@ApiResponse(responseCode = "201", description = "Order created",
 					content = @Content(schema = @Schema(implementation = OrderResponse.class))),
 			@ApiResponse(responseCode = "400", description = "Validation error",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
 		OrderResult result = createOrderUseCase.execute(orderHttpMapper.toCommand(request));
@@ -131,11 +130,11 @@ public class OrderController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Order found"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse getOrderById(@PathVariable UUID id) {
 		OrderResult result = getOrderByIdUseCase.execute(OrderId.of(id));
@@ -147,15 +146,15 @@ public class OrderController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Order updated"),
 			@ApiResponse(responseCode = "400", description = "Validation error",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse updateOrder(
 			@PathVariable UUID id,
@@ -170,13 +169,13 @@ public class OrderController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "204", description = "Order deleted"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Conflict",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public void deleteOrder(@PathVariable UUID id) {
 		deleteOrderUseCase.execute(OrderId.of(id));
@@ -187,13 +186,13 @@ public class OrderController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Order confirmed"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse confirm(@PathVariable UUID id) {
 		return orderHttpMapper.toResponse(confirmOrderUseCase.execute(OrderId.of(id)));
@@ -204,13 +203,13 @@ public class OrderController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Preparation started"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse startPreparation(@PathVariable UUID id) {
 		return orderHttpMapper.toResponse(startOrderPreparationUseCase.execute(OrderId.of(id)));
@@ -231,13 +230,13 @@ public class OrderController {
 			@ApiResponse(responseCode = "200",
 					description = "Order marked READY (TX A). Auto-assignment runs after commit."),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse markReady(@PathVariable UUID id) {
 		return orderHttpMapper.toResponse(markOrderReadyUseCase.execute(OrderId.of(id)));
@@ -249,15 +248,15 @@ public class OrderController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Order cancelled"),
 			@ApiResponse(responseCode = "400", description = "Validation error",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "409", description = "Invalid transition",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse cancel(
 			@PathVariable UUID id,
@@ -271,11 +270,11 @@ public class OrderController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "History returned"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
-					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<OrderHistoryResponse> history(@PathVariable UUID id) {
 		return getOrderHistoryUseCase.execute(OrderId.of(id)).stream()

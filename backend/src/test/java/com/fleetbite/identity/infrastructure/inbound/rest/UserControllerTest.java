@@ -15,6 +15,7 @@ import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.domain.model.UserRole;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
 import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({IdentityHttpMapper.class, GlobalExceptionHandler.class})
+@Import({IdentityHttpMapper.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
 class UserControllerTest {
 
 	private static final OffsetDateTime CREATED_AT =
@@ -71,8 +72,8 @@ class UserControllerTest {
 
 		mockMvc.perform(get("/api/v1/users"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)))
-				.andExpect(jsonPath("$[0].email").value("admin@fleetbite.local"));
+				.andExpect(jsonPath("$.data", hasSize(1)))
+				.andExpect(jsonPath("$.data[0].email").value("admin@fleetbite.local"));
 	}
 
 	@Test
@@ -91,7 +92,7 @@ class UserControllerTest {
 								"""))
 				.andExpect(status().isCreated())
 				.andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/v1/users/")))
-				.andExpect(jsonPath("$.id").value(USER_ID.toString()));
+				.andExpect(jsonPath("$.data.id").value(USER_ID.toString()));
 	}
 
 	@Test
@@ -143,8 +144,8 @@ class UserControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.fullName").value("Updated Admin"))
-				.andExpect(jsonPath("$.role").value("DISPATCHER"));
+				.andExpect(jsonPath("$.data.fullName").value("Updated Admin"))
+				.andExpect(jsonPath("$.data.role").value("DISPATCHER"));
 	}
 
 	@Test
@@ -154,11 +155,11 @@ class UserControllerTest {
 
 		mockMvc.perform(post("/api/v1/users/{id}/activate", USER_ID))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(USER_ID.toString()));
+				.andExpect(jsonPath("$.data.id").value(USER_ID.toString()));
 
 		mockMvc.perform(post("/api/v1/users/{id}/deactivate", USER_ID))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(USER_ID.toString()));
+				.andExpect(jsonPath("$.data.id").value(USER_ID.toString()));
 	}
 
 	private static UserResult sampleResult() {

@@ -8,6 +8,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -15,6 +19,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "delivery_assignments")
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DeliveryAssignmentJpaEntity {
 
 	@Id
@@ -58,111 +65,4 @@ public class DeliveryAssignmentJpaEntity {
 	@Version
 	@Column(name = "version", nullable = false)
 	private Long version;
-
-	protected DeliveryAssignmentJpaEntity() {
-	}
-
-	public UUID getId() {
-		return id;
-	}
-
-	public void setId(UUID id) {
-		this.id = id;
-	}
-
-	public UUID getOrderId() {
-		return orderId;
-	}
-
-	public void setOrderId(UUID orderId) {
-		this.orderId = orderId;
-	}
-
-	public UUID getDriverId() {
-		return driverId;
-	}
-
-	public void setDriverId(UUID driverId) {
-		this.driverId = driverId;
-	}
-
-	public AssignmentStatus getStatus() {
-		return status;
-	}
-
-	public void setStatus(AssignmentStatus status) {
-		this.status = status;
-	}
-
-	public OffsetDateTime getAssignedAt() {
-		return assignedAt;
-	}
-
-	public void setAssignedAt(OffsetDateTime assignedAt) {
-		this.assignedAt = assignedAt;
-	}
-
-	public OffsetDateTime getAcceptedAt() {
-		return acceptedAt;
-	}
-
-	public void setAcceptedAt(OffsetDateTime acceptedAt) {
-		this.acceptedAt = acceptedAt;
-	}
-
-	public OffsetDateTime getRejectedAt() {
-		return rejectedAt;
-	}
-
-	public void setRejectedAt(OffsetDateTime rejectedAt) {
-		this.rejectedAt = rejectedAt;
-	}
-
-	public OffsetDateTime getPickedUpAt() {
-		return pickedUpAt;
-	}
-
-	public void setPickedUpAt(OffsetDateTime pickedUpAt) {
-		this.pickedUpAt = pickedUpAt;
-	}
-
-	public OffsetDateTime getCompletedAt() {
-		return completedAt;
-	}
-
-	public void setCompletedAt(OffsetDateTime completedAt) {
-		this.completedAt = completedAt;
-	}
-
-	public String getRejectionReason() {
-		return rejectionReason;
-	}
-
-	public void setRejectionReason(String rejectionReason) {
-		this.rejectionReason = rejectionReason;
-	}
-
-	public BigDecimal getAssignmentScore() {
-		return assignmentScore;
-	}
-
-	public void setAssignmentScore(BigDecimal assignmentScore) {
-		this.assignmentScore = assignmentScore;
-	}
-
-	public OffsetDateTime getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(OffsetDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
-
-	public Long getVersion() {
-		return version;
-	}
-
-	public void setVersion(Long version) {
-		this.version = version;
-	}
 }

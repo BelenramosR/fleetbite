@@ -1,6 +1,6 @@
 package com.fleetbite.identity.infrastructure.security;
 
-import com.fleetbite.identity.application.port.out.AuthenticatedPrincipal;
+import com.fleetbite.identity.application.dto.AuthenticatedPrincipal;
 import com.fleetbite.identity.application.port.out.TokenProviderPort;
 import com.fleetbite.identity.domain.exception.AuthenticationFailedException;
 import jakarta.servlet.FilterChain;

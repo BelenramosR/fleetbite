@@ -3,13 +3,15 @@ package com.fleetbite.vehicle.infrastructure.outbound.persistence;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.domain.model.Vehicle;
 import com.fleetbite.vehicle.domain.model.VehicleId;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Component
-public class VehiclePersistenceMapper {
+@Mapper(componentModel = "spring")
+public abstract class VehiclePersistenceMapper {
 
 	public VehicleJpaEntity toEntity(Vehicle vehicle) {
 		Objects.requireNonNull(vehicle, "vehicle is required");
@@ -29,13 +31,14 @@ public class VehiclePersistenceMapper {
 		copyPersistableState(vehicle, existingEntity);
 	}
 
-	private void copyPersistableState(Vehicle vehicle, VehicleJpaEntity entity) {
-		entity.setPlate(vehicle.plate());
-		entity.setType(vehicle.type());
-		entity.setStatus(vehicle.status());
-		entity.setCreatedAt(vehicle.createdAt());
-		entity.setUpdatedAt(vehicle.updatedAt());
-	}
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "version", ignore = true)
+	@Mapping(target = "plate", expression = "java(vehicle.plate())")
+	@Mapping(target = "type", expression = "java(vehicle.type())")
+	@Mapping(target = "status", expression = "java(vehicle.status())")
+	@Mapping(target = "createdAt", expression = "java(vehicle.createdAt())")
+	@Mapping(target = "updatedAt", expression = "java(vehicle.updatedAt())")
+	protected abstract void copyPersistableState(Vehicle vehicle, @MappingTarget VehicleJpaEntity entity);
 
 	public Vehicle toDomain(VehicleJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");
@@ -49,7 +52,7 @@ public class VehiclePersistenceMapper {
 				toBusinessOffset(entity.getUpdatedAt()));
 	}
 
-	private static OffsetDateTime toBusinessOffset(OffsetDateTime value) {
+	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
 		if (value == null) {
 			return null;
 		}

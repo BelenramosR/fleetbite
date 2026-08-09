@@ -5,13 +5,13 @@ import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Component
-public class DeliveryAssignmentPersistenceMapper {
+@Mapper(componentModel = "spring")
+public abstract class DeliveryAssignmentPersistenceMapper {
 
 	public DeliveryAssignmentJpaEntity toEntity(DeliveryAssignment assignment) {
 		Objects.requireNonNull(assignment, "assignment is required");
@@ -31,7 +31,7 @@ public class DeliveryAssignmentPersistenceMapper {
 		copyPersistableState(assignment, existingEntity);
 	}
 
-	private void copyPersistableState(DeliveryAssignment assignment, DeliveryAssignmentJpaEntity entity) {
+	protected void copyPersistableState(DeliveryAssignment assignment, DeliveryAssignmentJpaEntity entity) {
 		entity.setOrderId(assignment.orderId().value());
 		entity.setDriverId(assignment.driverId().value());
 		entity.setStatus(assignment.status());
@@ -63,7 +63,7 @@ public class DeliveryAssignmentPersistenceMapper {
 				toBusinessOffset(entity.getCreatedAt()));
 	}
 
-	private static OffsetDateTime toBusinessOffset(OffsetDateTime value) {
+	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
 		if (value == null) {
 			return null;
 		}

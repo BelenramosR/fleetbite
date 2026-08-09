@@ -22,6 +22,32 @@ Base path propuesta:
 application/json
 ```
 
+### Envelope estándar (`ApiResponse`)
+
+Todas las respuestas de negocio usan:
+
+```json
+{
+  "success": true,
+  "code": "OK",
+  "data": { },
+  "errors": []
+}
+```
+
+Errores:
+
+```json
+{
+  "success": false,
+  "code": "VALIDATION_ERROR",
+  "data": null,
+  "errors": [{ "message": "..." }]
+}
+```
+
+El payload útil está siempre en `data`.
+
 ### Fechas
 
 ISO 8601 con offset de negocio `-05:00` (no UTC `Z`):

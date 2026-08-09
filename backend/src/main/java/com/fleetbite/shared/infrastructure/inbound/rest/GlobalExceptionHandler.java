@@ -39,20 +39,19 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.time.Instant;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<ApiErrorResponse> handleValidation(
+	public ResponseEntity<ApiResponse<Void>> handleValidation(
 			MethodArgumentNotValidException exception,
 			HttpServletRequest request) {
 		String message = exception.getBindingResult().getFieldErrors().stream()
 				.map(this::formatFieldError)
 				.collect(Collectors.joining("; "));
-		return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message, request.getRequestURI());
+		return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message);
 	}
 
 	@ExceptionHandler({
@@ -62,24 +61,24 @@ public class GlobalExceptionHandler {
 			InvalidAssignmentDataException.class,
 			InvalidUserDataException.class
 	})
-	public ResponseEntity<ApiErrorResponse> handleInvalidDomainData(
+	public ResponseEntity<ApiResponse<Void>> handleInvalidDomainData(
 			DomainException exception,
 			HttpServletRequest request) {
-		return build(HttpStatus.BAD_REQUEST, exception.getCode(), exception.getMessage(), request.getRequestURI());
+		return build(HttpStatus.BAD_REQUEST, exception.getCode(), exception.getMessage());
 	}
 
 	@ExceptionHandler(AuthenticationFailedException.class)
-	public ResponseEntity<ApiErrorResponse> handleAuthenticationFailed(
+	public ResponseEntity<ApiResponse<Void>> handleAuthenticationFailed(
 			AuthenticationFailedException exception,
 			HttpServletRequest request) {
-		return build(HttpStatus.UNAUTHORIZED, exception.getCode(), exception.getMessage(), request.getRequestURI());
+		return build(HttpStatus.UNAUTHORIZED, exception.getCode(), exception.getMessage());
 	}
 
 	@ExceptionHandler(UserInactiveException.class)
-	public ResponseEntity<ApiErrorResponse> handleUserInactive(
+	public ResponseEntity<ApiResponse<Void>> handleUserInactive(
 			UserInactiveException exception,
 			HttpServletRequest request) {
-		return build(HttpStatus.FORBIDDEN, exception.getCode(), exception.getMessage(), request.getRequestURI());
+		return build(HttpStatus.FORBIDDEN, exception.getCode(), exception.getMessage());
 	}
 
 	@ExceptionHandler({
@@ -101,82 +100,78 @@ public class GlobalExceptionHandler {
 			DriverNotAssignableException.class,
 			DuplicateUserEmailException.class
 	})
-	public ResponseEntity<ApiErrorResponse> handleConflict(
+	public ResponseEntity<ApiResponse<Void>> handleConflict(
 			DomainException exception,
 			HttpServletRequest request) {
-		return build(HttpStatus.CONFLICT, exception.getCode(), exception.getMessage(), request.getRequestURI());
+		return build(HttpStatus.CONFLICT, exception.getCode(), exception.getMessage());
 	}
 
 	@ExceptionHandler({
 			OptimisticLockingFailureException.class,
 			ObjectOptimisticLockingFailureException.class
 	})
-	public ResponseEntity<ApiErrorResponse> handleOptimisticLock(
+	public ResponseEntity<ApiResponse<Void>> handleOptimisticLock(
 			OptimisticLockingFailureException exception,
 			HttpServletRequest request) {
 		return build(
 				HttpStatus.CONFLICT,
 				"OPTIMISTIC_LOCK_CONFLICT",
-				"The resource was modified concurrently; please retry",
-				request.getRequestURI());
+				"The resource was modified concurrently; please retry");
 	}
 
 	@ExceptionHandler(ResourceNotFoundException.class)
-	public ResponseEntity<ApiErrorResponse> handleNotFound(
+	public ResponseEntity<ApiResponse<Void>> handleNotFound(
 			ResourceNotFoundException exception,
 			HttpServletRequest request) {
-		return build(HttpStatus.NOT_FOUND, exception.getCode(), exception.getMessage(), request.getRequestURI());
+		return build(HttpStatus.NOT_FOUND, exception.getCode(), exception.getMessage());
 	}
 
 	@ExceptionHandler(ApplicationException.class)
-	public ResponseEntity<ApiErrorResponse> handleApplication(
+	public ResponseEntity<ApiResponse<Void>> handleApplication(
 			ApplicationException exception,
 			HttpServletRequest request) {
-		return build(HttpStatus.BAD_REQUEST, exception.getCode(), exception.getMessage(), request.getRequestURI());
+		return build(HttpStatus.BAD_REQUEST, exception.getCode(), exception.getMessage());
 	}
 
 	@ExceptionHandler(DomainException.class)
-	public ResponseEntity<ApiErrorResponse> handleDomain(
+	public ResponseEntity<ApiResponse<Void>> handleDomain(
 			DomainException exception,
 			HttpServletRequest request) {
-		return build(HttpStatus.BAD_REQUEST, exception.getCode(), exception.getMessage(), request.getRequestURI());
+		return build(HttpStatus.BAD_REQUEST, exception.getCode(), exception.getMessage());
 	}
 
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
-	public ResponseEntity<ApiErrorResponse> handleTypeMismatch(
+	public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(
 			MethodArgumentTypeMismatchException exception,
 			HttpServletRequest request) {
 		return build(
 				HttpStatus.BAD_REQUEST,
 				"INVALID_REQUEST",
-				"Invalid value for parameter '" + exception.getName() + "'",
-				request.getRequestURI());
+				"Invalid value for parameter '" + exception.getName() + "'");
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)
-	public ResponseEntity<ApiErrorResponse> handleUnreadable(
+	public ResponseEntity<ApiResponse<Void>> handleUnreadable(
 			HttpMessageNotReadableException exception,
 			HttpServletRequest request) {
-		return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Malformed JSON request", request.getRequestURI());
+		return build(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Malformed JSON request");
 	}
 
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ApiErrorResponse> handleUnexpected(
+	public ResponseEntity<ApiResponse<Void>> handleUnexpected(
 			Exception exception,
 			HttpServletRequest request) {
 		return build(
 				HttpStatus.INTERNAL_SERVER_ERROR,
 				"INTERNAL_ERROR",
-				"Unexpected server error",
-				request.getRequestURI());
+				"Unexpected server error");
 	}
 
 	private String formatFieldError(FieldError error) {
 		return error.getField() + ": " + error.getDefaultMessage();
 	}
 
-	private ResponseEntity<ApiErrorResponse> build(HttpStatus status, String code, String message, String path) {
-		ApiErrorResponse body = new ApiErrorResponse(Instant.now(), status.value(), code, message, path);
-		return ResponseEntity.status(status).body(body);
+	private ResponseEntity<ApiResponse<Void>> build(HttpStatus status, String code, String message) {
+		return ResponseEntity.status(status).body(ApiResponse.failure(code, message));
 	}
 }

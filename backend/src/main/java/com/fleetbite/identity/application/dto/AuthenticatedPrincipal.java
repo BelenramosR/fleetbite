@@ -1,4 +1,4 @@
-package com.fleetbite.identity.application.port.out;
+package com.fleetbite.identity.application.dto;
 
 import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.domain.model.UserRole;

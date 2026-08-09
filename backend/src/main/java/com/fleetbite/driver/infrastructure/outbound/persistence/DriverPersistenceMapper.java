@@ -6,15 +6,15 @@ import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.domain.model.VehicleId;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Component
-public class DriverPersistenceMapper {
+@Mapper(componentModel = "spring")
+public abstract class DriverPersistenceMapper {
 
 	private static final int COORDINATE_SCALE = 7;
 
@@ -36,7 +36,7 @@ public class DriverPersistenceMapper {
 		copyPersistableState(driver, existingEntity);
 	}
 
-	private void copyPersistableState(Driver driver, DriverJpaEntity entity) {
+	protected void copyPersistableState(Driver driver, DriverJpaEntity entity) {
 		entity.setUserId(driver.userId().value());
 		entity.setPhone(driver.phone());
 		entity.setStatus(driver.status());
@@ -76,14 +76,14 @@ public class DriverPersistenceMapper {
 				toBusinessOffset(entity.getUpdatedAt()));
 	}
 
-	private static OffsetDateTime toBusinessOffset(OffsetDateTime value) {
+	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
 		if (value == null) {
 			return null;
 		}
 		return value.withOffsetSameInstant(BusinessTime.ZONE_OFFSET);
 	}
 
-	private static BigDecimal toCoordinate(double value) {
+	protected BigDecimal toCoordinate(double value) {
 		return BigDecimal.valueOf(value).setScale(COORDINATE_SCALE, RoundingMode.HALF_UP);
 	}
 }

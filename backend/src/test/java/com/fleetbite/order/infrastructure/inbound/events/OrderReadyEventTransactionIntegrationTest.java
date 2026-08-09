@@ -90,7 +90,7 @@ class OrderReadyEventTransactionIntegrationTest {
 		mockMvc.perform(post("/api/v1/orders/{id}/ready", orderId)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("READY"));
+				.andExpect(jsonPath("$.data.status").value("READY"));
 
 		verify(autoAssignOrderUseCase).execute(OrderId.of(orderId));
 
@@ -103,7 +103,7 @@ class OrderReadyEventTransactionIntegrationTest {
 		mockMvc.perform(get("/api/v1/orders/{id}", orderId)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("READY"));
+				.andExpect(jsonPath("$.data.status").value("READY"));
 	}
 
 	private UUID createPreparingOrder(String token) throws Exception {
@@ -122,7 +122,7 @@ class OrderReadyEventTransactionIntegrationTest {
 								"""))
 				.andExpect(status().isCreated())
 				.andReturn();
-		UUID orderId = UUID.fromString(readJson(created).get("id").asString());
+		UUID orderId = UUID.fromString(readJson(created).path("data").get("id").asString());
 
 		mockMvc.perform(post("/api/v1/orders/{id}/confirm", orderId)
 						.header("Authorization", "Bearer " + token))
@@ -144,7 +144,7 @@ class OrderReadyEventTransactionIntegrationTest {
 								""".formatted(email, PASSWORD)))
 				.andExpect(status().isOk())
 				.andReturn();
-		return readJson(result).get("accessToken").asString();
+		return readJson(result).path("data").get("accessToken").asString();
 	}
 
 	private JsonNode readJson(MvcResult result) throws Exception {

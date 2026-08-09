@@ -28,6 +28,7 @@ import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
 import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,14 +57,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = OrderController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({OrderHttpMapper.class, GlobalExceptionHandler.class})
+@Import({OrderHttpMapper.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
 class OrderControllerTest {
 
 	private static final OffsetDateTime CREATED_AT =
@@ -109,8 +109,8 @@ class OrderControllerTest {
 						.content(validBody()))
 				.andExpect(status().isCreated())
 				.andExpect(header().string("Location", containsString("/api/v1/orders/" + result.id())))
-				.andExpect(jsonPath("$.createdAt").value("2026-08-08T22:00:00-05:00"))
-				.andExpect(jsonPath("$.promisedDeliveryAt").value("2026-08-08T22:45:00-05:00"));
+				.andExpect(jsonPath("$.data.createdAt").value("2026-08-08T22:00:00-05:00"))
+				.andExpect(jsonPath("$.data.promisedDeliveryAt").value("2026-08-08T22:45:00-05:00"));
 	}
 
 	@Test
@@ -119,8 +119,8 @@ class OrderControllerTest {
 
 		mockMvc.perform(get("/api/v1/orders"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)))
-				.andExpect(jsonPath("$[0].status").value("CREATED"));
+				.andExpect(jsonPath("$.data", hasSize(1)))
+				.andExpect(jsonPath("$.data[0].status").value("CREATED"));
 	}
 
 	@Test
@@ -129,7 +129,7 @@ class OrderControllerTest {
 
 		mockMvc.perform(get("/api/v1/orders"))
 				.andExpect(status().isOk())
-				.andExpect(content().json("[]"));
+				.andExpect(jsonPath("$.data", hasSize(0)));
 	}
 
 	@Test
@@ -142,7 +142,7 @@ class OrderControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(validBody()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(result.id().toString()));
+				.andExpect(jsonPath("$.data.id").value(result.id().toString()));
 	}
 
 	@Test
@@ -245,7 +245,7 @@ class OrderControllerTest {
 
 		mockMvc.perform(get("/api/v1/orders/{id}", result.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(result.id().toString()));
+				.andExpect(jsonPath("$.data.id").value(result.id().toString()));
 	}
 
 	@Test
@@ -255,7 +255,7 @@ class OrderControllerTest {
 
 		mockMvc.perform(post("/api/v1/orders/{id}/confirm", result.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(result.id().toString()));
+				.andExpect(jsonPath("$.data.id").value(result.id().toString()));
 	}
 
 	@Test
@@ -320,9 +320,9 @@ class OrderControllerTest {
 
 		mockMvc.perform(get("/api/v1/orders/{id}/history", orderId))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)))
-				.andExpect(jsonPath("$[0].eventType").value("ORDER_CREATED"))
-				.andExpect(jsonPath("$[0].createdAt").value("2026-08-08T22:00:00-05:00"));
+				.andExpect(jsonPath("$.data", hasSize(1)))
+				.andExpect(jsonPath("$.data[0].eventType").value("ORDER_CREATED"))
+				.andExpect(jsonPath("$.data[0].createdAt").value("2026-08-08T22:00:00-05:00"));
 	}
 
 	@Test

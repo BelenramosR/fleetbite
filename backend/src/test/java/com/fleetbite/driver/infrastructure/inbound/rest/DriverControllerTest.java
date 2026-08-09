@@ -21,6 +21,7 @@ import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
 import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,13 +49,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = DriverController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({DriverHttpMapper.class, GlobalExceptionHandler.class})
+@Import({DriverHttpMapper.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
 class DriverControllerTest {
 
 	private static final OffsetDateTime CREATED_AT =
@@ -97,8 +97,8 @@ class DriverControllerTest {
 
 		mockMvc.perform(get("/api/v1/drivers"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)))
-				.andExpect(jsonPath("$[0].status").value("OFFLINE"));
+				.andExpect(jsonPath("$.data", hasSize(1)))
+				.andExpect(jsonPath("$.data[0].status").value("OFFLINE"));
 	}
 
 	@Test
@@ -107,7 +107,7 @@ class DriverControllerTest {
 
 		mockMvc.perform(get("/api/v1/drivers"))
 				.andExpect(status().isOk())
-				.andExpect(content().json("[]"));
+				.andExpect(jsonPath("$.data", hasSize(0)));
 	}
 
 	@Test
@@ -117,7 +117,7 @@ class DriverControllerTest {
 
 		mockMvc.perform(get("/api/v1/drivers/{id}", result.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(result.id().toString()));
+				.andExpect(jsonPath("$.data.id").value(result.id().toString()));
 	}
 
 	@Test
@@ -145,7 +145,7 @@ class DriverControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(result.id().toString()));
+				.andExpect(jsonPath("$.data.id").value(result.id().toString()));
 	}
 
 	@Test
@@ -203,8 +203,8 @@ class DriverControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.currentLatitude").value(-12.10))
-				.andExpect(jsonPath("$.currentLongitude").value(-77.03));
+				.andExpect(jsonPath("$.data.currentLatitude").value(-12.10))
+				.andExpect(jsonPath("$.data.currentLongitude").value(-77.03));
 	}
 
 	@Test
@@ -214,7 +214,7 @@ class DriverControllerTest {
 
 		mockMvc.perform(post("/api/v1/drivers/{id}/online", result.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("AVAILABLE"));
+				.andExpect(jsonPath("$.data.status").value("AVAILABLE"));
 	}
 
 	@Test
@@ -236,7 +236,7 @@ class DriverControllerTest {
 
 		mockMvc.perform(post("/api/v1/drivers/{id}/offline", result.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("OFFLINE"));
+				.andExpect(jsonPath("$.data.status").value("OFFLINE"));
 	}
 
 	private static DriverResult sampleResult(Location location) {

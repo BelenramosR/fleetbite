@@ -52,10 +52,10 @@ class SecurityIntegrationTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.accessToken", notNullValue()))
-				.andExpect(jsonPath("$.tokenType").value("Bearer"))
-				.andExpect(jsonPath("$.expiresIn").value(3600))
-				.andExpect(jsonPath("$.refreshToken", notNullValue()));
+				.andExpect(jsonPath("$.data.accessToken", notNullValue()))
+				.andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+				.andExpect(jsonPath("$.data.expiresIn").value(3600))
+				.andExpect(jsonPath("$.data.refreshToken", notNullValue()));
 	}
 
 	@Test
@@ -81,8 +81,8 @@ class SecurityIntegrationTest {
 								}
 								""".formatted(refreshToken)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.accessToken", notNullValue()))
-				.andExpect(jsonPath("$.refreshToken", notNullValue()))
+				.andExpect(jsonPath("$.data.accessToken", notNullValue()))
+				.andExpect(jsonPath("$.data.refreshToken", notNullValue()))
 				.andReturn();
 		String newRefresh = extractJsonString(refreshed.getResponse().getContentAsString(), "refreshToken");
 
@@ -204,7 +204,7 @@ class SecurityIntegrationTest {
 		mockMvc.perform(post("/api/v1/users/{id}/deactivate", userId)
 						.header("Authorization", "Bearer " + adminToken))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("INACTIVE"));
+				.andExpect(jsonPath("$.data.status").value("INACTIVE"));
 
 		mockMvc.perform(post("/api/v1/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -232,7 +232,7 @@ class SecurityIntegrationTest {
 		mockMvc.perform(get("/api/v1/users")
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[0].email", notNullValue()));
+				.andExpect(jsonPath("$.data[0].email", notNullValue()));
 	}
 
 	@Test
