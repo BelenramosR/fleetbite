@@ -1,0 +1,23 @@
+---
+alwaysApply: true
+---
+
+El backend utiliza arquitectura hexagonal.
+
+Separar:
+
+domain
+application
+infrastructure
+
+El dominio no debe depender de Spring.
+
+No colocar reglas de negocio en controllers.
+
+Controllers solo:
+- reciben request;
+- validan;
+- llaman casos de uso;
+- convierten response.
+
+Persistencia mediante ports y adapters.

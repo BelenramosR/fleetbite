@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+---
+
+FleetBite utiliza:
+
+- Monorepo.
+- Backend Java Spring Boot.
+- Arquitectura Hexagonal.
+- PostgreSQL.
+- Frontend React + TypeScript.
+- Arquitectura híbrida core + serverless.
+- Docker Compose.
+
+No introducir microservicios sin una necesidad explícita.
+
+Las reglas de dominio pertenecen al backend y no al frontend.
+
+Los servicios serverless reaccionan a eventos y no sustituyen
+el core transaccional.
