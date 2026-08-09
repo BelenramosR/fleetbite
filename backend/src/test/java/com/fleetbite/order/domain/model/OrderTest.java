@@ -2,6 +2,8 @@ package com.fleetbite.order.domain.model;
 
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
+import com.fleetbite.order.domain.exception.OrderNotDeletableException;
+import com.fleetbite.order.domain.exception.OrderNotEditableException;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.Test;
@@ -247,6 +249,67 @@ class OrderTest {
 		Order failed = orderIn(OrderStatus.FAILED_DELIVERY);
 		assertThrows(InvalidOrderTransitionException.class, () -> failed.deliver(LATER));
 		assertThrows(InvalidOrderTransitionException.class, () -> failed.assign(LATER));
+	}
+
+	@Test
+	void updateDetails_shouldUpdateEditableFieldsInCreated() {
+		Order order = validOrder();
+		OrderId id = order.id();
+		OrderCode code = order.code();
+
+		order.updateDetails(
+				"Luis Gomez",
+				"988000111",
+				"Calle Nueva 10",
+				new Location(-12.11, -77.03),
+				Money.of(new BigDecimal("99.50")));
+
+		assertEquals("Luis Gomez", order.customerName());
+		assertEquals("988000111", order.customerPhone());
+		assertEquals("Calle Nueva 10", order.deliveryAddress());
+		assertEquals(-12.11, order.deliveryLocation().latitude());
+		assertEquals(0, order.totalAmount().amount().compareTo(new BigDecimal("99.50")));
+		assertEquals(id, order.id());
+		assertEquals(code, order.code());
+		assertEquals(OrderStatus.CREATED, order.status());
+		assertEquals(OrderPriority.NORMAL, order.priority());
+		assertEquals(CREATED_AT, order.createdAt());
+		assertEquals(PROMISED_AT, order.promisedDeliveryAt());
+	}
+
+	@Test
+	void updateDetails_shouldAllowConfirmedOrders() {
+		Order order = orderIn(OrderStatus.CONFIRMED);
+
+		order.updateDetails(
+				"Luis Gomez",
+				"988000111",
+				"Calle Nueva 10",
+				new Location(-12.11, -77.03),
+				Money.of(new BigDecimal("40.00")));
+
+		assertEquals("Luis Gomez", order.customerName());
+		assertEquals(OrderStatus.CONFIRMED, order.status());
+	}
+
+	@Test
+	void updateDetails_shouldRejectPreparingAndLater() {
+		Order preparing = orderIn(OrderStatus.PREPARING);
+		assertThrows(OrderNotEditableException.class, () -> preparing.updateDetails(
+				"Luis Gomez",
+				"988000111",
+				"Calle Nueva 10",
+				new Location(-12.11, -77.03),
+				Money.of(new BigDecimal("40.00"))));
+	}
+
+	@Test
+	void ensureDeletable_shouldAllowCreatedOnly() {
+		Order created = validOrder();
+		created.ensureDeletable();
+
+		Order confirmed = orderIn(OrderStatus.CONFIRMED);
+		assertThrows(OrderNotDeletableException.class, confirmed::ensureDeletable);
 	}
 
 	private static Order validOrder() {

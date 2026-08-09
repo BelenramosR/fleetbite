@@ -2,6 +2,8 @@ package com.fleetbite.order.domain.model;
 
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
+import com.fleetbite.order.domain.exception.OrderNotDeletableException;
+import com.fleetbite.order.domain.exception.OrderNotEditableException;
 import com.fleetbite.shared.domain.model.Location;
 
 import java.time.OffsetDateTime;
@@ -11,11 +13,11 @@ public final class Order {
 
 	private final OrderId id;
 	private final OrderCode code;
-	private final String customerName;
-	private final String customerPhone;
-	private final String deliveryAddress;
-	private final Location deliveryLocation;
-	private final Money totalAmount;
+	private String customerName;
+	private String customerPhone;
+	private String deliveryAddress;
+	private Location deliveryLocation;
+	private Money totalAmount;
 	private final OffsetDateTime promisedDeliveryAt;
 	private final OffsetDateTime createdAt;
 
@@ -190,10 +192,42 @@ public final class Order {
 				failedDeliveryAt);
 	}
 
+	public void updateDetails(
+			String customerName,
+			String customerPhone,
+			String deliveryAddress,
+			Location deliveryLocation,
+			Money totalAmount) {
+		ensureEditable();
+		if (deliveryLocation == null) {
+			throw new InvalidOrderDataException("deliveryLocation is required");
+		}
+		if (totalAmount == null) {
+			throw new InvalidOrderDataException("totalAmount is required");
+		}
+		this.customerName = requireText(customerName, "customerName");
+		this.customerPhone = requireText(customerPhone, "customerPhone");
+		this.deliveryAddress = requireText(deliveryAddress, "deliveryAddress");
+		this.deliveryLocation = deliveryLocation;
+		this.totalAmount = totalAmount;
+	}
+
+	public void ensureDeletable() {
+		if (status != OrderStatus.CREATED) {
+			throw new OrderNotDeletableException(status);
+		}
+	}
+
 	public void confirm(OffsetDateTime now) {
 		requireTimestamp(now);
 		transitionTo(OrderStatus.CONFIRMED);
 		this.confirmedAt = now;
+	}
+
+	private void ensureEditable() {
+		if (status != OrderStatus.CREATED && status != OrderStatus.CONFIRMED) {
+			throw new OrderNotEditableException(status);
+		}
 	}
 
 	public void startPreparation(OffsetDateTime now) {

@@ -20,6 +20,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,11 +47,83 @@ class OrderRepositoryAdapterIntegrationTest {
 	@Autowired
 	private OrderRepositoryPort orderRepositoryPort;
 
+	@Autowired
+	private SpringDataOrderRepository springDataOrderRepository;
+
 	@Test
 	void saveAndFindById_shouldPersistAndReconstituteOrderWithBusinessOffset() {
-		Order order = Order.create(
+		Order saved = orderRepositoryPort.save(sampleOrder("ORD-2026-PERSIST1"));
+		Optional<Order> loaded = orderRepositoryPort.findById(saved.id());
+
+		assertTrue(loaded.isPresent());
+		Order found = loaded.get();
+		assertEquals(saved.id(), found.id());
+		assertEquals(OrderStatus.CREATED, found.status());
+		assertEquals(CREATED_AT, found.createdAt());
+		assertEquals(PROMISED_AT, found.promisedDeliveryAt());
+	}
+
+	@Test
+	void findById_shouldReturnEmptyWhenMissing() {
+		assertTrue(orderRepositoryPort.findById(OrderId.generate()).isEmpty());
+	}
+
+	@Test
+	void findAll_shouldReturnOrdersOrderedByCreatedAt() {
+		Order first = orderRepositoryPort.save(sampleOrder("ORD-2026-LIST0001"));
+		Order second = Order.create(
 				OrderId.generate(),
-				OrderCode.of("ORD-2026-PERSIST1"),
+				OrderCode.of("ORD-2026-LIST0002"),
+				"Luis Gomez",
+				"988000111",
+				"Calle Nueva 10",
+				new Location(-12.11, -77.03),
+				Money.of(new BigDecimal("40.00")),
+				CREATED_AT.plusMinutes(1),
+				PROMISED_AT.plusMinutes(1));
+		orderRepositoryPort.save(second);
+
+		List<Order> all = orderRepositoryPort.findAll();
+
+		assertEquals(2, all.size());
+		assertEquals(first.id(), all.get(0).id());
+		assertEquals(second.id(), all.get(1).id());
+	}
+
+	@Test
+	void update_shouldModifyExistingRowAndIncrementVersion() {
+		Order saved = orderRepositoryPort.save(sampleOrder("ORD-2026-UPD00001"));
+		Long versionBefore = springDataOrderRepository.findById(saved.id().value()).orElseThrow().getVersion();
+
+		saved.updateDetails(
+				"Luis Gomez",
+				"988000111",
+				"Calle Nueva 10",
+				new Location(-12.11, -77.03),
+				Money.of(new BigDecimal("40.00")));
+		Order updated = orderRepositoryPort.update(saved);
+
+		assertEquals("Luis Gomez", updated.customerName());
+		assertEquals(0, updated.totalAmount().amount().compareTo(new BigDecimal("40.00")));
+		assertEquals(1, springDataOrderRepository.count());
+		Long versionAfter = springDataOrderRepository.findById(saved.id().value()).orElseThrow().getVersion();
+		assertEquals(versionBefore + 1, versionAfter);
+	}
+
+	@Test
+	void deleteById_shouldRemoveRow() {
+		Order saved = orderRepositoryPort.save(sampleOrder("ORD-2026-DEL00001"));
+
+		orderRepositoryPort.deleteById(saved.id());
+
+		assertTrue(orderRepositoryPort.findById(saved.id()).isEmpty());
+		assertEquals(0, springDataOrderRepository.count());
+	}
+
+	private static Order sampleOrder(String code) {
+		return Order.create(
+				OrderId.generate(),
+				OrderCode.of(code),
 				"Ana Torres",
 				"999999999",
 				"Av. Example 123",
@@ -58,23 +131,5 @@ class OrderRepositoryAdapterIntegrationTest {
 				Money.of(new BigDecimal("85.90")),
 				CREATED_AT,
 				PROMISED_AT);
-
-		Order saved = orderRepositoryPort.save(order);
-		Optional<Order> loaded = orderRepositoryPort.findById(saved.id());
-
-		assertTrue(loaded.isPresent());
-		Order found = loaded.get();
-		assertEquals(saved.id(), found.id());
-		assertEquals(OrderStatus.CREATED, found.status());
-		assertEquals(BusinessTime.ZONE_OFFSET, found.createdAt().getOffset());
-		assertEquals(BusinessTime.ZONE_OFFSET, found.promisedDeliveryAt().getOffset());
-		assertEquals(CREATED_AT, found.createdAt());
-		assertEquals(PROMISED_AT, found.promisedDeliveryAt());
-	}
-
-	@Test
-	void findById_shouldReturnEmptyWhenMissing() {
-		Optional<Order> loaded = orderRepositoryPort.findById(OrderId.generate());
-		assertTrue(loaded.isEmpty());
 	}
 }

@@ -23,6 +23,25 @@ public class OrderPersistenceMapper {
 
 		OrderJpaEntity entity = new OrderJpaEntity();
 		entity.setId(order.id().value());
+		copyPersistableState(order, entity);
+		// version remains null so Spring Data treats this as a new entity (CREATE)
+		return entity;
+	}
+
+	/**
+	 * Copies domain state onto an existing JPA entity while preserving id and {@code @Version}.
+	 * Used exclusively for UPDATE so optimistic locking keeps working.
+	 */
+	public void copyToEntity(Order order, OrderJpaEntity existingEntity) {
+		Objects.requireNonNull(order, "order is required");
+		Objects.requireNonNull(existingEntity, "existingEntity is required");
+		if (!existingEntity.getId().equals(order.id().value())) {
+			throw new IllegalArgumentException("cannot copy order onto entity with a different id");
+		}
+		copyPersistableState(order, existingEntity);
+	}
+
+	private void copyPersistableState(Order order, OrderJpaEntity entity) {
 		entity.setCode(order.code().value());
 		entity.setCustomerName(order.customerName());
 		entity.setCustomerPhone(order.customerPhone());
@@ -43,7 +62,6 @@ public class OrderPersistenceMapper {
 		entity.setDeliveredAt(order.deliveredAt());
 		entity.setCancelledAt(order.cancelledAt());
 		entity.setFailedDeliveryAt(order.failedDeliveryAt());
-		return entity;
 	}
 
 	public Order toDomain(OrderJpaEntity entity) {

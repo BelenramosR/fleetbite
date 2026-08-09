@@ -1,6 +1,8 @@
 package com.fleetbite.shared.infrastructure.inbound.rest;
 
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
+import com.fleetbite.order.domain.exception.OrderNotDeletableException;
+import com.fleetbite.order.domain.exception.OrderNotEditableException;
 import com.fleetbite.shared.application.exception.ApplicationException;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.exception.DomainException;
@@ -35,6 +37,13 @@ public class GlobalExceptionHandler {
 			InvalidOrderDataException exception,
 			HttpServletRequest request) {
 		return build(HttpStatus.BAD_REQUEST, exception.getCode(), exception.getMessage(), request.getRequestURI());
+	}
+
+	@ExceptionHandler({OrderNotEditableException.class, OrderNotDeletableException.class})
+	public ResponseEntity<ApiErrorResponse> handleConflict(
+			DomainException exception,
+			HttpServletRequest request) {
+		return build(HttpStatus.CONFLICT, exception.getCode(), exception.getMessage(), request.getRequestURI());
 	}
 
 	@ExceptionHandler(ResourceNotFoundException.class)
