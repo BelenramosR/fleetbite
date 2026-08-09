@@ -1,11 +1,13 @@
 package com.fleetbite.delivery.infrastructure.inbound.rest;
 
 import com.fleetbite.delivery.application.dto.AssignmentResult;
+import com.fleetbite.delivery.application.dto.AutoAssignmentResult;
 import com.fleetbite.delivery.application.dto.CreateManualAssignmentCommand;
 import com.fleetbite.delivery.application.dto.RejectAssignmentCommand;
 import com.fleetbite.delivery.infrastructure.inbound.rest.request.CreateManualAssignmentRequest;
 import com.fleetbite.delivery.infrastructure.inbound.rest.request.RejectAssignmentRequest;
 import com.fleetbite.delivery.infrastructure.inbound.rest.response.AssignmentResponse;
+import com.fleetbite.delivery.infrastructure.inbound.rest.response.AutoAssignmentResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -35,5 +37,17 @@ public class AssignmentHttpMapper {
 				result.rejectionReason(),
 				result.assignmentScore(),
 				result.createdAt());
+	}
+
+	public AutoAssignmentResponse toResponse(AutoAssignmentResult result) {
+		return new AutoAssignmentResponse(
+				result.assigned(),
+				result.orderId(),
+				result.assignmentId(),
+				result.driverId(),
+				result.distanceKm(),
+				result.score(),
+				result.orderStatus().name(),
+				result.reason());
 	}
 }

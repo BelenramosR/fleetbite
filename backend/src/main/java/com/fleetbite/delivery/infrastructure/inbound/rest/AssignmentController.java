@@ -1,7 +1,9 @@
 package com.fleetbite.delivery.infrastructure.inbound.rest;
 
 import com.fleetbite.delivery.application.dto.AssignmentResult;
+import com.fleetbite.delivery.application.dto.AutoAssignmentResult;
 import com.fleetbite.delivery.application.port.in.AcceptAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;
 import com.fleetbite.delivery.application.port.in.CompleteAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.CreateManualAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.GetAssignmentByIdUseCase;
@@ -13,6 +15,8 @@ import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.delivery.infrastructure.inbound.rest.request.CreateManualAssignmentRequest;
 import com.fleetbite.delivery.infrastructure.inbound.rest.request.RejectAssignmentRequest;
 import com.fleetbite.delivery.infrastructure.inbound.rest.response.AssignmentResponse;
+import com.fleetbite.delivery.infrastructure.inbound.rest.response.AutoAssignmentResponse;
+import com.fleetbite.order.domain.model.OrderId;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +37,7 @@ import java.util.UUID;
 public class AssignmentController {
 
 	private final CreateManualAssignmentUseCase createManualAssignmentUseCase;
+	private final AutoAssignOrderUseCase autoAssignOrderUseCase;
 	private final GetAssignmentByIdUseCase getAssignmentByIdUseCase;
 	private final ListAssignmentsUseCase listAssignmentsUseCase;
 	private final AcceptAssignmentUseCase acceptAssignmentUseCase;
@@ -44,6 +49,7 @@ public class AssignmentController {
 
 	public AssignmentController(
 			CreateManualAssignmentUseCase createManualAssignmentUseCase,
+			AutoAssignOrderUseCase autoAssignOrderUseCase,
 			GetAssignmentByIdUseCase getAssignmentByIdUseCase,
 			ListAssignmentsUseCase listAssignmentsUseCase,
 			AcceptAssignmentUseCase acceptAssignmentUseCase,
@@ -53,6 +59,7 @@ public class AssignmentController {
 			CompleteAssignmentUseCase completeAssignmentUseCase,
 			AssignmentHttpMapper assignmentHttpMapper) {
 		this.createManualAssignmentUseCase = Objects.requireNonNull(createManualAssignmentUseCase);
+		this.autoAssignOrderUseCase = Objects.requireNonNull(autoAssignOrderUseCase);
 		this.getAssignmentByIdUseCase = Objects.requireNonNull(getAssignmentByIdUseCase);
 		this.listAssignmentsUseCase = Objects.requireNonNull(listAssignmentsUseCase);
 		this.acceptAssignmentUseCase = Objects.requireNonNull(acceptAssignmentUseCase);
@@ -75,6 +82,12 @@ public class AssignmentController {
 				.buildAndExpand(result.id())
 				.toUri();
 		return ResponseEntity.created(location).body(assignmentHttpMapper.toResponse(result));
+	}
+
+	@PostMapping("/orders/{orderId}/auto-assign")
+	public AutoAssignmentResponse autoAssign(@PathVariable UUID orderId) {
+		AutoAssignmentResult result = autoAssignOrderUseCase.execute(OrderId.of(orderId));
+		return assignmentHttpMapper.toResponse(result);
 	}
 
 	@GetMapping("/assignments")

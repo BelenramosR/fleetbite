@@ -1,6 +1,9 @@
 package com.fleetbite.delivery.infrastructure.config;
 
+import com.fleetbite.delivery.application.policy.DriverSelectionPolicy;
+import com.fleetbite.delivery.application.policy.NearestDriverSelectionPolicy;
 import com.fleetbite.delivery.application.port.in.AcceptAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;
 import com.fleetbite.delivery.application.port.in.CompleteAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.CreateManualAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.GetAssignmentByIdUseCase;
@@ -9,8 +12,11 @@ import com.fleetbite.delivery.application.port.in.PickupAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.RejectAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.StartDeliveryAssignmentUseCase;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
+import com.fleetbite.delivery.application.port.out.DistanceCalculatorPort;
 import com.fleetbite.delivery.application.service.AcceptAssignmentService;
+import com.fleetbite.delivery.application.service.AutoAssignOrderService;
 import com.fleetbite.delivery.application.service.CompleteAssignmentService;
+import com.fleetbite.delivery.application.service.CreateAssignmentOperation;
 import com.fleetbite.delivery.application.service.CreateManualAssignmentService;
 import com.fleetbite.delivery.application.service.GetAssignmentByIdService;
 import com.fleetbite.delivery.application.service.ListAssignmentsService;
@@ -18,6 +24,7 @@ import com.fleetbite.delivery.application.service.PickupAssignmentService;
 import com.fleetbite.delivery.application.service.RejectAssignmentService;
 import com.fleetbite.delivery.application.service.StartDeliveryAssignmentService;
 import com.fleetbite.delivery.infrastructure.transaction.TransactionalAcceptAssignmentUseCase;
+import com.fleetbite.delivery.infrastructure.transaction.TransactionalAutoAssignOrderUseCase;
 import com.fleetbite.delivery.infrastructure.transaction.TransactionalCompleteAssignmentUseCase;
 import com.fleetbite.delivery.infrastructure.transaction.TransactionalCreateManualAssignmentUseCase;
 import com.fleetbite.delivery.infrastructure.transaction.TransactionalPickupAssignmentUseCase;
@@ -34,17 +41,49 @@ import java.time.Clock;
 public class DeliveryAssignmentApplicationConfig {
 
 	@Bean
-	CreateManualAssignmentUseCase createManualAssignmentUseCase(
+	CreateAssignmentOperation createAssignmentOperation(
 			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
 			OrderRepositoryPort orderRepositoryPort,
 			DriverRepositoryPort driverRepositoryPort,
 			Clock clock) {
+		return new CreateAssignmentOperation(
+				assignmentRepositoryPort,
+				orderRepositoryPort,
+				driverRepositoryPort,
+				clock);
+	}
+
+	@Bean
+	DriverSelectionPolicy driverSelectionPolicy(DistanceCalculatorPort distanceCalculatorPort) {
+		return new NearestDriverSelectionPolicy(distanceCalculatorPort);
+	}
+
+	@Bean
+	CreateManualAssignmentUseCase createManualAssignmentUseCase(
+			OrderRepositoryPort orderRepositoryPort,
+			DriverRepositoryPort driverRepositoryPort,
+			CreateAssignmentOperation createAssignmentOperation) {
 		return new TransactionalCreateManualAssignmentUseCase(
 				new CreateManualAssignmentService(
-						assignmentRepositoryPort,
 						orderRepositoryPort,
 						driverRepositoryPort,
-						clock));
+						createAssignmentOperation));
+	}
+
+	@Bean
+	AutoAssignOrderUseCase autoAssignOrderUseCase(
+			OrderRepositoryPort orderRepositoryPort,
+			DriverRepositoryPort driverRepositoryPort,
+			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
+			DriverSelectionPolicy driverSelectionPolicy,
+			CreateAssignmentOperation createAssignmentOperation) {
+		return new TransactionalAutoAssignOrderUseCase(
+				new AutoAssignOrderService(
+						orderRepositoryPort,
+						driverRepositoryPort,
+						assignmentRepositoryPort,
+						driverSelectionPolicy,
+						createAssignmentOperation));
 	}
 
 	@Bean

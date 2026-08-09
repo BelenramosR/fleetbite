@@ -31,6 +31,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -57,15 +58,19 @@ class CreateManualAssignmentServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new CreateManualAssignmentService(
+		CreateAssignmentOperation operation = new CreateAssignmentOperation(
 				assignmentRepositoryPort,
 				orderRepositoryPort,
 				driverRepositoryPort,
 				FIXED_CLOCK);
+		service = new CreateManualAssignmentService(
+				orderRepositoryPort,
+				driverRepositoryPort,
+				operation);
 	}
 
 	@Test
-	void execute_shouldAssignReadyOrderAndBusyDriver() {
+	void execute_shouldAssignReadyOrderAndBusyDriverWithNullScore() {
 		Order order = readyOrder();
 		Driver driver = availableDriver();
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
@@ -79,6 +84,7 @@ class CreateManualAssignmentServiceTest {
 		var result = service.execute(new CreateManualAssignmentCommand(order.id().value(), driver.id().value()));
 
 		assertEquals(AssignmentStatus.PENDING, result.status());
+		assertNull(result.assignmentScore());
 		assertEquals(OrderStatus.ASSIGNED, order.status());
 		assertEquals(DriverStatus.BUSY, driver.status());
 		verify(assignmentRepositoryPort).save(any(DeliveryAssignment.class));
@@ -111,9 +117,6 @@ class CreateManualAssignmentServiceTest {
 	@Test
 	void execute_shouldRejectDriverWithoutLocation() {
 		Order order = readyOrder();
-		Driver driver = Driver.create(DriverId.generate(), "Carlos", "999888777", null, CREATED);
-		driver.updateLocation(new Location(-12.1, -77.0), CREATED.plusMinutes(1));
-		// go online then clear? can't clear - create offline without going online
 		Driver offline = Driver.create(DriverId.generate(), "Carlos", "999888778", null, CREATED);
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
 		when(driverRepositoryPort.findById(offline.id())).thenReturn(Optional.of(offline));

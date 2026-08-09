@@ -3,6 +3,7 @@ package com.fleetbite.driver.infrastructure.outbound.persistence;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
+import com.fleetbite.driver.domain.model.DriverStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
@@ -52,6 +53,15 @@ public class DriverRepositoryAdapter implements DriverRepositoryPort {
 	@Override
 	public List<Driver> findAll() {
 		return springDataDriverRepository.findAll(Sort.by(Sort.Direction.ASC, "createdAt")).stream()
+				.map(driverPersistenceMapper::toDomain)
+				.toList();
+	}
+
+	@Override
+	public List<Driver> findAvailableWithLocation() {
+		return springDataDriverRepository
+				.findByStatusAndCurrentLatitudeIsNotNullAndCurrentLongitudeIsNotNull(DriverStatus.AVAILABLE)
+				.stream()
 				.map(driverPersistenceMapper::toDomain)
 				.toList();
 	}

@@ -56,6 +56,22 @@ public final class DeliveryAssignment {
 			OrderId orderId,
 			DriverId driverId,
 			OffsetDateTime assignedAt) {
+		return create(id, orderId, driverId, assignedAt, null);
+	}
+
+	/**
+	 * Creates a PENDING assignment.
+	 *
+	 * @param assignmentScore optional score; for auto-assign MVP this stores Haversine distanceKm.
+	 *                        Manual assign passes {@code null}. A later phase may replace this with a
+	 *                        weighted score (workload + SLA).
+	 */
+	public static DeliveryAssignment create(
+			DeliveryAssignmentId id,
+			OrderId orderId,
+			DriverId driverId,
+			OffsetDateTime assignedAt,
+			BigDecimal assignmentScore) {
 		if (id == null) {
 			throw new InvalidAssignmentDataException("assignmentId is required");
 		}
@@ -79,7 +95,7 @@ public final class DeliveryAssignment {
 				null,
 				null,
 				null,
-				null,
+				assignmentScore,
 				assignedAt);
 	}
 

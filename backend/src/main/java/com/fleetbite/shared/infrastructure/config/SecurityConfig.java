@@ -46,6 +46,8 @@ public class SecurityConfig {
 						.requestMatchers("/api/v1/users/**").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.POST, "/api/v1/orders/*/assign")
 						.hasAnyRole("ADMIN", "DISPATCHER")
+						.requestMatchers(HttpMethod.POST, "/api/v1/orders/*/auto-assign")
+						.hasAnyRole("ADMIN", "DISPATCHER")
 						.requestMatchers("/api/v1/orders/**")
 						.hasAnyRole("ADMIN", "RESTAURANT_OPERATOR", "DISPATCHER")
 						.requestMatchers("/api/v1/drivers/**").hasAnyRole("ADMIN", "DISPATCHER")

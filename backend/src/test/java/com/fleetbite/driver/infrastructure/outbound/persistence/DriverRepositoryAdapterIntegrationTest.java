@@ -127,6 +127,30 @@ class DriverRepositoryAdapterIntegrationTest {
 		assertTrue(driverRepositoryPort.existsByPhone("666666666"));
 	}
 
+	@Test
+	void findAvailableWithLocation_shouldReturnOnlyAvailableDriversWithCoordinates() {
+		Driver available = sampleDriver("777777777", new Location(-12.10, -77.03));
+		available.goOnline(CREATED_AT.plusMinutes(1));
+		driverRepositoryPort.save(available);
+
+		Driver offlineWithLocation = sampleDriver("888888888", new Location(-12.11, -77.04));
+		driverRepositoryPort.save(offlineWithLocation);
+
+		Driver offlineWithoutLocation = sampleDriver("999999999", null);
+		driverRepositoryPort.save(offlineWithoutLocation);
+
+		Driver busy = sampleDriver("101010101", new Location(-12.12, -77.05));
+		busy.goOnline(CREATED_AT.plusMinutes(1));
+		busy.markBusy(CREATED_AT.plusMinutes(2));
+		driverRepositoryPort.save(busy);
+
+		List<Driver> found = driverRepositoryPort.findAvailableWithLocation();
+
+		assertEquals(1, found.size());
+		assertEquals(available.id(), found.getFirst().id());
+		assertEquals(DriverStatus.AVAILABLE, found.getFirst().status());
+	}
+
 	private static Driver sampleDriver(String phone, Location location) {
 		return Driver.create(DriverId.generate(), "Carlos Perez", phone, location, CREATED_AT);
 	}

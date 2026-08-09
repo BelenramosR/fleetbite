@@ -16,6 +16,11 @@ public interface DriverRepositoryPort {
 
 	List<Driver> findAll();
 
+	/**
+	 * Returns drivers that are AVAILABLE and have a non-null current location.
+	 */
+	List<Driver> findAvailableWithLocation();
+
 	void deleteById(DriverId id);
 
 	boolean existsByPhone(String phone);

@@ -144,6 +144,11 @@ class SecurityIntegrationTest {
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
 
+		mockMvc.perform(post("/api/v1/orders/{orderId}/auto-assign", FAKE_ORDER_ID)
+						.header("Authorization", "Bearer " + token))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+
 		mockMvc.perform(get("/api/v1/drivers")
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isForbidden())
@@ -173,7 +178,30 @@ class SecurityIntegrationTest {
 								"""))
 				.andExpect(status().isNotFound());
 
+		mockMvc.perform(post("/api/v1/orders/{orderId}/auto-assign", FAKE_ORDER_ID)
+						.header("Authorization", "Bearer " + token))
+				.andExpect(status().isNotFound());
+
 		mockMvc.perform(get("/api/v1/users")
+						.header("Authorization", "Bearer " + token))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+	}
+
+	@Test
+	void admin_shouldAccessAutoAssign() throws Exception {
+		String token = login("admin@fleetbite.local");
+
+		mockMvc.perform(post("/api/v1/orders/{orderId}/auto-assign", FAKE_ORDER_ID)
+						.header("Authorization", "Bearer " + token))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void driver_shouldBeDeniedAutoAssign() throws Exception {
+		String token = login("driver@fleetbite.local");
+
+		mockMvc.perform(post("/api/v1/orders/{orderId}/auto-assign", FAKE_ORDER_ID)
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("ACCESS_DENIED"));

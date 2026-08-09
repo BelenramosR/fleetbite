@@ -1,9 +1,11 @@
 package com.fleetbite.delivery.infrastructure.inbound.rest;
 
 import com.fleetbite.delivery.application.dto.AssignmentResult;
+import com.fleetbite.delivery.application.dto.AutoAssignmentResult;
 import com.fleetbite.delivery.application.dto.CreateManualAssignmentCommand;
 import com.fleetbite.delivery.application.dto.RejectAssignmentCommand;
 import com.fleetbite.delivery.application.port.in.AcceptAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;
 import com.fleetbite.delivery.application.port.in.CompleteAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.CreateManualAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.GetAssignmentByIdUseCase;
@@ -60,6 +62,8 @@ class AssignmentControllerTest {
 	@MockitoBean
 	private CreateManualAssignmentUseCase createManualAssignmentUseCase;
 	@MockitoBean
+	private AutoAssignOrderUseCase autoAssignOrderUseCase;
+	@MockitoBean
 	private GetAssignmentByIdUseCase getAssignmentByIdUseCase;
 	@MockitoBean
 	private ListAssignmentsUseCase listAssignmentsUseCase;
@@ -87,6 +91,43 @@ class AssignmentControllerTest {
 				.andExpect(status().isCreated())
 				.andExpect(header().string("Location", containsString("/api/v1/assignments/" + result.id())))
 				.andExpect(jsonPath("$.status").value("PENDING"));
+	}
+
+	@Test
+	void autoAssign_shouldReturn200WhenAssigned() throws Exception {
+		UUID orderId = UUID.randomUUID();
+		UUID assignmentId = UUID.randomUUID();
+		UUID driverId = UUID.randomUUID();
+		when(autoAssignOrderUseCase.execute(any())).thenReturn(
+				AutoAssignmentResult.assigned(
+						orderId,
+						assignmentId,
+						driverId,
+						new java.math.BigDecimal("1.4200"),
+						new java.math.BigDecimal("1.4200")));
+
+		mockMvc.perform(post("/api/v1/orders/{orderId}/auto-assign", orderId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.assigned").value(true))
+				.andExpect(jsonPath("$.orderId").value(orderId.toString()))
+				.andExpect(jsonPath("$.assignmentId").value(assignmentId.toString()))
+				.andExpect(jsonPath("$.driverId").value(driverId.toString()))
+				.andExpect(jsonPath("$.orderStatus").value("ASSIGNED"))
+				.andExpect(jsonPath("$.score").value(1.4200));
+	}
+
+	@Test
+	void autoAssign_shouldReturn200WhenNoDriver() throws Exception {
+		UUID orderId = UUID.randomUUID();
+		when(autoAssignOrderUseCase.execute(any()))
+				.thenReturn(AutoAssignmentResult.waitingForDriver(orderId));
+
+		mockMvc.perform(post("/api/v1/orders/{orderId}/auto-assign", orderId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.assigned").value(false))
+				.andExpect(jsonPath("$.orderStatus").value("WAITING_FOR_DRIVER"))
+				.andExpect(jsonPath("$.reason").value("NO_AVAILABLE_DRIVER"))
+				.andExpect(jsonPath("$.assignmentId").value(org.hamcrest.Matchers.nullValue()));
 	}
 
 	@Test
