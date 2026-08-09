@@ -25,3 +25,9 @@ management:
     web:
       exposure:
         include: health,info
+
+fleetbite:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:local-dev-only-fleetbite-jwt-secret-32b}
+      expiration-seconds: ${JWT_EXPIRATION:3600}

@@ -20,10 +20,10 @@ import com.fleetbite.driver.domain.model.DriverStatus;
 import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import com.fleetbite.shared.infrastructure.config.SecurityConfig;
 import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -47,7 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AssignmentController.class)
-@Import({AssignmentHttpMapper.class, GlobalExceptionHandler.class, SecurityConfig.class})
+@AutoConfigureMockMvc(addFilters = false)
+@Import({AssignmentHttpMapper.class, GlobalExceptionHandler.class})
 class AssignmentControllerTest {
 
 	private static final OffsetDateTime ASSIGNED_AT =

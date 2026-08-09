@@ -7,6 +7,10 @@ import com.fleetbite.delivery.domain.exception.OrderNotAssignableException;
 import com.fleetbite.driver.domain.exception.DriverNotDeletableException;
 import com.fleetbite.driver.domain.exception.DuplicateDriverPhoneException;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
+import com.fleetbite.identity.domain.exception.AuthenticationFailedException;
+import com.fleetbite.identity.domain.exception.DuplicateUserEmailException;
+import com.fleetbite.identity.domain.exception.InvalidUserDataException;
+import com.fleetbite.identity.domain.exception.UserInactiveException;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.OrderNotDeletableException;
 import com.fleetbite.order.domain.exception.OrderNotEditableException;
@@ -48,12 +52,27 @@ public class GlobalExceptionHandler {
 			InvalidOrderDataException.class,
 			InvalidDriverDataException.class,
 			InvalidVehicleDataException.class,
-			InvalidAssignmentDataException.class
+			InvalidAssignmentDataException.class,
+			InvalidUserDataException.class
 	})
 	public ResponseEntity<ApiErrorResponse> handleInvalidDomainData(
 			DomainException exception,
 			HttpServletRequest request) {
 		return build(HttpStatus.BAD_REQUEST, exception.getCode(), exception.getMessage(), request.getRequestURI());
+	}
+
+	@ExceptionHandler(AuthenticationFailedException.class)
+	public ResponseEntity<ApiErrorResponse> handleAuthenticationFailed(
+			AuthenticationFailedException exception,
+			HttpServletRequest request) {
+		return build(HttpStatus.UNAUTHORIZED, exception.getCode(), exception.getMessage(), request.getRequestURI());
+	}
+
+	@ExceptionHandler(UserInactiveException.class)
+	public ResponseEntity<ApiErrorResponse> handleUserInactive(
+			UserInactiveException exception,
+			HttpServletRequest request) {
+		return build(HttpStatus.FORBIDDEN, exception.getCode(), exception.getMessage(), request.getRequestURI());
 	}
 
 	@ExceptionHandler({
@@ -65,7 +84,8 @@ public class GlobalExceptionHandler {
 			DuplicateVehiclePlateException.class,
 			ActiveAssignmentAlreadyExistsException.class,
 			OrderNotAssignableException.class,
-			DriverNotAssignableException.class
+			DriverNotAssignableException.class,
+			DuplicateUserEmailException.class
 	})
 	public ResponseEntity<ApiErrorResponse> handleConflict(
 			DomainException exception,

@@ -1,0 +1,16 @@
+CREATE TABLE users (
+    id              UUID            NOT NULL,
+    email           VARCHAR(255)    NOT NULL,
+    password_hash   VARCHAR(100)    NOT NULL,
+    full_name       VARCHAR(120)    NOT NULL,
+    role            VARCHAR(32)     NOT NULL,
+    status          VARCHAR(16)     NOT NULL,
+    created_at      TIMESTAMPTZ     NOT NULL,
+    updated_at      TIMESTAMPTZ     NOT NULL,
+    version         BIGINT          NOT NULL DEFAULT 0,
+    CONSTRAINT pk_users PRIMARY KEY (id),
+    CONSTRAINT uq_users_email UNIQUE (email)
+);
+
+CREATE INDEX idx_users_role ON users (role);
+CREATE INDEX idx_users_status ON users (status);
