@@ -18,6 +18,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/v1/orders/**").permitAll()
 						.requestMatchers("/api/v1/drivers/**").permitAll()
 						.requestMatchers("/api/v1/vehicles/**").permitAll()
+						.requestMatchers("/api/v1/assignments/**").permitAll()
 						.requestMatchers("/actuator/health").permitAll()
 						.anyRequest().authenticated())
 				.httpBasic(Customizer.withDefaults());

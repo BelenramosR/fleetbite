@@ -136,11 +136,13 @@ class OrderTest {
 	}
 
 	@Test
-	void assign_shouldRejectDirectTransitionFromReady() {
+	void assign_shouldAllowDirectTransitionFromReady() {
 		Order order = orderIn(OrderStatus.READY);
 
-		assertThrows(InvalidOrderTransitionException.class, () -> order.assign(LATER));
-		assertEquals(OrderStatus.READY, order.status());
+		order.assign(LATER);
+
+		assertEquals(OrderStatus.ASSIGNED, order.status());
+		assertEquals(LATER, order.assignedAt());
 	}
 
 	@Test

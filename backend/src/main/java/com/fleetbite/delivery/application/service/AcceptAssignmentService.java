@@ -1,0 +1,38 @@
+package com.fleetbite.delivery.application.service;
+
+import com.fleetbite.delivery.application.dto.AssignmentResult;
+import com.fleetbite.delivery.application.port.in.AcceptAssignmentUseCase;
+import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
+import com.fleetbite.delivery.domain.model.DeliveryAssignment;
+import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
+import com.fleetbite.shared.application.exception.ResourceNotFoundException;
+import com.fleetbite.shared.domain.time.BusinessTime;
+
+import java.time.Clock;
+import java.time.OffsetDateTime;
+import java.util.Objects;
+
+public final class AcceptAssignmentService implements AcceptAssignmentUseCase {
+
+	private final DeliveryAssignmentRepositoryPort assignmentRepositoryPort;
+	private final Clock clock;
+
+	public AcceptAssignmentService(DeliveryAssignmentRepositoryPort assignmentRepositoryPort, Clock clock) {
+		this.assignmentRepositoryPort = Objects.requireNonNull(assignmentRepositoryPort);
+		this.clock = Objects.requireNonNull(clock);
+	}
+
+	@Override
+	public AssignmentResult execute(DeliveryAssignmentId assignmentId) {
+		Objects.requireNonNull(assignmentId, "assignmentId is required");
+
+		DeliveryAssignment assignment = assignmentRepositoryPort.findById(assignmentId)
+				.orElseThrow(() -> new ResourceNotFoundException("DeliveryAssignment", assignmentId.value()));
+
+		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
+		assignment.accept(now);
+
+		DeliveryAssignment updated = assignmentRepositoryPort.update(assignment);
+		return AssignmentResult.from(updated);
+	}
+}

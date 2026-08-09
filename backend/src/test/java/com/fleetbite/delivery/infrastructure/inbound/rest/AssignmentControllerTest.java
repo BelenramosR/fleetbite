@@ -1,0 +1,214 @@
+package com.fleetbite.delivery.infrastructure.inbound.rest;
+
+import com.fleetbite.delivery.application.dto.AssignmentResult;
+import com.fleetbite.delivery.application.dto.CreateManualAssignmentCommand;
+import com.fleetbite.delivery.application.dto.RejectAssignmentCommand;
+import com.fleetbite.delivery.application.port.in.AcceptAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.CompleteAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.CreateManualAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.GetAssignmentByIdUseCase;
+import com.fleetbite.delivery.application.port.in.ListAssignmentsUseCase;
+import com.fleetbite.delivery.application.port.in.PickupAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.RejectAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.StartDeliveryAssignmentUseCase;
+import com.fleetbite.delivery.domain.exception.ActiveAssignmentAlreadyExistsException;
+import com.fleetbite.delivery.domain.exception.DriverNotAssignableException;
+import com.fleetbite.delivery.domain.model.DeliveryAssignment;
+import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
+import com.fleetbite.driver.domain.model.DriverId;
+import com.fleetbite.driver.domain.model.DriverStatus;
+import com.fleetbite.order.domain.model.OrderId;
+import com.fleetbite.shared.application.exception.ResourceNotFoundException;
+import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.shared.infrastructure.config.SecurityConfig;
+import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(controllers = AssignmentController.class)
+@Import({AssignmentHttpMapper.class, GlobalExceptionHandler.class, SecurityConfig.class})
+class AssignmentControllerTest {
+
+	private static final OffsetDateTime ASSIGNED_AT =
+			OffsetDateTime.of(2026, 8, 8, 22, 0, 0, 0, BusinessTime.ZONE_OFFSET);
+
+	@Autowired
+	private MockMvc mockMvc;
+
+	@MockitoBean
+	private CreateManualAssignmentUseCase createManualAssignmentUseCase;
+	@MockitoBean
+	private GetAssignmentByIdUseCase getAssignmentByIdUseCase;
+	@MockitoBean
+	private ListAssignmentsUseCase listAssignmentsUseCase;
+	@MockitoBean
+	private AcceptAssignmentUseCase acceptAssignmentUseCase;
+	@MockitoBean
+	private RejectAssignmentUseCase rejectAssignmentUseCase;
+	@MockitoBean
+	private PickupAssignmentUseCase pickupAssignmentUseCase;
+	@MockitoBean
+	private StartDeliveryAssignmentUseCase startDeliveryAssignmentUseCase;
+	@MockitoBean
+	private CompleteAssignmentUseCase completeAssignmentUseCase;
+
+	@Test
+	void assign_shouldReturn201() throws Exception {
+		AssignmentResult result = sampleResult();
+		when(createManualAssignmentUseCase.execute(any(CreateManualAssignmentCommand.class))).thenReturn(result);
+
+		mockMvc.perform(post("/api/v1/orders/{orderId}/assign", result.orderId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "driverId": "%s" }
+								""".formatted(result.driverId())))
+				.andExpect(status().isCreated())
+				.andExpect(header().string("Location", containsString("/api/v1/assignments/" + result.id())))
+				.andExpect(jsonPath("$.status").value("PENDING"));
+	}
+
+	@Test
+	void assign_shouldReturn409WhenActiveExists() throws Exception {
+		UUID orderId = UUID.randomUUID();
+		when(createManualAssignmentUseCase.execute(any(CreateManualAssignmentCommand.class)))
+				.thenThrow(new ActiveAssignmentAlreadyExistsException(orderId));
+
+		mockMvc.perform(post("/api/v1/orders/{orderId}/assign", orderId)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "driverId": "%s" }
+								""".formatted(UUID.randomUUID())))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("ACTIVE_ASSIGNMENT_EXISTS"));
+	}
+
+	@Test
+	void assign_shouldReturn409WhenDriverNotAssignable() throws Exception {
+		UUID orderId = UUID.randomUUID();
+		when(createManualAssignmentUseCase.execute(any(CreateManualAssignmentCommand.class)))
+				.thenThrow(new DriverNotAssignableException(DriverStatus.OFFLINE));
+
+		mockMvc.perform(post("/api/v1/orders/{orderId}/assign", orderId)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "driverId": "%s" }
+								""".formatted(UUID.randomUUID())))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("DRIVER_NOT_ASSIGNABLE"));
+	}
+
+	@Test
+	void list_shouldReturn200() throws Exception {
+		when(listAssignmentsUseCase.execute()).thenReturn(List.of(sampleResult()));
+
+		mockMvc.perform(get("/api/v1/assignments"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)));
+	}
+
+	@Test
+	void getById_shouldReturn404() throws Exception {
+		UUID id = UUID.randomUUID();
+		when(getAssignmentByIdUseCase.execute(DeliveryAssignmentId.of(id)))
+				.thenThrow(new ResourceNotFoundException("DeliveryAssignment", id));
+
+		mockMvc.perform(get("/api/v1/assignments/{id}", id))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void reject_shouldReturn400WhenReasonMissing() throws Exception {
+		UUID id = UUID.randomUUID();
+
+		mockMvc.perform(post("/api/v1/assignments/{id}/reject", id)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "reason": "   " }
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	void reject_shouldReturn200() throws Exception {
+		AssignmentResult result = rejectedResult();
+		when(rejectAssignmentUseCase.execute(eq(DeliveryAssignmentId.of(result.id())), any(RejectAssignmentCommand.class)))
+				.thenReturn(result);
+
+		mockMvc.perform(post("/api/v1/assignments/{id}/reject", result.id())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "reason": "Vehicle problem" }
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("REJECTED"));
+	}
+
+	@Test
+	void accept_pickup_startDelivery_complete_shouldReturn200() throws Exception {
+		AssignmentResult result = sampleResult();
+		when(acceptAssignmentUseCase.execute(DeliveryAssignmentId.of(result.id()))).thenReturn(result);
+		when(pickupAssignmentUseCase.execute(DeliveryAssignmentId.of(result.id()))).thenReturn(result);
+		when(startDeliveryAssignmentUseCase.execute(DeliveryAssignmentId.of(result.id()))).thenReturn(result);
+		when(completeAssignmentUseCase.execute(DeliveryAssignmentId.of(result.id()))).thenReturn(result);
+
+		mockMvc.perform(post("/api/v1/assignments/{id}/accept", result.id())).andExpect(status().isOk());
+		mockMvc.perform(post("/api/v1/assignments/{id}/pickup", result.id())).andExpect(status().isOk());
+		mockMvc.perform(post("/api/v1/assignments/{id}/start-delivery", result.id())).andExpect(status().isOk());
+		mockMvc.perform(post("/api/v1/assignments/{id}/complete", result.id())).andExpect(status().isOk());
+	}
+
+	@Test
+	void assign_shouldReturn409OnOptimisticLock() throws Exception {
+		UUID orderId = UUID.randomUUID();
+		when(createManualAssignmentUseCase.execute(any(CreateManualAssignmentCommand.class)))
+				.thenThrow(new OptimisticLockingFailureException("conflict"));
+
+		mockMvc.perform(post("/api/v1/orders/{orderId}/assign", orderId)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "driverId": "%s" }
+								""".formatted(UUID.randomUUID())))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("OPTIMISTIC_LOCK_CONFLICT"));
+	}
+
+	private static AssignmentResult sampleResult() {
+		return AssignmentResult.from(DeliveryAssignment.create(
+				DeliveryAssignmentId.generate(),
+				OrderId.generate(),
+				DriverId.generate(),
+				ASSIGNED_AT));
+	}
+
+	private static AssignmentResult rejectedResult() {
+		DeliveryAssignment assignment = DeliveryAssignment.create(
+				DeliveryAssignmentId.generate(),
+				OrderId.generate(),
+				DriverId.generate(),
+				ASSIGNED_AT);
+		assignment.reject("Vehicle problem", ASSIGNED_AT.plusMinutes(1));
+		return AssignmentResult.from(assignment);
+	}
+}

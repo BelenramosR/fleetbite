@@ -374,7 +374,7 @@ public final class Order {
 			case CREATED -> to == OrderStatus.CONFIRMED || to == OrderStatus.CANCELLED;
 			case CONFIRMED -> to == OrderStatus.PREPARING || to == OrderStatus.CANCELLED;
 			case PREPARING -> to == OrderStatus.READY || to == OrderStatus.CANCELLED;
-			case READY -> to == OrderStatus.WAITING_FOR_DRIVER;
+			case READY -> to == OrderStatus.WAITING_FOR_DRIVER || to == OrderStatus.ASSIGNED;
 			case WAITING_FOR_DRIVER -> to == OrderStatus.ASSIGNED;
 			case ASSIGNED -> to == OrderStatus.PICKED_UP || to == OrderStatus.WAITING_FOR_DRIVER;
 			case PICKED_UP -> to == OrderStatus.IN_TRANSIT;

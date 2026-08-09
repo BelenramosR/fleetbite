@@ -1,21 +1,27 @@
 package com.fleetbite.shared.infrastructure.inbound.rest;
 
+import com.fleetbite.delivery.domain.exception.ActiveAssignmentAlreadyExistsException;
+import com.fleetbite.delivery.domain.exception.DriverNotAssignableException;
+import com.fleetbite.delivery.domain.exception.InvalidAssignmentDataException;
+import com.fleetbite.delivery.domain.exception.OrderNotAssignableException;
 import com.fleetbite.driver.domain.exception.DriverNotDeletableException;
 import com.fleetbite.driver.domain.exception.DuplicateDriverPhoneException;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.OrderNotDeletableException;
 import com.fleetbite.order.domain.exception.OrderNotEditableException;
-import com.fleetbite.vehicle.domain.exception.DuplicateVehiclePlateException;
-import com.fleetbite.vehicle.domain.exception.InvalidVehicleDataException;
-import com.fleetbite.vehicle.domain.exception.VehicleNotDeletableException;
 import com.fleetbite.shared.application.exception.ApplicationException;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.exception.DomainException;
+import com.fleetbite.vehicle.domain.exception.DuplicateVehiclePlateException;
+import com.fleetbite.vehicle.domain.exception.InvalidVehicleDataException;
+import com.fleetbite.vehicle.domain.exception.VehicleNotDeletableException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -41,7 +47,8 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler({
 			InvalidOrderDataException.class,
 			InvalidDriverDataException.class,
-			InvalidVehicleDataException.class
+			InvalidVehicleDataException.class,
+			InvalidAssignmentDataException.class
 	})
 	public ResponseEntity<ApiErrorResponse> handleInvalidDomainData(
 			DomainException exception,
@@ -55,12 +62,29 @@ public class GlobalExceptionHandler {
 			DriverNotDeletableException.class,
 			DuplicateDriverPhoneException.class,
 			VehicleNotDeletableException.class,
-			DuplicateVehiclePlateException.class
+			DuplicateVehiclePlateException.class,
+			ActiveAssignmentAlreadyExistsException.class,
+			OrderNotAssignableException.class,
+			DriverNotAssignableException.class
 	})
 	public ResponseEntity<ApiErrorResponse> handleConflict(
 			DomainException exception,
 			HttpServletRequest request) {
 		return build(HttpStatus.CONFLICT, exception.getCode(), exception.getMessage(), request.getRequestURI());
+	}
+
+	@ExceptionHandler({
+			OptimisticLockingFailureException.class,
+			ObjectOptimisticLockingFailureException.class
+	})
+	public ResponseEntity<ApiErrorResponse> handleOptimisticLock(
+			OptimisticLockingFailureException exception,
+			HttpServletRequest request) {
+		return build(
+				HttpStatus.CONFLICT,
+				"OPTIMISTIC_LOCK_CONFLICT",
+				"The resource was modified concurrently; please retry",
+				request.getRequestURI());
 	}
 
 	@ExceptionHandler(ResourceNotFoundException.class)
