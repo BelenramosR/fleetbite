@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({IdentityHttpMapper.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
+@Import({IdentityHttpMapperImpl.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
 class AuthControllerTest {
 
 	@Autowired

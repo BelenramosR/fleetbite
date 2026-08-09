@@ -8,46 +8,34 @@ import com.fleetbite.delivery.infrastructure.inbound.rest.request.CreateManualAs
 import com.fleetbite.delivery.infrastructure.inbound.rest.request.RejectAssignmentRequest;
 import com.fleetbite.delivery.infrastructure.inbound.rest.response.AssignmentResponse;
 import com.fleetbite.delivery.infrastructure.inbound.rest.response.AutoAssignmentResponse;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.UUID;
 
-@Component
-public class AssignmentHttpMapper {
+@Mapper(componentModel = "spring")
+public interface AssignmentHttpMapper {
 
-	public CreateManualAssignmentCommand toCommand(UUID orderId, CreateManualAssignmentRequest request) {
-		return new CreateManualAssignmentCommand(orderId, request.driverId());
-	}
+	@Mapping(target = "orderId", source = "orderId")
+	@Mapping(target = "driverId", source = "request.driverId")
+	CreateManualAssignmentCommand toCommand(UUID orderId, CreateManualAssignmentRequest request);
 
-	public RejectAssignmentCommand toCommand(RejectAssignmentRequest request) {
-		return new RejectAssignmentCommand(request.reason());
-	}
+	RejectAssignmentCommand toCommand(RejectAssignmentRequest request);
 
-	public AssignmentResponse toResponse(AssignmentResult result) {
-		return new AssignmentResponse(
-				result.id(),
-				result.orderId(),
-				result.driverId(),
-				result.status().name(),
-				result.assignedAt(),
-				result.acceptedAt(),
-				result.rejectedAt(),
-				result.pickedUpAt(),
-				result.completedAt(),
-				result.rejectionReason(),
-				result.assignmentScore(),
-				result.createdAt());
-	}
+	@Mapping(target = "id", expression = "java(result.id())")
+	@Mapping(target = "orderId", expression = "java(result.orderId())")
+	@Mapping(target = "driverId", expression = "java(result.driverId())")
+	@Mapping(target = "status", expression = "java(result.status().name())")
+	@Mapping(target = "assignedAt", expression = "java(result.assignedAt())")
+	@Mapping(target = "acceptedAt", expression = "java(result.acceptedAt())")
+	@Mapping(target = "rejectedAt", expression = "java(result.rejectedAt())")
+	@Mapping(target = "pickedUpAt", expression = "java(result.pickedUpAt())")
+	@Mapping(target = "completedAt", expression = "java(result.completedAt())")
+	@Mapping(target = "rejectionReason", expression = "java(result.rejectionReason())")
+	@Mapping(target = "assignmentScore", expression = "java(result.assignmentScore())")
+	@Mapping(target = "createdAt", expression = "java(result.createdAt())")
+	AssignmentResponse toResponse(AssignmentResult result);
 
-	public AutoAssignmentResponse toResponse(AutoAssignmentResult result) {
-		return new AutoAssignmentResponse(
-				result.assigned(),
-				result.orderId(),
-				result.assignmentId(),
-				result.driverId(),
-				result.distanceKm(),
-				result.score(),
-				result.orderStatus().name(),
-				result.reason());
-	}
+	@Mapping(target = "orderStatus", expression = "java(result.orderStatus().name())")
+	AutoAssignmentResponse toResponse(AutoAssignmentResult result);
 }

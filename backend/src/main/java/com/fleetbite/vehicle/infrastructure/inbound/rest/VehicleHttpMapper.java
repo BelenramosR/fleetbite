@@ -6,26 +6,21 @@ import com.fleetbite.vehicle.application.dto.VehicleResult;
 import com.fleetbite.vehicle.infrastructure.inbound.rest.request.CreateVehicleRequest;
 import com.fleetbite.vehicle.infrastructure.inbound.rest.request.UpdateVehicleRequest;
 import com.fleetbite.vehicle.infrastructure.inbound.rest.response.VehicleResponse;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Component
-public class VehicleHttpMapper {
+@Mapper(componentModel = "spring")
+public interface VehicleHttpMapper {
 
-	public CreateVehicleCommand toCommand(CreateVehicleRequest request) {
-		return new CreateVehicleCommand(request.plate(), request.type());
-	}
+	CreateVehicleCommand toCommand(CreateVehicleRequest request);
 
-	public UpdateVehicleCommand toCommand(UpdateVehicleRequest request) {
-		return new UpdateVehicleCommand(request.plate(), request.type());
-	}
+	UpdateVehicleCommand toCommand(UpdateVehicleRequest request);
 
-	public VehicleResponse toResponse(VehicleResult result) {
-		return new VehicleResponse(
-				result.id(),
-				result.plate(),
-				result.type().name(),
-				result.status().name(),
-				result.createdAt(),
-				result.updatedAt());
-	}
+	@Mapping(target = "id", expression = "java(result.id())")
+	@Mapping(target = "plate", expression = "java(result.plate())")
+	@Mapping(target = "type", expression = "java(result.type().name())")
+	@Mapping(target = "status", expression = "java(result.status().name())")
+	@Mapping(target = "createdAt", expression = "java(result.createdAt())")
+	@Mapping(target = "updatedAt", expression = "java(result.updatedAt())")
+	VehicleResponse toResponse(VehicleResult result);
 }

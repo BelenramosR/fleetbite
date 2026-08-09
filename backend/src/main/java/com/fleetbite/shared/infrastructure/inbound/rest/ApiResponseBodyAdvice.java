@@ -1,6 +1,5 @@
 package com.fleetbite.shared.infrastructure.inbound.rest;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;

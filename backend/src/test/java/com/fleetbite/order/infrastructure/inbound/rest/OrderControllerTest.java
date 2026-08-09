@@ -63,7 +63,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = OrderController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({OrderHttpMapper.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
+@Import({OrderHttpMapperImpl.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
 class OrderControllerTest {
 
 	private static final OffsetDateTime CREATED_AT =

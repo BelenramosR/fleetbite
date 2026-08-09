@@ -4,6 +4,8 @@ import com.fleetbite.identity.domain.model.RefreshToken;
 import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -15,13 +17,17 @@ public abstract class RefreshTokenPersistenceMapper {
 		Objects.requireNonNull(refreshToken, "refreshToken is required");
 		RefreshTokenJpaEntity entity = new RefreshTokenJpaEntity();
 		entity.setId(refreshToken.id());
-		entity.setUserId(refreshToken.userId().value());
-		entity.setTokenHash(refreshToken.tokenHash());
-		entity.setExpiresAt(refreshToken.expiresAt());
-		entity.setCreatedAt(refreshToken.createdAt());
-		entity.setRevokedAt(refreshToken.revokedAt());
+		copyPersistableState(refreshToken, entity);
 		return entity;
 	}
+
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "userId", expression = "java(refreshToken.userId().value())")
+	@Mapping(target = "tokenHash", expression = "java(refreshToken.tokenHash())")
+	@Mapping(target = "expiresAt", expression = "java(refreshToken.expiresAt())")
+	@Mapping(target = "createdAt", expression = "java(refreshToken.createdAt())")
+	@Mapping(target = "revokedAt", expression = "java(refreshToken.revokedAt())")
+	protected abstract void copyPersistableState(RefreshToken refreshToken, @MappingTarget RefreshTokenJpaEntity entity);
 
 	public RefreshToken toDomain(RefreshTokenJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");

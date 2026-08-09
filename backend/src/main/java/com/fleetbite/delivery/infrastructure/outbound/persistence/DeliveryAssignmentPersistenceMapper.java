@@ -6,6 +6,8 @@ import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -31,19 +33,22 @@ public abstract class DeliveryAssignmentPersistenceMapper {
 		copyPersistableState(assignment, existingEntity);
 	}
 
-	protected void copyPersistableState(DeliveryAssignment assignment, DeliveryAssignmentJpaEntity entity) {
-		entity.setOrderId(assignment.orderId().value());
-		entity.setDriverId(assignment.driverId().value());
-		entity.setStatus(assignment.status());
-		entity.setAssignedAt(assignment.assignedAt());
-		entity.setAcceptedAt(assignment.acceptedAt());
-		entity.setRejectedAt(assignment.rejectedAt());
-		entity.setPickedUpAt(assignment.pickedUpAt());
-		entity.setCompletedAt(assignment.completedAt());
-		entity.setRejectionReason(assignment.rejectionReason());
-		entity.setAssignmentScore(assignment.assignmentScore());
-		entity.setCreatedAt(assignment.createdAt());
-	}
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "version", ignore = true)
+	@Mapping(target = "orderId", expression = "java(assignment.orderId().value())")
+	@Mapping(target = "driverId", expression = "java(assignment.driverId().value())")
+	@Mapping(target = "status", expression = "java(assignment.status())")
+	@Mapping(target = "assignedAt", expression = "java(assignment.assignedAt())")
+	@Mapping(target = "acceptedAt", expression = "java(assignment.acceptedAt())")
+	@Mapping(target = "rejectedAt", expression = "java(assignment.rejectedAt())")
+	@Mapping(target = "pickedUpAt", expression = "java(assignment.pickedUpAt())")
+	@Mapping(target = "completedAt", expression = "java(assignment.completedAt())")
+	@Mapping(target = "rejectionReason", expression = "java(assignment.rejectionReason())")
+	@Mapping(target = "assignmentScore", expression = "java(assignment.assignmentScore())")
+	@Mapping(target = "createdAt", expression = "java(assignment.createdAt())")
+	protected abstract void copyPersistableState(
+			DeliveryAssignment assignment,
+			@MappingTarget DeliveryAssignmentJpaEntity entity);
 
 	public DeliveryAssignment toDomain(DeliveryAssignmentJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");

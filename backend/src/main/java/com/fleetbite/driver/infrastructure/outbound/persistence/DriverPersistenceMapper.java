@@ -7,6 +7,8 @@ import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -36,22 +38,23 @@ public abstract class DriverPersistenceMapper {
 		copyPersistableState(driver, existingEntity);
 	}
 
-	protected void copyPersistableState(Driver driver, DriverJpaEntity entity) {
-		entity.setUserId(driver.userId().value());
-		entity.setPhone(driver.phone());
-		entity.setStatus(driver.status());
-		if (driver.currentLocation() == null) {
-			entity.setCurrentLatitude(null);
-			entity.setCurrentLongitude(null);
-		}
-		else {
-			entity.setCurrentLatitude(toCoordinate(driver.currentLocation().latitude()));
-			entity.setCurrentLongitude(toCoordinate(driver.currentLocation().longitude()));
-		}
-		entity.setVehicleId(driver.vehicleId() == null ? null : driver.vehicleId().value());
-		entity.setCreatedAt(driver.createdAt());
-		entity.setUpdatedAt(driver.updatedAt());
-	}
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "version", ignore = true)
+	@Mapping(target = "userId", expression = "java(driver.userId().value())")
+	@Mapping(target = "phone", expression = "java(driver.phone())")
+	@Mapping(target = "status", expression = "java(driver.status())")
+	@Mapping(
+			target = "currentLatitude",
+			expression = "java(driver.currentLocation() == null ? null : toCoordinate(driver.currentLocation().latitude()))")
+	@Mapping(
+			target = "currentLongitude",
+			expression = "java(driver.currentLocation() == null ? null : toCoordinate(driver.currentLocation().longitude()))")
+	@Mapping(
+			target = "vehicleId",
+			expression = "java(driver.vehicleId() == null ? null : driver.vehicleId().value())")
+	@Mapping(target = "createdAt", expression = "java(driver.createdAt())")
+	@Mapping(target = "updatedAt", expression = "java(driver.updatedAt())")
+	protected abstract void copyPersistableState(Driver driver, @MappingTarget DriverJpaEntity entity);
 
 	public Driver toDomain(DriverJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");

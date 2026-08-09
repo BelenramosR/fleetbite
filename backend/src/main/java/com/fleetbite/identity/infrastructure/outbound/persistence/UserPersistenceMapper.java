@@ -4,6 +4,8 @@ import com.fleetbite.identity.domain.model.User;
 import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -28,15 +30,16 @@ public abstract class UserPersistenceMapper {
 		copyPersistableState(user, existingEntity);
 	}
 
-	protected void copyPersistableState(User user, UserJpaEntity entity) {
-		entity.setEmail(user.email());
-		entity.setPasswordHash(user.passwordHash());
-		entity.setFullName(user.fullName());
-		entity.setRole(user.role());
-		entity.setStatus(user.status());
-		entity.setCreatedAt(user.createdAt());
-		entity.setUpdatedAt(user.updatedAt());
-	}
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "version", ignore = true)
+	@Mapping(target = "email", expression = "java(user.email())")
+	@Mapping(target = "passwordHash", expression = "java(user.passwordHash())")
+	@Mapping(target = "fullName", expression = "java(user.fullName())")
+	@Mapping(target = "role", expression = "java(user.role())")
+	@Mapping(target = "status", expression = "java(user.status())")
+	@Mapping(target = "createdAt", expression = "java(user.createdAt())")
+	@Mapping(target = "updatedAt", expression = "java(user.updatedAt())")
+	protected abstract void copyPersistableState(User user, @MappingTarget UserJpaEntity entity);
 
 	public User toDomain(UserJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");

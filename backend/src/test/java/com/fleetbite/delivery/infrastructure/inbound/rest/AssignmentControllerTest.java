@@ -51,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = AssignmentController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({AssignmentHttpMapper.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
+@Import({AssignmentHttpMapperImpl.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
 class AssignmentControllerTest {
 
 	private static final OffsetDateTime ASSIGNED_AT =

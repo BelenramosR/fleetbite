@@ -7,6 +7,8 @@ import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -41,28 +43,29 @@ public abstract class OrderPersistenceMapper {
 		copyPersistableState(order, existingEntity);
 	}
 
-	protected void copyPersistableState(Order order, OrderJpaEntity entity) {
-		entity.setCode(order.code().value());
-		entity.setCustomerName(order.customerName());
-		entity.setCustomerPhone(order.customerPhone());
-		entity.setDeliveryAddress(order.deliveryAddress());
-		entity.setDeliveryLatitude(toCoordinate(order.deliveryLocation().latitude()));
-		entity.setDeliveryLongitude(toCoordinate(order.deliveryLocation().longitude()));
-		entity.setTotalAmount(order.totalAmount().amount());
-		entity.setStatus(order.status());
-		entity.setPriority(order.priority());
-		entity.setPromisedDeliveryAt(order.promisedDeliveryAt());
-		entity.setCreatedAt(order.createdAt());
-		entity.setConfirmedAt(order.confirmedAt());
-		entity.setPreparationStartedAt(order.preparationStartedAt());
-		entity.setReadyAt(order.readyAt());
-		entity.setAssignedAt(order.assignedAt());
-		entity.setPickedUpAt(order.pickedUpAt());
-		entity.setInTransitAt(order.inTransitAt());
-		entity.setDeliveredAt(order.deliveredAt());
-		entity.setCancelledAt(order.cancelledAt());
-		entity.setFailedDeliveryAt(order.failedDeliveryAt());
-	}
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "version", ignore = true)
+	@Mapping(target = "code", expression = "java(order.code().value())")
+	@Mapping(target = "customerName", expression = "java(order.customerName())")
+	@Mapping(target = "customerPhone", expression = "java(order.customerPhone())")
+	@Mapping(target = "deliveryAddress", expression = "java(order.deliveryAddress())")
+	@Mapping(target = "deliveryLatitude", expression = "java(toCoordinate(order.deliveryLocation().latitude()))")
+	@Mapping(target = "deliveryLongitude", expression = "java(toCoordinate(order.deliveryLocation().longitude()))")
+	@Mapping(target = "totalAmount", expression = "java(order.totalAmount().amount())")
+	@Mapping(target = "status", expression = "java(order.status())")
+	@Mapping(target = "priority", expression = "java(order.priority())")
+	@Mapping(target = "promisedDeliveryAt", expression = "java(order.promisedDeliveryAt())")
+	@Mapping(target = "createdAt", expression = "java(order.createdAt())")
+	@Mapping(target = "confirmedAt", expression = "java(order.confirmedAt())")
+	@Mapping(target = "preparationStartedAt", expression = "java(order.preparationStartedAt())")
+	@Mapping(target = "readyAt", expression = "java(order.readyAt())")
+	@Mapping(target = "assignedAt", expression = "java(order.assignedAt())")
+	@Mapping(target = "pickedUpAt", expression = "java(order.pickedUpAt())")
+	@Mapping(target = "inTransitAt", expression = "java(order.inTransitAt())")
+	@Mapping(target = "deliveredAt", expression = "java(order.deliveredAt())")
+	@Mapping(target = "cancelledAt", expression = "java(order.cancelledAt())")
+	@Mapping(target = "failedDeliveryAt", expression = "java(order.failedDeliveryAt())")
+	protected abstract void copyPersistableState(Order order, @MappingTarget OrderJpaEntity entity);
 
 	public Order toDomain(OrderJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");

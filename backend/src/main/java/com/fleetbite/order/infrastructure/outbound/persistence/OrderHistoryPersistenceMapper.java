@@ -5,6 +5,8 @@ import com.fleetbite.order.domain.model.OrderHistoryEventId;
 import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -16,15 +18,19 @@ public abstract class OrderHistoryPersistenceMapper {
 		Objects.requireNonNull(event, "event is required");
 		OrderHistoryJpaEntity entity = new OrderHistoryJpaEntity();
 		entity.setId(event.id().value());
-		entity.setOrderId(event.orderId().value());
-		entity.setEventType(event.eventType());
-		entity.setPreviousStatus(event.previousStatus());
-		entity.setNewStatus(event.newStatus());
-		entity.setDescription(event.description());
-		entity.setPerformedBy(event.performedBy());
-		entity.setCreatedAt(event.createdAt());
+		copyPersistableState(event, entity);
 		return entity;
 	}
+
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "orderId", expression = "java(event.orderId().value())")
+	@Mapping(target = "eventType", expression = "java(event.eventType())")
+	@Mapping(target = "previousStatus", expression = "java(event.previousStatus())")
+	@Mapping(target = "newStatus", expression = "java(event.newStatus())")
+	@Mapping(target = "description", expression = "java(event.description())")
+	@Mapping(target = "performedBy", expression = "java(event.performedBy())")
+	@Mapping(target = "createdAt", expression = "java(event.createdAt())")
+	protected abstract void copyPersistableState(OrderHistoryEvent event, @MappingTarget OrderHistoryJpaEntity entity);
 
 	public OrderHistoryEvent toDomain(OrderHistoryJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");

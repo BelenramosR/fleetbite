@@ -54,7 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = DriverController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({DriverHttpMapper.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
+@Import({DriverHttpMapperImpl.class, GlobalExceptionHandler.class, ApiResponseBodyAdvice.class})
 class DriverControllerTest {
 
 	private static final OffsetDateTime CREATED_AT =

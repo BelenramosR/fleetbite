@@ -10,39 +10,32 @@ import com.fleetbite.driver.infrastructure.inbound.rest.request.UpdateDriverLoca
 import com.fleetbite.driver.infrastructure.inbound.rest.request.UpdateDriverRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.response.DriverResponse;
 import com.fleetbite.driver.infrastructure.inbound.rest.response.DriverVehicleResponse;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Component
-public class DriverHttpMapper {
+@Mapper(componentModel = "spring")
+public interface DriverHttpMapper {
 
-	public UpdateDriverCommand toCommand(UpdateDriverRequest request) {
-		return new UpdateDriverCommand(request.phone());
-	}
+	UpdateDriverCommand toCommand(UpdateDriverRequest request);
 
-	public UpdateDriverLocationCommand toCommand(UpdateDriverLocationRequest request) {
-		return new UpdateDriverLocationCommand(request.latitude(), request.longitude());
-	}
+	UpdateDriverLocationCommand toCommand(UpdateDriverLocationRequest request);
 
-	public AssignVehicleToDriverCommand toCommand(AssignVehicleRequest request) {
-		return new AssignVehicleToDriverCommand(request.vehicleId());
-	}
+	AssignVehicleToDriverCommand toCommand(AssignVehicleRequest request);
 
-	public DriverResponse toResponse(DriverResult result) {
-		return new DriverResponse(
-				result.id(),
-				result.userId(),
-				result.name(),
-				result.phone(),
-				result.status().name(),
-				result.currentLatitude(),
-				result.currentLongitude(),
-				result.vehicleId(),
-				toVehicleResponse(result.vehicle()),
-				result.createdAt(),
-				result.updatedAt());
-	}
+	@Mapping(target = "id", expression = "java(result.id())")
+	@Mapping(target = "userId", expression = "java(result.userId())")
+	@Mapping(target = "name", expression = "java(result.name())")
+	@Mapping(target = "phone", expression = "java(result.phone())")
+	@Mapping(target = "status", expression = "java(result.status().name())")
+	@Mapping(target = "currentLatitude", expression = "java(result.currentLatitude())")
+	@Mapping(target = "currentLongitude", expression = "java(result.currentLongitude())")
+	@Mapping(target = "vehicleId", expression = "java(result.vehicleId())")
+	@Mapping(target = "vehicle", expression = "java(toVehicleResponse(result.vehicle()))")
+	@Mapping(target = "createdAt", expression = "java(result.createdAt())")
+	@Mapping(target = "updatedAt", expression = "java(result.updatedAt())")
+	DriverResponse toResponse(DriverResult result);
 
-	private static DriverVehicleResponse toVehicleResponse(VehicleSummary summary) {
+	default DriverVehicleResponse toVehicleResponse(VehicleSummary summary) {
 		if (summary == null) {
 			return null;
 		}

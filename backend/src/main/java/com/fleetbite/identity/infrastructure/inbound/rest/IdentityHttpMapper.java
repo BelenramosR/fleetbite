@@ -12,47 +12,28 @@ import com.fleetbite.identity.infrastructure.inbound.rest.request.RefreshTokenRe
 import com.fleetbite.identity.infrastructure.inbound.rest.request.UpdateUserRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.response.LoginResponse;
 import com.fleetbite.identity.infrastructure.inbound.rest.response.UserResponse;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Component
-public class IdentityHttpMapper {
+@Mapper(componentModel = "spring")
+public interface IdentityHttpMapper {
 
-	public LoginCommand toCommand(LoginRequest request) {
-		return new LoginCommand(request.email(), request.password());
-	}
+	LoginCommand toCommand(LoginRequest request);
 
-	public RefreshTokenCommand toCommand(RefreshTokenRequest request) {
-		return new RefreshTokenCommand(request.refreshToken());
-	}
+	RefreshTokenCommand toCommand(RefreshTokenRequest request);
 
-	public CreateUserCommand toCommand(CreateUserRequest request) {
-		return new CreateUserCommand(
-				request.email(),
-				request.password(),
-				request.fullName(),
-				request.role());
-	}
+	CreateUserCommand toCommand(CreateUserRequest request);
 
-	public UpdateUserCommand toCommand(UpdateUserRequest request) {
-		return new UpdateUserCommand(request.fullName(), request.role());
-	}
+	UpdateUserCommand toCommand(UpdateUserRequest request);
 
-	public LoginResponse toResponse(LoginResult result) {
-		return new LoginResponse(
-				result.accessToken(),
-				result.tokenType(),
-				result.expiresIn(),
-				result.refreshToken());
-	}
+	LoginResponse toResponse(LoginResult result);
 
-	public UserResponse toResponse(UserResult result) {
-		return new UserResponse(
-				result.id(),
-				result.email(),
-				result.fullName(),
-				result.role().name(),
-				result.status().name(),
-				result.createdAt(),
-				result.updatedAt());
-	}
+	@Mapping(target = "id", expression = "java(result.id())")
+	@Mapping(target = "email", expression = "java(result.email())")
+	@Mapping(target = "fullName", expression = "java(result.fullName())")
+	@Mapping(target = "role", expression = "java(result.role().name())")
+	@Mapping(target = "status", expression = "java(result.status().name())")
+	@Mapping(target = "createdAt", expression = "java(result.createdAt())")
+	@Mapping(target = "updatedAt", expression = "java(result.updatedAt())")
+	UserResponse toResponse(UserResult result);
 }
