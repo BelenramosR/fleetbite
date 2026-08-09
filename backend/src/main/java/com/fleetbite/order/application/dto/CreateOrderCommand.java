@@ -1,7 +1,6 @@
 package com.fleetbite.order.application.dto;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.Objects;
 
 public final class CreateOrderCommand {
@@ -12,7 +11,6 @@ public final class CreateOrderCommand {
 	private final double deliveryLatitude;
 	private final double deliveryLongitude;
 	private final BigDecimal totalAmount;
-	private final Instant promisedDeliveryAt;
 
 	public CreateOrderCommand(
 			String customerName,
@@ -20,15 +18,13 @@ public final class CreateOrderCommand {
 			String deliveryAddress,
 			double deliveryLatitude,
 			double deliveryLongitude,
-			BigDecimal totalAmount,
-			Instant promisedDeliveryAt) {
+			BigDecimal totalAmount) {
 		this.customerName = customerName;
 		this.customerPhone = customerPhone;
 		this.deliveryAddress = deliveryAddress;
 		this.deliveryLatitude = deliveryLatitude;
 		this.deliveryLongitude = deliveryLongitude;
 		this.totalAmount = totalAmount;
-		this.promisedDeliveryAt = promisedDeliveryAt;
 	}
 
 	public String customerName() {
@@ -55,10 +51,6 @@ public final class CreateOrderCommand {
 		return totalAmount;
 	}
 
-	public Instant promisedDeliveryAt() {
-		return promisedDeliveryAt;
-	}
-
 	@Override
 	public boolean equals(Object other) {
 		if (this == other) {
@@ -72,8 +64,7 @@ public final class CreateOrderCommand {
 				&& Objects.equals(customerName, that.customerName)
 				&& Objects.equals(customerPhone, that.customerPhone)
 				&& Objects.equals(deliveryAddress, that.deliveryAddress)
-				&& Objects.equals(totalAmount, that.totalAmount)
-				&& Objects.equals(promisedDeliveryAt, that.promisedDeliveryAt);
+				&& Objects.equals(totalAmount, that.totalAmount);
 	}
 
 	@Override
@@ -84,7 +75,6 @@ public final class CreateOrderCommand {
 				deliveryAddress,
 				deliveryLatitude,
 				deliveryLongitude,
-				totalAmount,
-				promisedDeliveryAt);
+				totalAmount);
 	}
 }

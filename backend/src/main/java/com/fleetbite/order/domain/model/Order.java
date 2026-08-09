@@ -4,7 +4,7 @@ import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
 import com.fleetbite.shared.domain.model.Location;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public final class Order {
@@ -16,20 +16,20 @@ public final class Order {
 	private final String deliveryAddress;
 	private final Location deliveryLocation;
 	private final Money totalAmount;
-	private final Instant promisedDeliveryAt;
-	private final Instant createdAt;
+	private final OffsetDateTime promisedDeliveryAt;
+	private final OffsetDateTime createdAt;
 
 	private OrderPriority priority;
 	private OrderStatus status;
-	private Instant confirmedAt;
-	private Instant preparationStartedAt;
-	private Instant readyAt;
-	private Instant assignedAt;
-	private Instant pickedUpAt;
-	private Instant inTransitAt;
-	private Instant deliveredAt;
-	private Instant cancelledAt;
-	private Instant failedDeliveryAt;
+	private OffsetDateTime confirmedAt;
+	private OffsetDateTime preparationStartedAt;
+	private OffsetDateTime readyAt;
+	private OffsetDateTime assignedAt;
+	private OffsetDateTime pickedUpAt;
+	private OffsetDateTime inTransitAt;
+	private OffsetDateTime deliveredAt;
+	private OffsetDateTime cancelledAt;
+	private OffsetDateTime failedDeliveryAt;
 
 	private Order(
 			OrderId id,
@@ -39,8 +39,19 @@ public final class Order {
 			String deliveryAddress,
 			Location deliveryLocation,
 			Money totalAmount,
-			Instant promisedDeliveryAt,
-			Instant createdAt) {
+			OrderPriority priority,
+			OrderStatus status,
+			OffsetDateTime promisedDeliveryAt,
+			OffsetDateTime createdAt,
+			OffsetDateTime confirmedAt,
+			OffsetDateTime preparationStartedAt,
+			OffsetDateTime readyAt,
+			OffsetDateTime assignedAt,
+			OffsetDateTime pickedUpAt,
+			OffsetDateTime inTransitAt,
+			OffsetDateTime deliveredAt,
+			OffsetDateTime cancelledAt,
+			OffsetDateTime failedDeliveryAt) {
 		this.id = id;
 		this.code = code;
 		this.customerName = customerName;
@@ -48,10 +59,19 @@ public final class Order {
 		this.deliveryAddress = deliveryAddress;
 		this.deliveryLocation = deliveryLocation;
 		this.totalAmount = totalAmount;
+		this.priority = priority;
+		this.status = status;
 		this.promisedDeliveryAt = promisedDeliveryAt;
 		this.createdAt = createdAt;
-		this.priority = OrderPriority.NORMAL;
-		this.status = OrderStatus.CREATED;
+		this.confirmedAt = confirmedAt;
+		this.preparationStartedAt = preparationStartedAt;
+		this.readyAt = readyAt;
+		this.assignedAt = assignedAt;
+		this.pickedUpAt = pickedUpAt;
+		this.inTransitAt = inTransitAt;
+		this.deliveredAt = deliveredAt;
+		this.cancelledAt = cancelledAt;
+		this.failedDeliveryAt = failedDeliveryAt;
 	}
 
 	public static Order create(
@@ -62,8 +82,8 @@ public final class Order {
 			String deliveryAddress,
 			Location deliveryLocation,
 			Money totalAmount,
-			Instant promisedDeliveryAt) {
-		Instant createdAt = Instant.now();
+			OffsetDateTime createdAt,
+			OffsetDateTime promisedDeliveryAt) {
 		validateCreation(
 				id,
 				code,
@@ -82,57 +102,150 @@ public final class Order {
 				requireText(deliveryAddress, "deliveryAddress"),
 				deliveryLocation,
 				totalAmount,
+				OrderPriority.NORMAL,
+				OrderStatus.CREATED,
 				promisedDeliveryAt,
-				createdAt);
+				createdAt,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null);
 	}
 
-	public void confirm() {
+	/**
+	 * Rebuilds an existing aggregate from persistence without running the state machine
+	 * or altering timestamps.
+	 */
+	public static Order reconstitute(
+			OrderId id,
+			OrderCode code,
+			String customerName,
+			String customerPhone,
+			String deliveryAddress,
+			Location deliveryLocation,
+			Money totalAmount,
+			OrderPriority priority,
+			OrderStatus status,
+			OffsetDateTime promisedDeliveryAt,
+			OffsetDateTime createdAt,
+			OffsetDateTime confirmedAt,
+			OffsetDateTime preparationStartedAt,
+			OffsetDateTime readyAt,
+			OffsetDateTime assignedAt,
+			OffsetDateTime pickedUpAt,
+			OffsetDateTime inTransitAt,
+			OffsetDateTime deliveredAt,
+			OffsetDateTime cancelledAt,
+			OffsetDateTime failedDeliveryAt) {
+		if (id == null) {
+			throw new InvalidOrderDataException("orderId is required");
+		}
+		if (code == null) {
+			throw new InvalidOrderDataException("orderCode is required");
+		}
+		if (status == null) {
+			throw new InvalidOrderDataException("status is required");
+		}
+		if (priority == null) {
+			throw new InvalidOrderDataException("priority is required");
+		}
+		if (createdAt == null) {
+			throw new InvalidOrderDataException("createdAt is required");
+		}
+		if (deliveryLocation == null) {
+			throw new InvalidOrderDataException("deliveryLocation is required");
+		}
+		if (totalAmount == null) {
+			throw new InvalidOrderDataException("totalAmount is required");
+		}
+		if (promisedDeliveryAt == null) {
+			throw new InvalidOrderDataException("promisedDeliveryAt is required");
+		}
+
+		return new Order(
+				id,
+				code,
+				requireText(customerName, "customerName"),
+				requireText(customerPhone, "customerPhone"),
+				requireText(deliveryAddress, "deliveryAddress"),
+				deliveryLocation,
+				totalAmount,
+				priority,
+				status,
+				promisedDeliveryAt,
+				createdAt,
+				confirmedAt,
+				preparationStartedAt,
+				readyAt,
+				assignedAt,
+				pickedUpAt,
+				inTransitAt,
+				deliveredAt,
+				cancelledAt,
+				failedDeliveryAt);
+	}
+
+	public void confirm(OffsetDateTime now) {
+		requireTimestamp(now);
 		transitionTo(OrderStatus.CONFIRMED);
-		this.confirmedAt = Instant.now();
+		this.confirmedAt = now;
 	}
 
-	public void startPreparation() {
+	public void startPreparation(OffsetDateTime now) {
+		requireTimestamp(now);
 		transitionTo(OrderStatus.PREPARING);
-		this.preparationStartedAt = Instant.now();
+		this.preparationStartedAt = now;
 	}
 
-	public void markReady() {
+	public void markReady(OffsetDateTime now) {
+		requireTimestamp(now);
 		transitionTo(OrderStatus.READY);
-		this.readyAt = Instant.now();
+		this.readyAt = now;
 	}
 
 	public void markWaitingForDriver() {
 		transitionTo(OrderStatus.WAITING_FOR_DRIVER);
 	}
 
-	public void assign() {
+	public void assign(OffsetDateTime now) {
+		requireTimestamp(now);
 		transitionTo(OrderStatus.ASSIGNED);
-		this.assignedAt = Instant.now();
+		this.assignedAt = now;
 	}
 
-	public void markPickedUp() {
+	public void pickUp(OffsetDateTime now) {
+		requireTimestamp(now);
 		transitionTo(OrderStatus.PICKED_UP);
-		this.pickedUpAt = Instant.now();
+		this.pickedUpAt = now;
 	}
 
-	public void startTransit() {
+	public void startDelivery(OffsetDateTime now) {
+		requireTimestamp(now);
 		transitionTo(OrderStatus.IN_TRANSIT);
-		this.inTransitAt = Instant.now();
+		this.inTransitAt = now;
 	}
 
-	public void markDelivered() {
+	public void deliver(OffsetDateTime now) {
+		requireTimestamp(now);
 		transitionTo(OrderStatus.DELIVERED);
-		this.deliveredAt = Instant.now();
+		this.deliveredAt = now;
 	}
 
-	public void cancel() {
+	public void cancel(OffsetDateTime now) {
+		requireTimestamp(now);
 		transitionTo(OrderStatus.CANCELLED);
-		this.cancelledAt = Instant.now();
+		this.cancelledAt = now;
 	}
 
-	public void markFailedDelivery() {
+	public void failDelivery(OffsetDateTime now) {
+		requireTimestamp(now);
 		transitionTo(OrderStatus.FAILED_DELIVERY);
-		this.failedDeliveryAt = Instant.now();
+		this.failedDeliveryAt = now;
 	}
 
 	public OrderId id() {
@@ -171,47 +284,47 @@ public final class Order {
 		return status;
 	}
 
-	public Instant promisedDeliveryAt() {
+	public OffsetDateTime promisedDeliveryAt() {
 		return promisedDeliveryAt;
 	}
 
-	public Instant createdAt() {
+	public OffsetDateTime createdAt() {
 		return createdAt;
 	}
 
-	public Instant confirmedAt() {
+	public OffsetDateTime confirmedAt() {
 		return confirmedAt;
 	}
 
-	public Instant preparationStartedAt() {
+	public OffsetDateTime preparationStartedAt() {
 		return preparationStartedAt;
 	}
 
-	public Instant readyAt() {
+	public OffsetDateTime readyAt() {
 		return readyAt;
 	}
 
-	public Instant assignedAt() {
+	public OffsetDateTime assignedAt() {
 		return assignedAt;
 	}
 
-	public Instant pickedUpAt() {
+	public OffsetDateTime pickedUpAt() {
 		return pickedUpAt;
 	}
 
-	public Instant inTransitAt() {
+	public OffsetDateTime inTransitAt() {
 		return inTransitAt;
 	}
 
-	public Instant deliveredAt() {
+	public OffsetDateTime deliveredAt() {
 		return deliveredAt;
 	}
 
-	public Instant cancelledAt() {
+	public OffsetDateTime cancelledAt() {
 		return cancelledAt;
 	}
 
-	public Instant failedDeliveryAt() {
+	public OffsetDateTime failedDeliveryAt() {
 		return failedDeliveryAt;
 	}
 
@@ -244,8 +357,8 @@ public final class Order {
 			String deliveryAddress,
 			Location deliveryLocation,
 			Money totalAmount,
-			Instant promisedDeliveryAt,
-			Instant createdAt) {
+			OffsetDateTime promisedDeliveryAt,
+			OffsetDateTime createdAt) {
 		if (id == null) {
 			throw new InvalidOrderDataException("orderId is required");
 		}
@@ -261,11 +374,20 @@ public final class Order {
 		if (totalAmount == null) {
 			throw new InvalidOrderDataException("totalAmount is required");
 		}
+		if (createdAt == null) {
+			throw new InvalidOrderDataException("createdAt is required");
+		}
 		if (promisedDeliveryAt == null) {
 			throw new InvalidOrderDataException("promisedDeliveryAt is required");
 		}
 		if (!promisedDeliveryAt.isAfter(createdAt)) {
 			throw new InvalidOrderDataException("promisedDeliveryAt must be after createdAt");
+		}
+	}
+
+	private static void requireTimestamp(OffsetDateTime now) {
+		if (now == null) {
+			throw new InvalidOrderDataException("timestamp is required");
 		}
 	}
 

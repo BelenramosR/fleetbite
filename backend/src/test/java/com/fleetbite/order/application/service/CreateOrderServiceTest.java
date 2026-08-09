@@ -7,6 +7,7 @@ import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderPriority;
 import com.fleetbite.order.domain.model.OrderStatus;
+import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,12 +16,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.Clock;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
+import java.time.OffsetDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,6 +32,13 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CreateOrderServiceTest {
 
+	private static final OffsetDateTime FIXED_CREATED =
+			OffsetDateTime.of(2026, 8, 8, 22, 0, 0, 0, BusinessTime.ZONE_OFFSET);
+	private static final OffsetDateTime FIXED_PROMISED =
+			OffsetDateTime.of(2026, 8, 8, 22, 45, 0, 0, BusinessTime.ZONE_OFFSET);
+	private static final Clock FIXED_CLOCK =
+			Clock.fixed(FIXED_CREATED.toInstant(), BusinessTime.ZONE_OFFSET);
+
 	@Mock
 	private OrderRepositoryPort orderRepositoryPort;
 
@@ -39,7 +46,7 @@ class CreateOrderServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		createOrderService = new CreateOrderService(orderRepositoryPort);
+		createOrderService = new CreateOrderService(orderRepositoryPort, FIXED_CLOCK);
 	}
 
 	@Test
@@ -55,15 +62,14 @@ class CreateOrderServiceTest {
 
 		assertEquals(OrderStatus.CREATED, saved.status());
 		assertEquals(OrderPriority.NORMAL, saved.priority());
-		assertTrue(saved.code().value().startsWith("ORD-" + LocalDate.now().getYear() + "-"));
+		assertEquals(FIXED_CREATED, saved.createdAt());
+		assertEquals(FIXED_PROMISED, saved.promisedDeliveryAt());
+		assertTrue(saved.code().value().startsWith("ORD-" + LocalDate.ofInstant(FIXED_CLOCK.instant(), BusinessTime.ZONE_OFFSET).getYear() + "-"));
 		assertEquals(command.customerName(), result.customerName());
+		assertEquals(FIXED_CREATED, result.createdAt());
+		assertEquals(FIXED_PROMISED, result.promisedDeliveryAt());
 		assertEquals(OrderStatus.CREATED, result.status());
-		assertEquals(OrderPriority.NORMAL, result.priority());
-		assertNotNull(result.id());
-		assertNotNull(result.createdAt());
 		assertNull(result.confirmedAt());
-		assertNull(result.readyAt());
-		assertNull(result.deliveredAt());
 	}
 
 	@Test
@@ -74,8 +80,7 @@ class CreateOrderServiceTest {
 				"Av. Example 123",
 				-12.1001,
 				-77.0201,
-				new BigDecimal("85.90"),
-				Instant.now().plus(45, ChronoUnit.MINUTES));
+				new BigDecimal("85.90"));
 
 		assertThrows(InvalidOrderDataException.class, () -> createOrderService.execute(command));
 		verify(orderRepositoryPort, never()).save(any());
@@ -88,7 +93,6 @@ class CreateOrderServiceTest {
 				"Av. Example 123",
 				-12.1001,
 				-77.0201,
-				new BigDecimal("85.90"),
-				Instant.now().plus(45, ChronoUnit.MINUTES));
+				new BigDecimal("85.90"));
 	}
 }

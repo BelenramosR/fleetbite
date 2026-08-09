@@ -5,7 +5,7 @@ import com.fleetbite.order.domain.model.OrderPriority;
 import com.fleetbite.order.domain.model.OrderStatus;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -21,17 +21,17 @@ public final class OrderResult {
 	private final BigDecimal totalAmount;
 	private final OrderPriority priority;
 	private final OrderStatus status;
-	private final Instant promisedDeliveryAt;
-	private final Instant createdAt;
-	private final Instant confirmedAt;
-	private final Instant preparationStartedAt;
-	private final Instant readyAt;
-	private final Instant assignedAt;
-	private final Instant pickedUpAt;
-	private final Instant inTransitAt;
-	private final Instant deliveredAt;
-	private final Instant cancelledAt;
-	private final Instant failedDeliveryAt;
+	private final OffsetDateTime promisedDeliveryAt;
+	private final OffsetDateTime createdAt;
+	private final OffsetDateTime confirmedAt;
+	private final OffsetDateTime preparationStartedAt;
+	private final OffsetDateTime readyAt;
+	private final OffsetDateTime assignedAt;
+	private final OffsetDateTime pickedUpAt;
+	private final OffsetDateTime inTransitAt;
+	private final OffsetDateTime deliveredAt;
+	private final OffsetDateTime cancelledAt;
+	private final OffsetDateTime failedDeliveryAt;
 
 	private OrderResult(
 			UUID id,
@@ -44,17 +44,17 @@ public final class OrderResult {
 			BigDecimal totalAmount,
 			OrderPriority priority,
 			OrderStatus status,
-			Instant promisedDeliveryAt,
-			Instant createdAt,
-			Instant confirmedAt,
-			Instant preparationStartedAt,
-			Instant readyAt,
-			Instant assignedAt,
-			Instant pickedUpAt,
-			Instant inTransitAt,
-			Instant deliveredAt,
-			Instant cancelledAt,
-			Instant failedDeliveryAt) {
+			OffsetDateTime promisedDeliveryAt,
+			OffsetDateTime createdAt,
+			OffsetDateTime confirmedAt,
+			OffsetDateTime preparationStartedAt,
+			OffsetDateTime readyAt,
+			OffsetDateTime assignedAt,
+			OffsetDateTime pickedUpAt,
+			OffsetDateTime inTransitAt,
+			OffsetDateTime deliveredAt,
+			OffsetDateTime cancelledAt,
+			OffsetDateTime failedDeliveryAt) {
 		this.id = id;
 		this.code = code;
 		this.customerName = customerName;
@@ -144,47 +144,47 @@ public final class OrderResult {
 		return status;
 	}
 
-	public Instant promisedDeliveryAt() {
+	public OffsetDateTime promisedDeliveryAt() {
 		return promisedDeliveryAt;
 	}
 
-	public Instant createdAt() {
+	public OffsetDateTime createdAt() {
 		return createdAt;
 	}
 
-	public Instant confirmedAt() {
+	public OffsetDateTime confirmedAt() {
 		return confirmedAt;
 	}
 
-	public Instant preparationStartedAt() {
+	public OffsetDateTime preparationStartedAt() {
 		return preparationStartedAt;
 	}
 
-	public Instant readyAt() {
+	public OffsetDateTime readyAt() {
 		return readyAt;
 	}
 
-	public Instant assignedAt() {
+	public OffsetDateTime assignedAt() {
 		return assignedAt;
 	}
 
-	public Instant pickedUpAt() {
+	public OffsetDateTime pickedUpAt() {
 		return pickedUpAt;
 	}
 
-	public Instant inTransitAt() {
+	public OffsetDateTime inTransitAt() {
 		return inTransitAt;
 	}
 
-	public Instant deliveredAt() {
+	public OffsetDateTime deliveredAt() {
 		return deliveredAt;
 	}
 
-	public Instant cancelledAt() {
+	public OffsetDateTime cancelledAt() {
 		return cancelledAt;
 	}
 
-	public Instant failedDeliveryAt() {
+	public OffsetDateTime failedDeliveryAt() {
 		return failedDeliveryAt;
 	}
 }

@@ -3,19 +3,25 @@ package com.fleetbite.order.domain.model;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
 import com.fleetbite.shared.domain.model.Location;
+import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.OffsetDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OrderTest {
+
+	private static final OffsetDateTime CREATED_AT =
+			OffsetDateTime.of(2026, 8, 8, 22, 0, 0, 0, BusinessTime.ZONE_OFFSET);
+	private static final OffsetDateTime PROMISED_AT =
+			OffsetDateTime.of(2026, 8, 8, 22, 45, 0, 0, BusinessTime.ZONE_OFFSET);
+	private static final OffsetDateTime LATER =
+			OffsetDateTime.of(2026, 8, 8, 23, 0, 0, 0, BusinessTime.ZONE_OFFSET);
 
 	@Test
 	void create_shouldInitializeOrderInCreatedWithNormalPriority() {
@@ -23,7 +29,8 @@ class OrderTest {
 
 		assertEquals(OrderStatus.CREATED, order.status());
 		assertEquals(OrderPriority.NORMAL, order.priority());
-		assertNotNull(order.createdAt());
+		assertEquals(CREATED_AT, order.createdAt());
+		assertEquals(PROMISED_AT, order.promisedDeliveryAt());
 		assertNull(order.confirmedAt());
 		assertNull(order.preparationStartedAt());
 		assertNull(order.readyAt());
@@ -42,12 +49,13 @@ class OrderTest {
 		assertThrows(InvalidOrderDataException.class, () -> Order.create(
 				OrderId.generate(),
 				OrderCode.of("ORD-2026-0001"),
-				" ",
+				"   ",
 				"999999999",
 				"Av. Example 123",
 				new Location(-12.1001, -77.0201),
 				Money.of(new BigDecimal("10.00")),
-				Instant.now().plus(45, ChronoUnit.MINUTES)));
+				CREATED_AT,
+				PROMISED_AT));
 	}
 
 	@Test
@@ -65,7 +73,8 @@ class OrderTest {
 				"Av. Example 123",
 				new Location(-12.1001, -77.0201),
 				Money.of(new BigDecimal("10.00")),
-				Instant.now().minus(1, ChronoUnit.MINUTES)));
+				CREATED_AT,
+				CREATED_AT.minusMinutes(1)));
 	}
 
 	@Test
@@ -78,119 +87,119 @@ class OrderTest {
 				"Av. Example 123",
 				null,
 				Money.of(new BigDecimal("10.00")),
-				Instant.now().plus(45, ChronoUnit.MINUTES)));
+				CREATED_AT,
+				PROMISED_AT));
 	}
 
 	@Test
 	void confirm_shouldTransitionFromCreatedToConfirmed() {
 		Order order = validOrder();
 
-		order.confirm();
+		order.confirm(LATER);
 
 		assertEquals(OrderStatus.CONFIRMED, order.status());
-		assertNotNull(order.confirmedAt());
+		assertEquals(LATER, order.confirmedAt());
 	}
 
 	@Test
 	void startPreparation_shouldTransitionFromConfirmedToPreparing() {
 		Order order = orderIn(OrderStatus.CONFIRMED);
 
-		order.startPreparation();
+		order.startPreparation(LATER);
 
 		assertEquals(OrderStatus.PREPARING, order.status());
-		assertNotNull(order.preparationStartedAt());
+		assertEquals(LATER, order.preparationStartedAt());
 	}
 
 	@Test
 	void markReady_shouldTransitionFromPreparingToReady() {
 		Order order = orderIn(OrderStatus.PREPARING);
 
-		order.markReady();
+		order.markReady(LATER);
 
 		assertEquals(OrderStatus.READY, order.status());
-		assertNotNull(order.readyAt());
+		assertEquals(LATER, order.readyAt());
 	}
 
 	@Test
 	void markWaitingForDriverAndAssign_shouldReachAssignedFromReady() {
-		// Flujo aprobado: READY -> WAITING_FOR_DRIVER -> ASSIGNED (no hay salto directo)
 		Order order = orderIn(OrderStatus.READY);
 
 		order.markWaitingForDriver();
 		assertEquals(OrderStatus.WAITING_FOR_DRIVER, order.status());
 
-		order.assign();
+		order.assign(LATER);
 		assertEquals(OrderStatus.ASSIGNED, order.status());
-		assertNotNull(order.assignedAt());
+		assertEquals(LATER, order.assignedAt());
 	}
 
 	@Test
 	void assign_shouldRejectDirectTransitionFromReady() {
 		Order order = orderIn(OrderStatus.READY);
 
-		assertThrows(InvalidOrderTransitionException.class, order::assign);
+		assertThrows(InvalidOrderTransitionException.class, () -> order.assign(LATER));
 		assertEquals(OrderStatus.READY, order.status());
 	}
 
 	@Test
-	void markPickedUp_shouldTransitionFromAssignedToPickedUp() {
+	void pickUp_shouldTransitionFromAssignedToPickedUp() {
 		Order order = orderIn(OrderStatus.ASSIGNED);
 
-		order.markPickedUp();
+		order.pickUp(LATER);
 
 		assertEquals(OrderStatus.PICKED_UP, order.status());
-		assertNotNull(order.pickedUpAt());
+		assertEquals(LATER, order.pickedUpAt());
 	}
 
 	@Test
-	void startTransit_shouldTransitionFromPickedUpToInTransit() {
+	void startDelivery_shouldTransitionFromPickedUpToInTransit() {
 		Order order = orderIn(OrderStatus.PICKED_UP);
 
-		order.startTransit();
+		order.startDelivery(LATER);
 
 		assertEquals(OrderStatus.IN_TRANSIT, order.status());
-		assertNotNull(order.inTransitAt());
+		assertEquals(LATER, order.inTransitAt());
 	}
 
 	@Test
-	void markDelivered_shouldTransitionFromInTransitToDelivered() {
+	void deliver_shouldTransitionFromInTransitToDelivered() {
 		Order order = orderIn(OrderStatus.IN_TRANSIT);
 
-		order.markDelivered();
+		order.deliver(LATER);
 
 		assertEquals(OrderStatus.DELIVERED, order.status());
-		assertNotNull(order.deliveredAt());
+		assertEquals(LATER, order.deliveredAt());
 	}
 
 	@Test
 	void cancel_shouldBeAllowedFromCreatedConfirmedAndPreparing() {
 		Order created = validOrder();
-		created.cancel();
+		created.cancel(LATER);
 		assertEquals(OrderStatus.CANCELLED, created.status());
-		assertNotNull(created.cancelledAt());
+		assertEquals(LATER, created.cancelledAt());
 
 		Order confirmed = orderIn(OrderStatus.CONFIRMED);
-		confirmed.cancel();
+		confirmed.cancel(LATER);
 		assertEquals(OrderStatus.CANCELLED, confirmed.status());
 
 		Order preparing = orderIn(OrderStatus.PREPARING);
-		preparing.cancel();
+		preparing.cancel(LATER);
 		assertEquals(OrderStatus.CANCELLED, preparing.status());
 	}
 
 	@Test
 	void cancel_shouldBeRejectedFromReadyOnwards() {
-		assertThrows(InvalidOrderTransitionException.class, () -> orderIn(OrderStatus.READY).cancel());
-		assertThrows(InvalidOrderTransitionException.class, () -> orderIn(OrderStatus.WAITING_FOR_DRIVER).cancel());
-		assertThrows(InvalidOrderTransitionException.class, () -> orderIn(OrderStatus.ASSIGNED).cancel());
-		assertThrows(InvalidOrderTransitionException.class, () -> orderIn(OrderStatus.PICKED_UP).cancel());
-		assertThrows(InvalidOrderTransitionException.class, () -> orderIn(OrderStatus.IN_TRANSIT).cancel());
+		assertThrows(InvalidOrderTransitionException.class, () -> orderIn(OrderStatus.READY).cancel(LATER));
+		assertThrows(InvalidOrderTransitionException.class, () -> orderIn(OrderStatus.WAITING_FOR_DRIVER).cancel(LATER));
+		assertThrows(InvalidOrderTransitionException.class, () -> orderIn(OrderStatus.ASSIGNED).cancel(LATER));
+		assertThrows(InvalidOrderTransitionException.class, () -> orderIn(OrderStatus.PICKED_UP).cancel(LATER));
+		assertThrows(InvalidOrderTransitionException.class, () -> orderIn(OrderStatus.IN_TRANSIT).cancel(LATER));
 	}
 
 	@Test
 	void markWaitingForDriver_shouldAllowReturnFromAssigned() {
 		Order order = orderIn(OrderStatus.ASSIGNED);
-		Instant previousAssignedAt = order.assignedAt();
+		OffsetDateTime previousAssignedAt = order.assignedAt();
 
 		order.markWaitingForDriver();
 
@@ -199,16 +208,16 @@ class OrderTest {
 	}
 
 	@Test
-	void markFailedDelivery_shouldOnlyBeAllowedFromInTransit() {
+	void failDelivery_shouldOnlyBeAllowedFromInTransit() {
 		Order inTransit = orderIn(OrderStatus.IN_TRANSIT);
-		inTransit.markFailedDelivery();
+		inTransit.failDelivery(LATER);
 		assertEquals(OrderStatus.FAILED_DELIVERY, inTransit.status());
-		assertNotNull(inTransit.failedDeliveryAt());
+		assertEquals(LATER, inTransit.failedDeliveryAt());
 
 		assertThrows(InvalidOrderTransitionException.class,
-				() -> orderIn(OrderStatus.ASSIGNED).markFailedDelivery());
+				() -> orderIn(OrderStatus.ASSIGNED).failDelivery(LATER));
 		assertThrows(InvalidOrderTransitionException.class,
-				() -> orderIn(OrderStatus.PICKED_UP).markFailedDelivery());
+				() -> orderIn(OrderStatus.PICKED_UP).failDelivery(LATER));
 	}
 
 	@Test
@@ -217,7 +226,7 @@ class OrderTest {
 
 		InvalidOrderTransitionException exception = assertThrows(
 				InvalidOrderTransitionException.class,
-				order::markReady);
+				() -> order.markReady(LATER));
 
 		assertEquals(OrderStatus.CREATED, order.status());
 		assertTrue(exception.getCode().equals("INVALID_ORDER_TRANSITION"));
@@ -227,17 +236,17 @@ class OrderTest {
 	@Test
 	void terminalOrders_shouldRejectFurtherModifications() {
 		Order delivered = orderIn(OrderStatus.DELIVERED);
-		assertThrows(InvalidOrderTransitionException.class, delivered::confirm);
-		assertThrows(InvalidOrderTransitionException.class, delivered::cancel);
-		assertThrows(InvalidOrderTransitionException.class, delivered::markFailedDelivery);
+		assertThrows(InvalidOrderTransitionException.class, () -> delivered.confirm(LATER));
+		assertThrows(InvalidOrderTransitionException.class, () -> delivered.cancel(LATER));
+		assertThrows(InvalidOrderTransitionException.class, () -> delivered.failDelivery(LATER));
 
 		Order cancelled = orderIn(OrderStatus.CANCELLED);
-		assertThrows(InvalidOrderTransitionException.class, cancelled::confirm);
-		assertThrows(InvalidOrderTransitionException.class, cancelled::startPreparation);
+		assertThrows(InvalidOrderTransitionException.class, () -> cancelled.confirm(LATER));
+		assertThrows(InvalidOrderTransitionException.class, () -> cancelled.startPreparation(LATER));
 
 		Order failed = orderIn(OrderStatus.FAILED_DELIVERY);
-		assertThrows(InvalidOrderTransitionException.class, failed::markDelivered);
-		assertThrows(InvalidOrderTransitionException.class, failed::assign);
+		assertThrows(InvalidOrderTransitionException.class, () -> failed.deliver(LATER));
+		assertThrows(InvalidOrderTransitionException.class, () -> failed.assign(LATER));
 	}
 
 	private static Order validOrder() {
@@ -249,31 +258,36 @@ class OrderTest {
 				"Av. Example 123",
 				new Location(-12.1001, -77.0201),
 				Money.of(new BigDecimal("85.90")),
-				Instant.now().plus(45, ChronoUnit.MINUTES));
+				CREATED_AT,
+				PROMISED_AT);
 	}
 
 	private static Order orderIn(OrderStatus target) {
 		Order order = validOrder();
+		OffsetDateTime step = CREATED_AT.plusMinutes(1);
 
 		if (target == OrderStatus.CREATED) {
 			return order;
 		}
 		if (target == OrderStatus.CANCELLED) {
-			order.cancel();
+			order.cancel(step);
 			return order;
 		}
 
-		order.confirm();
+		order.confirm(step);
+		step = step.plusMinutes(1);
 		if (target == OrderStatus.CONFIRMED) {
 			return order;
 		}
 
-		order.startPreparation();
+		order.startPreparation(step);
+		step = step.plusMinutes(1);
 		if (target == OrderStatus.PREPARING) {
 			return order;
 		}
 
-		order.markReady();
+		order.markReady(step);
+		step = step.plusMinutes(1);
 		if (target == OrderStatus.READY) {
 			return order;
 		}
@@ -283,28 +297,31 @@ class OrderTest {
 			return order;
 		}
 
-		order.assign();
+		order.assign(step);
+		step = step.plusMinutes(1);
 		if (target == OrderStatus.ASSIGNED) {
 			return order;
 		}
 
-		order.markPickedUp();
+		order.pickUp(step);
+		step = step.plusMinutes(1);
 		if (target == OrderStatus.PICKED_UP) {
 			return order;
 		}
 
-		order.startTransit();
+		order.startDelivery(step);
+		step = step.plusMinutes(1);
 		if (target == OrderStatus.IN_TRANSIT) {
 			return order;
 		}
 
 		if (target == OrderStatus.DELIVERED) {
-			order.markDelivered();
+			order.deliver(step);
 			return order;
 		}
 
 		if (target == OrderStatus.FAILED_DELIVERY) {
-			order.markFailedDelivery();
+			order.failDelivery(step);
 			return order;
 		}
 
