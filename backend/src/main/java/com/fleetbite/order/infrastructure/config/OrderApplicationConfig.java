@@ -10,6 +10,7 @@ import com.fleetbite.order.application.port.in.ListOrdersUseCase;
 import com.fleetbite.order.application.port.in.MarkOrderReadyUseCase;
 import com.fleetbite.order.application.port.in.StartOrderPreparationUseCase;
 import com.fleetbite.order.application.port.in.UpdateOrderUseCase;
+import com.fleetbite.order.application.port.out.DomainEventPublisherPort;
 import com.fleetbite.order.application.port.out.OrderHistoryRepositoryPort;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.application.service.CancelOrderService;
@@ -92,9 +93,14 @@ public class OrderApplicationConfig {
 	MarkOrderReadyUseCase markOrderReadyUseCase(
 			OrderRepositoryPort orderRepositoryPort,
 			OrderHistoryRecorder orderHistoryRecorder,
+			DomainEventPublisherPort domainEventPublisherPort,
 			Clock clock) {
 		return new TransactionalMarkOrderReadyUseCase(
-				new MarkOrderReadyService(orderRepositoryPort, orderHistoryRecorder, clock));
+				new MarkOrderReadyService(
+						orderRepositoryPort,
+						orderHistoryRecorder,
+						domainEventPublisherPort,
+						clock));
 	}
 
 	@Bean

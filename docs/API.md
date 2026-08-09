@@ -136,7 +136,11 @@ POST /api/v1/orders/{id}/ready
 POST /api/v1/orders/{id}/cancel
 ```
 
-`ready` no dispara auto-assign.
+`ready` dispara auto-assign **después del commit** vía evento local `ORDER_READY`
+(consistencia eventual: la respuesta HTTP de `/ready` refleja TX A y puede mostrar `READY`
+aunque luego el pedido quede `ASSIGNED` o `WAITING_FOR_DRIVER`).
+
+Fallback manual: `POST /api/v1/orders/{id}/auto-assign`.
 
 ## GET /orders/{id}/history
 

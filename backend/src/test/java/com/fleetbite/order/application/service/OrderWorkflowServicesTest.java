@@ -1,8 +1,10 @@
 package com.fleetbite.order.application.service;
 
 import com.fleetbite.order.application.dto.CancelOrderCommand;
+import com.fleetbite.order.application.port.out.DomainEventPublisherPort;
 import com.fleetbite.order.application.port.out.OrderHistoryRepositoryPort;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
+import com.fleetbite.order.domain.event.OrderReadyEvent;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
 import com.fleetbite.order.domain.model.Money;
@@ -30,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -46,6 +49,8 @@ class OrderWorkflowServicesTest {
 	private OrderRepositoryPort orderRepositoryPort;
 	@Mock
 	private OrderHistoryRepositoryPort orderHistoryRepositoryPort;
+	@Mock
+	private DomainEventPublisherPort domainEventPublisherPort;
 
 	private ConfirmOrderService confirmOrderService;
 	private StartOrderPreparationService startOrderPreparationService;
@@ -57,7 +62,11 @@ class OrderWorkflowServicesTest {
 		OrderHistoryRecorder recorder = new OrderHistoryRecorder(orderHistoryRepositoryPort);
 		confirmOrderService = new ConfirmOrderService(orderRepositoryPort, recorder, FIXED_CLOCK);
 		startOrderPreparationService = new StartOrderPreparationService(orderRepositoryPort, recorder, FIXED_CLOCK);
-		markOrderReadyService = new MarkOrderReadyService(orderRepositoryPort, recorder, FIXED_CLOCK);
+		markOrderReadyService = new MarkOrderReadyService(
+				orderRepositoryPort,
+				recorder,
+				domainEventPublisherPort,
+				FIXED_CLOCK);
 		cancelOrderService = new CancelOrderService(orderRepositoryPort, recorder, FIXED_CLOCK);
 	}
 
@@ -97,7 +106,7 @@ class OrderWorkflowServicesTest {
 	}
 
 	@Test
-	void ready_shouldTransitionAndRecordHistoryWithoutAutoAssign() {
+	void ready_shouldTransitionRecordHistoryAndPublishOrderReadyEvent() {
 		Order order = createdOrder();
 		order.confirm(CREATED.plusMinutes(1));
 		order.startPreparation(CREATED.plusMinutes(2));
@@ -108,6 +117,26 @@ class OrderWorkflowServicesTest {
 
 		assertEquals(OrderStatus.READY, result.status());
 		assertHistory(OrderHistoryEventType.ORDER_READY, OrderStatus.PREPARING, OrderStatus.READY, null);
+
+		ArgumentCaptor<OrderReadyEvent> eventCaptor = ArgumentCaptor.forClass(OrderReadyEvent.class);
+		verify(domainEventPublisherPort, times(1)).publish(eventCaptor.capture());
+		OrderReadyEvent event = eventCaptor.getValue();
+		assertEquals(order.id(), event.orderId());
+		assertEquals(NOW, event.occurredAt());
+		assertEquals(BusinessTime.ZONE_OFFSET, event.occurredAt().getOffset());
+	}
+
+	@Test
+	void ready_shouldNotPublishWhenPersistFails() {
+		Order order = createdOrder();
+		order.confirm(CREATED.plusMinutes(1));
+		order.startPreparation(CREATED.plusMinutes(2));
+		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
+		when(orderRepositoryPort.update(any())).thenThrow(new RuntimeException("persist failed"));
+
+		assertThrows(RuntimeException.class, () -> markOrderReadyService.execute(order.id()));
+		verify(domainEventPublisherPort, never()).publish(any());
+		verify(orderHistoryRepositoryPort, never()).save(any());
 	}
 
 	@Test

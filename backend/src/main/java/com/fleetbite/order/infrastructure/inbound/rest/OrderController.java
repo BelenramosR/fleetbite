@@ -218,9 +218,18 @@ public class OrderController {
 
 	@PostMapping("/{id}/ready")
 	@Operation(summary = "Mark order ready",
-			description = "PREPARING → READY. Does not trigger auto-assignment.")
+			description = """
+					PREPARING → READY within the request transaction (TX A): persists the order,
+					records history ORDER_READY, and publishes domain event ORDER_READY.
+					After commit, a local listener runs AutoAssignOrderUseCase (TX B), which may
+					leave the order ASSIGNED or WAITING_FOR_DRIVER.
+					The HTTP response reflects TX A and may still show status READY even though
+					the database may already contain ASSIGNED or WAITING_FOR_DRIVER (eventual consistency).
+					Manual fallback remains available at POST /api/v1/orders/{id}/auto-assign.
+					""")
 	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "Order ready"),
+			@ApiResponse(responseCode = "200",
+					description = "Order marked READY (TX A). Auto-assignment runs after commit."),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
 					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",

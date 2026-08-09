@@ -2,7 +2,9 @@ package com.fleetbite.order.application.service;
 
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.port.in.MarkOrderReadyUseCase;
+import com.fleetbite.order.application.port.out.DomainEventPublisherPort;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
+import com.fleetbite.order.domain.event.OrderReadyEvent;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderHistoryEventType;
 import com.fleetbite.order.domain.model.OrderId;
@@ -18,14 +20,17 @@ public final class MarkOrderReadyService implements MarkOrderReadyUseCase {
 
 	private final OrderRepositoryPort orderRepositoryPort;
 	private final OrderHistoryRecorder orderHistoryRecorder;
+	private final DomainEventPublisherPort domainEventPublisherPort;
 	private final Clock clock;
 
 	public MarkOrderReadyService(
 			OrderRepositoryPort orderRepositoryPort,
 			OrderHistoryRecorder orderHistoryRecorder,
+			DomainEventPublisherPort domainEventPublisherPort,
 			Clock clock) {
 		this.orderRepositoryPort = Objects.requireNonNull(orderRepositoryPort);
 		this.orderHistoryRecorder = Objects.requireNonNull(orderHistoryRecorder);
+		this.domainEventPublisherPort = Objects.requireNonNull(domainEventPublisherPort);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -47,6 +52,9 @@ public final class MarkOrderReadyService implements MarkOrderReadyUseCase {
 				updated.status(),
 				null,
 				now);
+
+		domainEventPublisherPort.publish(OrderReadyEvent.of(orderId, now));
+
 		return OrderResult.from(updated);
 	}
 }
