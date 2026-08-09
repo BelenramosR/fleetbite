@@ -4,6 +4,7 @@ import com.fleetbite.delivery.application.port.out.DistanceCalculatorPort;
 import com.fleetbite.delivery.infrastructure.outbound.geo.HaversineDistanceAdapter;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
+import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
@@ -52,7 +53,7 @@ class NearestDriverSelectionPolicyTest {
 	void select_shouldIgnoreOfflineAndBusy() {
 		Driver offline = Driver.create(
 				DriverId.of(uuid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
-				"Offline",
+				UserId.generate(),
 				"111111111",
 				new Location(-12.0470, -77.0430),
 				CREATED);
@@ -105,7 +106,12 @@ class NearestDriverSelectionPolicyTest {
 	}
 
 	private static Driver available(UUID id, Location location) {
-		Driver driver = Driver.create(DriverId.of(id), "Driver", id.toString().substring(0, 9), location, CREATED);
+		Driver driver = Driver.create(
+				DriverId.of(id),
+				UserId.generate(),
+				id.toString().substring(0, 9),
+				location,
+				CREATED);
 		driver.goOnline(CREATED.plusMinutes(1));
 		return driver;
 	}

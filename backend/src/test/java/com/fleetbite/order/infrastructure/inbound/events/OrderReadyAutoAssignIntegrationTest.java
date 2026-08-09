@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -164,23 +165,65 @@ class OrderReadyAutoAssignIntegrationTest {
 		return orderId;
 	}
 
-	private UUID createAvailableDriver(String token, String phone, double lat, double lon) throws Exception {
-		MvcResult created = mockMvc.perform(post("/api/v1/drivers")
-						.header("Authorization", "Bearer " + token)
+	private UUID createAvailableDriver(String dispatcherToken, String phone, double lat, double lon)
+			throws Exception {
+		String adminToken = login("admin@fleetbite.local");
+		String email = "driver-" + phone + "@fleetbite.local";
+		MvcResult userCreated = mockMvc.perform(post("/api/v1/users")
+						.header("Authorization", "Bearer " + adminToken)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
-								  "name": "Driver Ready",
+								  "email": "%s",
+								  "password": "%s",
+								  "fullName": "Driver Ready %s",
+								  "role": "DRIVER"
+								}
+								""".formatted(email, PASSWORD, phone)))
+				.andExpect(status().isCreated())
+				.andReturn();
+		UUID userId = UUID.fromString(readJson(userCreated).get("id").asString());
+
+		MvcResult vehicleCreated = mockMvc.perform(post("/api/v1/vehicles")
+						.header("Authorization", "Bearer " + dispatcherToken)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "plate": "PLT-%s",
+								  "type": "MOTORCYCLE"
+								}
+								""".formatted(phone.substring(phone.length() - 4))))
+				.andExpect(status().isCreated())
+				.andReturn();
+		UUID vehicleId = UUID.fromString(readJson(vehicleCreated).get("id").asString());
+
+		MvcResult driverCreated = mockMvc.perform(post("/api/v1/drivers")
+						.header("Authorization", "Bearer " + dispatcherToken)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "userId": "%s",
 								  "phone": "%s",
 								  "currentLatitude": %s,
 								  "currentLongitude": %s
 								}
-								""".formatted(phone, lat, lon)))
+								""".formatted(userId, phone, lat, lon)))
 				.andExpect(status().isCreated())
 				.andReturn();
-		UUID driverId = UUID.fromString(readJson(created).get("id").asString());
+		UUID driverId = UUID.fromString(readJson(driverCreated).get("id").asString());
+
+		mockMvc.perform(put("/api/v1/drivers/{id}/vehicle", driverId)
+						.header("Authorization", "Bearer " + dispatcherToken)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "vehicleId": "%s"
+								}
+								""".formatted(vehicleId)))
+				.andExpect(status().isOk());
+
 		mockMvc.perform(post("/api/v1/drivers/{id}/online", driverId)
-						.header("Authorization", "Bearer " + token))
+						.header("Authorization", "Bearer " + dispatcherToken))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("AVAILABLE"));
 		return driverId;

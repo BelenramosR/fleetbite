@@ -4,7 +4,9 @@ import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
+import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
+import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
@@ -60,10 +62,18 @@ public class DriverRepositoryAdapter implements DriverRepositoryPort {
 	@Override
 	public List<Driver> findAvailableWithLocation() {
 		return springDataDriverRepository
-				.findByStatusAndCurrentLatitudeIsNotNullAndCurrentLongitudeIsNotNull(DriverStatus.AVAILABLE)
+				.findByStatusAndCurrentLatitudeIsNotNullAndCurrentLongitudeIsNotNullAndVehicleIdIsNotNull(
+						DriverStatus.AVAILABLE)
 				.stream()
 				.map(driverPersistenceMapper::toDomain)
 				.toList();
+	}
+
+	@Override
+	public Optional<Driver> findByVehicleId(VehicleId vehicleId) {
+		Objects.requireNonNull(vehicleId, "vehicleId is required");
+		return springDataDriverRepository.findByVehicleId(vehicleId.value())
+				.map(driverPersistenceMapper::toDomain);
 	}
 
 	@Override
@@ -86,5 +96,11 @@ public class DriverRepositoryAdapter implements DriverRepositoryPort {
 		Objects.requireNonNull(phone, "phone is required");
 		Objects.requireNonNull(id, "id is required");
 		return springDataDriverRepository.existsByPhoneAndIdNot(phone, id.value());
+	}
+
+	@Override
+	public boolean existsByUserId(UserId userId) {
+		Objects.requireNonNull(userId, "userId is required");
+		return springDataDriverRepository.existsByUserId(userId.value());
 	}
 }

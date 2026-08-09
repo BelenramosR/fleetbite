@@ -3,7 +3,9 @@ package com.fleetbite.driver.domain.model;
 import com.fleetbite.driver.domain.exception.DriverNotDeletableException;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.driver.domain.exception.InvalidDriverTransitionException;
+import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.model.Location;
+import com.fleetbite.vehicle.domain.model.VehicleId;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -11,62 +13,73 @@ import java.util.Objects;
 public final class Driver {
 
 	private final DriverId id;
-	private String name;
+	private final UserId userId;
 	private String phone;
 	private DriverStatus status;
 	private Location currentLocation;
+	private VehicleId vehicleId;
 	private final OffsetDateTime createdAt;
 	private OffsetDateTime updatedAt;
 
 	private Driver(
 			DriverId id,
-			String name,
+			UserId userId,
 			String phone,
 			DriverStatus status,
 			Location currentLocation,
+			VehicleId vehicleId,
 			OffsetDateTime createdAt,
 			OffsetDateTime updatedAt) {
 		this.id = id;
-		this.name = name;
+		this.userId = userId;
 		this.phone = phone;
 		this.status = status;
 		this.currentLocation = currentLocation;
+		this.vehicleId = vehicleId;
 		this.createdAt = createdAt;
 		this.updatedAt = updatedAt;
 	}
 
 	public static Driver create(
 			DriverId id,
-			String name,
+			UserId userId,
 			String phone,
 			Location currentLocation,
 			OffsetDateTime createdAt) {
 		if (id == null) {
 			throw new InvalidDriverDataException("driverId is required");
 		}
+		if (userId == null) {
+			throw new InvalidDriverDataException("userId is required");
+		}
 		if (createdAt == null) {
 			throw new InvalidDriverDataException("createdAt is required");
 		}
 		return new Driver(
 				id,
-				requireText(name, "name"),
+				userId,
 				requireText(phone, "phone"),
 				DriverStatus.OFFLINE,
 				currentLocation,
+				null,
 				createdAt,
 				createdAt);
 	}
 
 	public static Driver reconstitute(
 			DriverId id,
-			String name,
+			UserId userId,
 			String phone,
 			DriverStatus status,
 			Location currentLocation,
+			VehicleId vehicleId,
 			OffsetDateTime createdAt,
 			OffsetDateTime updatedAt) {
 		if (id == null) {
 			throw new InvalidDriverDataException("driverId is required");
+		}
+		if (userId == null) {
+			throw new InvalidDriverDataException("userId is required");
 		}
 		if (status == null) {
 			throw new InvalidDriverDataException("status is required");
@@ -79,17 +92,17 @@ public final class Driver {
 		}
 		return new Driver(
 				id,
-				requireText(name, "name"),
+				userId,
 				requireText(phone, "phone"),
 				status,
 				currentLocation,
+				vehicleId,
 				createdAt,
 				updatedAt);
 	}
 
-	public void updateProfile(String name, String phone, OffsetDateTime now) {
+	public void updatePhone(String phone, OffsetDateTime now) {
 		requireTimestamp(now);
-		this.name = requireText(name, "name");
 		this.phone = requireText(phone, "phone");
 		this.updatedAt = now;
 	}
@@ -100,6 +113,24 @@ public final class Driver {
 			throw new InvalidDriverDataException("currentLocation is required");
 		}
 		this.currentLocation = location;
+		this.updatedAt = now;
+	}
+
+	public void assignVehicle(VehicleId vehicleId, OffsetDateTime now) {
+		requireTimestamp(now);
+		if (vehicleId == null) {
+			throw new InvalidDriverDataException("vehicleId is required");
+		}
+		this.vehicleId = vehicleId;
+		this.updatedAt = now;
+	}
+
+	public void unassignVehicle(OffsetDateTime now) {
+		requireTimestamp(now);
+		if (this.vehicleId == null) {
+			throw new InvalidDriverDataException("Driver has no vehicle assigned");
+		}
+		this.vehicleId = null;
 		this.updatedAt = now;
 	}
 
@@ -135,6 +166,13 @@ public final class Driver {
 		if (status != DriverStatus.OFFLINE) {
 			throw new DriverNotDeletableException(status);
 		}
+		if (vehicleId != null) {
+			throw new DriverNotDeletableException("Driver still has a vehicle assigned");
+		}
+	}
+
+	public boolean hasVehicle() {
+		return vehicleId != null;
 	}
 
 	private void transitionTo(DriverStatus target) {
@@ -169,8 +207,8 @@ public final class Driver {
 		return id;
 	}
 
-	public String name() {
-		return name;
+	public UserId userId() {
+		return userId;
 	}
 
 	public String phone() {
@@ -183,6 +221,10 @@ public final class Driver {
 
 	public Location currentLocation() {
 		return currentLocation;
+	}
+
+	public VehicleId vehicleId() {
+		return vehicleId;
 	}
 
 	public OffsetDateTime createdAt() {

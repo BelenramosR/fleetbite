@@ -4,7 +4,6 @@ import com.fleetbite.identity.application.dto.LoginCommand;
 import com.fleetbite.identity.application.dto.LoginResult;
 import com.fleetbite.identity.application.port.in.LoginUseCase;
 import com.fleetbite.identity.application.port.out.PasswordEncoderPort;
-import com.fleetbite.identity.application.port.out.TokenProviderPort;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.exception.AuthenticationFailedException;
 import com.fleetbite.identity.domain.exception.InvalidUserDataException;
@@ -17,15 +16,15 @@ public final class LoginService implements LoginUseCase {
 
 	private final UserRepositoryPort userRepositoryPort;
 	private final PasswordEncoderPort passwordEncoderPort;
-	private final TokenProviderPort tokenProviderPort;
+	private final AuthTokenIssuer authTokenIssuer;
 
 	public LoginService(
 			UserRepositoryPort userRepositoryPort,
 			PasswordEncoderPort passwordEncoderPort,
-			TokenProviderPort tokenProviderPort) {
+			AuthTokenIssuer authTokenIssuer) {
 		this.userRepositoryPort = Objects.requireNonNull(userRepositoryPort);
 		this.passwordEncoderPort = Objects.requireNonNull(passwordEncoderPort);
-		this.tokenProviderPort = Objects.requireNonNull(tokenProviderPort);
+		this.authTokenIssuer = Objects.requireNonNull(authTokenIssuer);
 	}
 
 	@Override
@@ -48,7 +47,6 @@ public final class LoginService implements LoginUseCase {
 
 		user.ensureActive();
 
-		String token = tokenProviderPort.generate(user.id(), user.email(), user.role());
-		return LoginResult.bearer(token, tokenProviderPort.expiresInSeconds());
+		return authTokenIssuer.issue(user);
 	}
 }

@@ -65,11 +65,13 @@ Campos: `timestamp`, `status`, `code`, `message`, `path`. No hay `correlationId`
 
 ```text
 POST /api/v1/auth/login
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
 ```
 
-Público (sin JWT). No existe refresh token en esta implementación.
+Públicos (sin JWT). No hay self-register: las cuentas se crean con `POST /api/v1/users` (ADMIN).
 
-Ejemplo:
+Login:
 
 ```json
 {
@@ -83,12 +85,19 @@ Respuesta:
 ```json
 {
   "accessToken": "...",
+  "refreshToken": "...",
   "tokenType": "Bearer",
   "expiresIn": 3600
 }
 ```
 
-Usar header `Authorization: Bearer <accessToken>` en el resto de endpoints.
+Refresh (rota el refresh token):
+
+```json
+{ "refreshToken": "..." }
+```
+
+Logout revoca el refresh (204, idempotente). Usar `Authorization: Bearer <accessToken>` en el resto de endpoints.
 
 ---
 
@@ -152,6 +161,8 @@ Historial append-only real (`order_history`).
 
 Roles: ADMIN, DISPATCHER.
 
+Relación: `User (role=DRIVER) 1 — 0..1 Driver 0..1 — 0..1 Vehicle`.
+
 ```text
 GET    /api/v1/drivers
 POST   /api/v1/drivers
@@ -161,20 +172,34 @@ DELETE /api/v1/drivers/{id}
 PATCH  /api/v1/drivers/{id}/location
 POST   /api/v1/drivers/{id}/online
 POST   /api/v1/drivers/{id}/offline
+PUT    /api/v1/drivers/{id}/vehicle
+DELETE /api/v1/drivers/{id}/vehicle
 ```
 
-Estados: `OFFLINE`, `AVAILABLE`, `BUSY`.
+Estados driver: `OFFLINE`, `AVAILABLE`, `BUSY`.
+
+Flujo: primero `POST /users` con `role=DRIVER`, luego `POST /drivers` con ese `userId`.
 
 ## POST /drivers
 
 ```json
 {
-  "name": "Luis Gómez",
+  "userId": "uuid",
   "phone": "988000111",
   "currentLatitude": -12.102,
   "currentLongitude": -77.028
 }
 ```
+
+`name` en la response viene de `User.fullName` (no se almacena en Driver).
+
+## PUT /drivers/{id}/vehicle
+
+```json
+{ "vehicleId": "uuid" }
+```
+
+Asigna vehículo (`AVAILABLE` → `IN_USE`). `DELETE .../vehicle` desasigna (`IN_USE` → `AVAILABLE`).
 
 ## PATCH /drivers/{id}/location
 
@@ -185,7 +210,7 @@ Estados: `OFFLINE`, `AVAILABLE`, `BUSY`.
 }
 ```
 
-Disponibilidad vía `online` / `offline` (no hay `PATCH .../status`).
+Disponibilidad vía `online` / `offline`. Delete driver exige `OFFLINE` y sin vehículo.
 
 ---
 
@@ -204,7 +229,7 @@ POST   /api/v1/vehicles/{id}/activate
 POST   /api/v1/vehicles/{id}/deactivate
 ```
 
-Estados: `ACTIVE`, `MAINTENANCE`, `INACTIVE`.
+Estados: `AVAILABLE`, `IN_USE`, `MAINTENANCE`, `INACTIVE`.
 
 ```json
 {
@@ -213,6 +238,7 @@ Estados: `ACTIVE`, `MAINTENANCE`, `INACTIVE`.
 }
 ```
 
+Nuevo vehículo nace `AVAILABLE`. No eliminar un vehículo asignado a un Driver (409).
 ---
 
 # 8. Assignments
@@ -248,7 +274,7 @@ Estados de assignment: `PENDING`, `ACCEPTED`, `REJECTED`, `CANCELLED`, `COMPLETE
 
 ## POST /orders/{orderId}/auto-assign
 
-- Candidatos: drivers `AVAILABLE` con ubicación.
+- Candidatos: drivers `AVAILABLE` con ubicación **y** vehículo asignado.
 - Distancia Haversine (km); menor distancia gana.
 - `assignmentScore` actualmente equivale a `distanceKm`.
 - Sin driver: HTTP 200, `assigned=false`, `reason=NO_AVAILABLE_DRIVER`; order → `WAITING_FOR_DRIVER`.

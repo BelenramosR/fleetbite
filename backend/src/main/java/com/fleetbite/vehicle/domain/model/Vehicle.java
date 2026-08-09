@@ -2,6 +2,7 @@ package com.fleetbite.vehicle.domain.model;
 
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleDataException;
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleTransitionException;
+import com.fleetbite.vehicle.domain.exception.VehicleNotAssignableException;
 import com.fleetbite.vehicle.domain.exception.VehicleNotDeletableException;
 
 import java.time.OffsetDateTime;
@@ -49,7 +50,7 @@ public final class Vehicle {
 				id,
 				requireText(plate, "plate"),
 				type,
-				VehicleStatus.ACTIVE,
+				VehicleStatus.AVAILABLE,
 				createdAt,
 				createdAt);
 	}
@@ -103,7 +104,7 @@ public final class Vehicle {
 
 	public void activate(OffsetDateTime now) {
 		requireTimestamp(now);
-		transitionTo(VehicleStatus.ACTIVE);
+		transitionTo(VehicleStatus.AVAILABLE);
 		this.updatedAt = now;
 	}
 
@@ -111,6 +112,30 @@ public final class Vehicle {
 		requireTimestamp(now);
 		transitionTo(VehicleStatus.INACTIVE);
 		this.updatedAt = now;
+	}
+
+	public void markInUse(OffsetDateTime now) {
+		requireTimestamp(now);
+		if (status != VehicleStatus.AVAILABLE) {
+			throw new VehicleNotAssignableException(status);
+		}
+		transitionTo(VehicleStatus.IN_USE);
+		this.updatedAt = now;
+	}
+
+	public void markAvailableAfterUnassign(OffsetDateTime now) {
+		requireTimestamp(now);
+		if (status != VehicleStatus.IN_USE) {
+			throw new InvalidVehicleTransitionException(status, VehicleStatus.AVAILABLE);
+		}
+		transitionTo(VehicleStatus.AVAILABLE);
+		this.updatedAt = now;
+	}
+
+	public void ensureAssignable() {
+		if (status != VehicleStatus.AVAILABLE) {
+			throw new VehicleNotAssignableException(status);
+		}
 	}
 
 	public void ensureDeletable() {
@@ -128,9 +153,12 @@ public final class Vehicle {
 
 	private static boolean canTransition(VehicleStatus from, VehicleStatus to) {
 		return switch (from) {
-			case ACTIVE -> to == VehicleStatus.MAINTENANCE || to == VehicleStatus.INACTIVE;
-			case MAINTENANCE -> to == VehicleStatus.ACTIVE;
-			case INACTIVE -> to == VehicleStatus.ACTIVE;
+			case AVAILABLE -> to == VehicleStatus.MAINTENANCE
+					|| to == VehicleStatus.INACTIVE
+					|| to == VehicleStatus.IN_USE;
+			case IN_USE -> to == VehicleStatus.AVAILABLE;
+			case MAINTENANCE -> to == VehicleStatus.AVAILABLE;
+			case INACTIVE -> to == VehicleStatus.AVAILABLE;
 		};
 	}
 

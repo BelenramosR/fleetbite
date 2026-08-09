@@ -61,6 +61,9 @@ public final class CreateAssignmentOperation {
 		if (driver.currentLocation() == null) {
 			throw new DriverNotAssignableException("Driver cannot be assigned without a current location");
 		}
+		if (!driver.hasVehicle()) {
+			throw new DriverNotAssignableException("Driver cannot be assigned without a vehicle");
+		}
 		if (assignmentRepositoryPort.existsActiveByOrderId(order.id())) {
 			throw new ActiveAssignmentAlreadyExistsException(order.id().value());
 		}

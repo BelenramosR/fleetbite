@@ -64,7 +64,7 @@ class VehicleStatusServicesTest {
 
 		var result = activateService.execute(vehicle.id());
 
-		assertEquals(VehicleStatus.ACTIVE, result.status());
+		assertEquals(VehicleStatus.AVAILABLE, result.status());
 	}
 
 	@Test

@@ -12,6 +12,7 @@ import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
+import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
@@ -22,6 +23,7 @@ import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -220,7 +222,13 @@ class AutoAssignOrderServiceTest {
 	}
 
 	private static Driver available(UUID id, Location location) {
-		Driver driver = Driver.create(DriverId.of(id), "Driver", id.toString().substring(0, 9), location, CREATED);
+		Driver driver = Driver.create(
+				DriverId.of(id),
+				UserId.generate(),
+				id.toString().substring(0, 9),
+				location,
+				CREATED);
+		driver.assignVehicle(VehicleId.generate(), CREATED.plusSeconds(30));
 		driver.goOnline(CREATED.plusMinutes(1));
 		return driver;
 	}

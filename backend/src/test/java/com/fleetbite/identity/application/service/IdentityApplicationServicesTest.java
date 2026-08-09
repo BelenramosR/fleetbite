@@ -2,12 +2,16 @@ package com.fleetbite.identity.application.service;
 
 import com.fleetbite.identity.application.dto.CreateUserCommand;
 import com.fleetbite.identity.application.dto.LoginCommand;
+import com.fleetbite.identity.application.dto.RefreshTokenCommand;
 import com.fleetbite.identity.application.port.out.PasswordEncoderPort;
+import com.fleetbite.identity.application.port.out.RefreshTokenRepositoryPort;
 import com.fleetbite.identity.application.port.out.TokenProviderPort;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
+import com.fleetbite.identity.application.util.RefreshTokenHasher;
 import com.fleetbite.identity.domain.exception.AuthenticationFailedException;
 import com.fleetbite.identity.domain.exception.DuplicateUserEmailException;
 import com.fleetbite.identity.domain.exception.UserInactiveException;
+import com.fleetbite.identity.domain.model.RefreshToken;
 import com.fleetbite.identity.domain.model.User;
 import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.domain.model.UserRole;
@@ -16,14 +20,18 @@ import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -45,14 +53,24 @@ class IdentityApplicationServicesTest {
 	private PasswordEncoderPort passwordEncoderPort;
 	@Mock
 	private TokenProviderPort tokenProviderPort;
+	@Mock
+	private RefreshTokenRepositoryPort refreshTokenRepositoryPort;
 
 	private CreateUserService createUserService;
 	private LoginService loginService;
+	private RefreshAccessTokenService refreshAccessTokenService;
+	private LogoutService logoutService;
+	private AuthTokenIssuer authTokenIssuer;
 
 	@BeforeEach
 	void setUp() {
+		authTokenIssuer = new AuthTokenIssuer(
+				tokenProviderPort, refreshTokenRepositoryPort, 604800L, FIXED_CLOCK);
 		createUserService = new CreateUserService(userRepositoryPort, passwordEncoderPort, FIXED_CLOCK);
-		loginService = new LoginService(userRepositoryPort, passwordEncoderPort, tokenProviderPort);
+		loginService = new LoginService(userRepositoryPort, passwordEncoderPort, authTokenIssuer);
+		refreshAccessTokenService = new RefreshAccessTokenService(
+				refreshTokenRepositoryPort, userRepositoryPort, authTokenIssuer, FIXED_CLOCK);
+		logoutService = new LogoutService(refreshTokenRepositoryPort, FIXED_CLOCK);
 	}
 
 	@Test
@@ -88,12 +106,20 @@ class IdentityApplicationServicesTest {
 		when(tokenProviderPort.generate(eq(user.id()), eq(user.email()), eq(UserRole.ADMIN)))
 				.thenReturn("jwt-token");
 		when(tokenProviderPort.expiresInSeconds()).thenReturn(3600L);
+		when(refreshTokenRepositoryPort.save(any(RefreshToken.class)))
+				.thenAnswer(invocation -> invocation.getArgument(0));
 
 		var result = loginService.execute(new LoginCommand("admin@fleetbite.local", "Fleetbite1!"));
 
 		assertEquals("jwt-token", result.accessToken());
 		assertEquals("Bearer", result.tokenType());
 		assertEquals(3600L, result.expiresIn());
+		assertNotNull(result.refreshToken());
+		assertFalse(result.refreshToken().isBlank());
+
+		ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
+		verify(refreshTokenRepositoryPort).save(captor.capture());
+		assertEquals(RefreshTokenHasher.sha256Hex(result.refreshToken()), captor.getValue().tokenHash());
 	}
 
 	@Test
@@ -117,6 +143,94 @@ class IdentityApplicationServicesTest {
 		assertThrows(
 				UserInactiveException.class,
 				() -> loginService.execute(new LoginCommand("admin@fleetbite.local", "Fleetbite1!")));
+	}
+
+	@Test
+	void refresh_shouldRotateTokensWhenValid() {
+		User user = activeUser();
+		String rawRefresh = UUID.randomUUID().toString();
+		RefreshToken existing = RefreshToken.issue(
+				UUID.randomUUID(),
+				user.id(),
+				RefreshTokenHasher.sha256Hex(rawRefresh),
+				NOW.minusHours(1),
+				NOW.plusDays(6));
+
+		when(refreshTokenRepositoryPort.findByHash(RefreshTokenHasher.sha256Hex(rawRefresh)))
+				.thenReturn(Optional.of(existing));
+		when(userRepositoryPort.findById(user.id())).thenReturn(Optional.of(user));
+		when(tokenProviderPort.generate(eq(user.id()), eq(user.email()), eq(UserRole.ADMIN)))
+				.thenReturn("new-jwt");
+		when(tokenProviderPort.expiresInSeconds()).thenReturn(3600L);
+		when(refreshTokenRepositoryPort.save(any(RefreshToken.class)))
+				.thenAnswer(invocation -> invocation.getArgument(0));
+
+		var result = refreshAccessTokenService.execute(new RefreshTokenCommand(rawRefresh));
+
+		assertEquals("new-jwt", result.accessToken());
+		assertNotNull(result.refreshToken());
+		assertFalse(result.refreshToken().equals(rawRefresh));
+		verify(refreshTokenRepositoryPort).revoke(eq(existing.id()), eq(NOW));
+		verify(refreshTokenRepositoryPort).save(any(RefreshToken.class));
+	}
+
+	@Test
+	void refresh_shouldFailWhenTokenRevoked() {
+		User user = activeUser();
+		String rawRefresh = UUID.randomUUID().toString();
+		RefreshToken existing = RefreshToken.issue(
+				UUID.randomUUID(),
+				user.id(),
+				RefreshTokenHasher.sha256Hex(rawRefresh),
+				NOW.minusHours(1),
+				NOW.plusDays(6));
+		existing.revoke(NOW.minusMinutes(5));
+
+		when(refreshTokenRepositoryPort.findByHash(RefreshTokenHasher.sha256Hex(rawRefresh)))
+				.thenReturn(Optional.of(existing));
+
+		assertThrows(
+				AuthenticationFailedException.class,
+				() -> refreshAccessTokenService.execute(new RefreshTokenCommand(rawRefresh)));
+		verify(refreshTokenRepositoryPort, never()).revoke(any(), any());
+		verify(refreshTokenRepositoryPort, never()).save(any());
+	}
+
+	@Test
+	void refresh_shouldFailWhenTokenUnknown() {
+		when(refreshTokenRepositoryPort.findByHash(anyString())).thenReturn(Optional.empty());
+
+		assertThrows(
+				AuthenticationFailedException.class,
+				() -> refreshAccessTokenService.execute(new RefreshTokenCommand(UUID.randomUUID().toString())));
+	}
+
+	@Test
+	void logout_shouldRevokeWhenPresent() {
+		User user = activeUser();
+		String rawRefresh = UUID.randomUUID().toString();
+		RefreshToken existing = RefreshToken.issue(
+				UUID.randomUUID(),
+				user.id(),
+				RefreshTokenHasher.sha256Hex(rawRefresh),
+				NOW.minusHours(1),
+				NOW.plusDays(6));
+
+		when(refreshTokenRepositoryPort.findByHash(RefreshTokenHasher.sha256Hex(rawRefresh)))
+				.thenReturn(Optional.of(existing));
+
+		logoutService.execute(new RefreshTokenCommand(rawRefresh));
+
+		verify(refreshTokenRepositoryPort).revoke(existing.id(), NOW);
+	}
+
+	@Test
+	void logout_shouldBeIdempotentWhenMissing() {
+		when(refreshTokenRepositoryPort.findByHash(anyString())).thenReturn(Optional.empty());
+
+		logoutService.execute(new RefreshTokenCommand(UUID.randomUUID().toString()));
+
+		verify(refreshTokenRepositoryPort, never()).revoke(any(), any());
 	}
 
 	private static User activeUser() {

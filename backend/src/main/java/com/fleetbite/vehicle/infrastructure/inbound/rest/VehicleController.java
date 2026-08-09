@@ -192,7 +192,7 @@ public class VehicleController {
 	}
 
 	@PostMapping("/{id}/activate")
-	@Operation(summary = "Activate vehicle", description = "Status → ACTIVE")
+	@Operation(summary = "Activate vehicle", description = "Status → AVAILABLE")
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Vehicle activated"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",

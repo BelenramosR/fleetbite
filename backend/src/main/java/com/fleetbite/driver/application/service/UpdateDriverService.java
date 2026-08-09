@@ -8,8 +8,10 @@ import com.fleetbite.driver.domain.exception.DuplicateDriverPhoneException;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
+import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -18,10 +20,16 @@ import java.util.Objects;
 public final class UpdateDriverService implements UpdateDriverUseCase {
 
 	private final DriverRepositoryPort driverRepositoryPort;
+	private final DriverResultAssembler resultAssembler;
 	private final Clock clock;
 
-	public UpdateDriverService(DriverRepositoryPort driverRepositoryPort, Clock clock) {
+	public UpdateDriverService(
+			DriverRepositoryPort driverRepositoryPort,
+			UserRepositoryPort userRepositoryPort,
+			VehicleRepositoryPort vehicleRepositoryPort,
+			Clock clock) {
 		this.driverRepositoryPort = Objects.requireNonNull(driverRepositoryPort, "driverRepositoryPort");
+		this.resultAssembler = new DriverResultAssembler(userRepositoryPort, vehicleRepositoryPort);
 		this.clock = Objects.requireNonNull(clock, "clock");
 	}
 
@@ -39,10 +47,10 @@ public final class UpdateDriverService implements UpdateDriverUseCase {
 		}
 
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
-		driver.updateProfile(command.name(), phone, now);
+		driver.updatePhone(phone, now);
 
 		Driver updated = driverRepositoryPort.update(driver);
-		return DriverResult.from(updated);
+		return resultAssembler.toResult(updated);
 	}
 
 	private static String requireTrimmed(String value, String fieldName) {

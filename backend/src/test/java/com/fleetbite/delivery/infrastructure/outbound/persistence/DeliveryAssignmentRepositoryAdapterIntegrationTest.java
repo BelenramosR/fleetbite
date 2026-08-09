@@ -4,10 +4,12 @@ import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryP
 import com.fleetbite.delivery.domain.model.AssignmentStatus;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
 import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
+import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.infrastructure.outbound.persistence.DriverPersistenceMapper;
 import com.fleetbite.driver.infrastructure.outbound.persistence.DriverRepositoryAdapter;
+import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
@@ -17,7 +19,6 @@ import com.fleetbite.order.infrastructure.outbound.persistence.OrderPersistenceM
 import com.fleetbite.order.infrastructure.outbound.persistence.OrderRepositoryAdapter;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -25,12 +26,14 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -67,6 +70,8 @@ class DeliveryAssignmentRepositoryAdapterIntegrationTest {
 	private DriverRepositoryPort driverRepositoryPort;
 	@Autowired
 	private SpringDataDeliveryAssignmentRepository springDataDeliveryAssignmentRepository;
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@Test
 	void saveAndFindById_shouldPersistAssignment() {
@@ -168,7 +173,26 @@ class DeliveryAssignmentRepositoryAdapterIntegrationTest {
 				CREATED.plusMinutes(45));
 	}
 
-	private static Driver sampleDriver(String phone) {
-		return Driver.create(DriverId.generate(), "Carlos Perez", phone, new Location(-12.10, -77.03), CREATED);
+	private Driver sampleDriver(String phone) {
+		return Driver.create(
+				DriverId.generate(),
+				insertDriverUser(),
+				phone,
+				new Location(-12.10, -77.03),
+				CREATED);
+	}
+
+	private UserId insertDriverUser() {
+		UUID id = UUID.randomUUID();
+		jdbcTemplate.update(
+				"""
+						INSERT INTO users (id, email, password_hash, full_name, role, status, created_at, updated_at, version)
+						VALUES (?, ?, 'hash', 'Test Driver', 'DRIVER', 'ACTIVE', ?, ?, 0)
+						""",
+				id,
+				"driver-" + id + "@test.local",
+				CREATED,
+				CREATED);
+		return UserId.of(id);
 	}
 }

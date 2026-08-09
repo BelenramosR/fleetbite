@@ -30,4 +30,7 @@ fleetbite:
   security:
     jwt:
       secret: ${JWT_SECRET:local-dev-only-fleetbite-jwt-secret-32b}
+      # Access JWT lifetime (seconds)
       expiration-seconds: ${JWT_EXPIRATION:3600}
+      # Opaque refresh token lifetime (seconds); default 7 days
+      refresh-expiration-seconds: ${JWT_REFRESH_EXPIRATION:604800}

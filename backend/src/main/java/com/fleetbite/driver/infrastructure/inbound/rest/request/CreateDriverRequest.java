@@ -4,12 +4,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-@Schema(description = "Create driver. Optional initial location can be provided.")
+import java.util.UUID;
+
+@Schema(description = "Create driver linked to an existing DRIVER user. Optional initial location can be provided.")
 public record CreateDriverRequest(
-		@Schema(example = "Luis Gómez", requiredMode = Schema.RequiredMode.REQUIRED)
-		@NotBlank @Size(max = 120) String name,
+		@Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+		@NotNull UUID userId,
 		@Schema(example = "988000111", requiredMode = Schema.RequiredMode.REQUIRED)
 		@NotBlank @Size(max = 32) String phone,
 		@Schema(example = "-12.102")

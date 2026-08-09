@@ -2,8 +2,10 @@ package com.fleetbite.driver.infrastructure.outbound.persistence;
 
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
+import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -35,7 +37,7 @@ public class DriverPersistenceMapper {
 	}
 
 	private void copyPersistableState(Driver driver, DriverJpaEntity entity) {
-		entity.setName(driver.name());
+		entity.setUserId(driver.userId().value());
 		entity.setPhone(driver.phone());
 		entity.setStatus(driver.status());
 		if (driver.currentLocation() == null) {
@@ -46,6 +48,7 @@ public class DriverPersistenceMapper {
 			entity.setCurrentLatitude(toCoordinate(driver.currentLocation().latitude()));
 			entity.setCurrentLongitude(toCoordinate(driver.currentLocation().longitude()));
 		}
+		entity.setVehicleId(driver.vehicleId() == null ? null : driver.vehicleId().value());
 		entity.setCreatedAt(driver.createdAt());
 		entity.setUpdatedAt(driver.updatedAt());
 	}
@@ -60,12 +63,15 @@ public class DriverPersistenceMapper {
 					entity.getCurrentLongitude().doubleValue());
 		}
 
+		VehicleId vehicleId = entity.getVehicleId() == null ? null : VehicleId.of(entity.getVehicleId());
+
 		return Driver.reconstitute(
 				DriverId.of(entity.getId()),
-				entity.getName(),
+				UserId.of(entity.getUserId()),
 				entity.getPhone(),
 				entity.getStatus(),
 				location,
+				vehicleId,
 				toBusinessOffset(entity.getCreatedAt()),
 				toBusinessOffset(entity.getUpdatedAt()));
 	}

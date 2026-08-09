@@ -1,15 +1,18 @@
 package com.fleetbite.driver.infrastructure.inbound.rest;
 
 import com.fleetbite.driver.application.dto.DriverResult;
+import com.fleetbite.driver.application.port.in.AssignVehicleToDriverUseCase;
 import com.fleetbite.driver.application.port.in.CreateDriverUseCase;
 import com.fleetbite.driver.application.port.in.DeleteDriverUseCase;
 import com.fleetbite.driver.application.port.in.GetDriverByIdUseCase;
 import com.fleetbite.driver.application.port.in.ListDriversUseCase;
 import com.fleetbite.driver.application.port.in.SetDriverOfflineUseCase;
 import com.fleetbite.driver.application.port.in.SetDriverOnlineUseCase;
+import com.fleetbite.driver.application.port.in.UnassignVehicleFromDriverUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverLocationUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverUseCase;
 import com.fleetbite.driver.domain.model.DriverId;
+import com.fleetbite.driver.infrastructure.inbound.rest.request.AssignVehicleRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.CreateDriverRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.UpdateDriverLocationRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.UpdateDriverRequest;
@@ -57,6 +60,8 @@ public class DriverController {
 	private final UpdateDriverLocationUseCase updateDriverLocationUseCase;
 	private final SetDriverOnlineUseCase setDriverOnlineUseCase;
 	private final SetDriverOfflineUseCase setDriverOfflineUseCase;
+	private final AssignVehicleToDriverUseCase assignVehicleToDriverUseCase;
+	private final UnassignVehicleFromDriverUseCase unassignVehicleFromDriverUseCase;
 	private final DriverHttpMapper driverHttpMapper;
 
 	public DriverController(
@@ -68,6 +73,8 @@ public class DriverController {
 			UpdateDriverLocationUseCase updateDriverLocationUseCase,
 			SetDriverOnlineUseCase setDriverOnlineUseCase,
 			SetDriverOfflineUseCase setDriverOfflineUseCase,
+			AssignVehicleToDriverUseCase assignVehicleToDriverUseCase,
+			UnassignVehicleFromDriverUseCase unassignVehicleFromDriverUseCase,
 			DriverHttpMapper driverHttpMapper) {
 		this.createDriverUseCase = Objects.requireNonNull(createDriverUseCase);
 		this.getDriverByIdUseCase = Objects.requireNonNull(getDriverByIdUseCase);
@@ -77,6 +84,8 @@ public class DriverController {
 		this.updateDriverLocationUseCase = Objects.requireNonNull(updateDriverLocationUseCase);
 		this.setDriverOnlineUseCase = Objects.requireNonNull(setDriverOnlineUseCase);
 		this.setDriverOfflineUseCase = Objects.requireNonNull(setDriverOfflineUseCase);
+		this.assignVehicleToDriverUseCase = Objects.requireNonNull(assignVehicleToDriverUseCase);
+		this.unassignVehicleFromDriverUseCase = Objects.requireNonNull(unassignVehicleFromDriverUseCase);
 		this.driverHttpMapper = Objects.requireNonNull(driverHttpMapper);
 	}
 
@@ -96,7 +105,7 @@ public class DriverController {
 	}
 
 	@PostMapping
-	@Operation(summary = "Create driver")
+	@Operation(summary = "Create driver", description = "Links a DRIVER-role user to a new driver profile.")
 	@ApiResponses({
 			@ApiResponse(responseCode = "201", description = "Driver created",
 					content = @Content(schema = @Schema(implementation = DriverResponse.class))),
@@ -105,6 +114,10 @@ public class DriverController {
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
 					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
 			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "User not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Conflict",
 					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
 	})
 	public ResponseEntity<DriverResponse> createDriver(@Valid @RequestBody CreateDriverRequest request) {
@@ -134,7 +147,7 @@ public class DriverController {
 	}
 
 	@PutMapping("/{id}")
-	@Operation(summary = "Update driver profile")
+	@Operation(summary = "Update driver phone")
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Driver updated"),
 			@ApiResponse(responseCode = "400", description = "Validation error",
@@ -144,6 +157,8 @@ public class DriverController {
 			@ApiResponse(responseCode = "403", description = "Forbidden",
 					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Conflict",
 					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
 	})
 	public DriverResponse updateDriver(
@@ -155,7 +170,7 @@ public class DriverController {
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@Operation(summary = "Delete driver")
+	@Operation(summary = "Delete driver", description = "Only OFFLINE drivers without an assigned vehicle can be deleted.")
 	@ApiResponses({
 			@ApiResponse(responseCode = "204", description = "Driver deleted"),
 			@ApiResponse(responseCode = "401", description = "Unauthenticated",
@@ -169,6 +184,50 @@ public class DriverController {
 	})
 	public void deleteDriver(@PathVariable UUID id) {
 		deleteDriverUseCase.execute(DriverId.of(id));
+	}
+
+	@PutMapping("/{id}/vehicle")
+	@Operation(summary = "Assign vehicle to driver", description = "Vehicle must be AVAILABLE and not already assigned.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Vehicle assigned"),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Conflict",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
+	public DriverResponse assignVehicle(
+			@PathVariable UUID id,
+			@Valid @RequestBody AssignVehicleRequest request) {
+		DriverResult result = assignVehicleToDriverUseCase.execute(
+				DriverId.of(id),
+				driverHttpMapper.toCommand(request));
+		return driverHttpMapper.toResponse(result);
+	}
+
+	@DeleteMapping("/{id}/vehicle")
+	@Operation(summary = "Unassign vehicle from driver")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Vehicle unassigned"),
+			@ApiResponse(responseCode = "400", description = "Validation error",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthenticated",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "403", description = "Forbidden",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Not found",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+			@ApiResponse(responseCode = "409", description = "Conflict",
+					content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+	})
+	public DriverResponse unassignVehicle(@PathVariable UUID id) {
+		DriverResult result = unassignVehicleFromDriverUseCase.execute(DriverId.of(id));
+		return driverHttpMapper.toResponse(result);
 	}
 
 	@PatchMapping("/{id}/location")

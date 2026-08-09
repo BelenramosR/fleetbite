@@ -54,7 +54,117 @@ class SecurityIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.accessToken", notNullValue()))
 				.andExpect(jsonPath("$.tokenType").value("Bearer"))
-				.andExpect(jsonPath("$.expiresIn").value(3600));
+				.andExpect(jsonPath("$.expiresIn").value(3600))
+				.andExpect(jsonPath("$.refreshToken", notNullValue()));
+	}
+
+	@Test
+	void refresh_shouldReturnNewTokensAndInvalidatePrevious() throws Exception {
+		MvcResult login = mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "email": "admin@fleetbite.local",
+								  "password": "Fleetbite1!"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andReturn();
+		String body = login.getResponse().getContentAsString();
+		String refreshToken = extractJsonString(body, "refreshToken");
+
+		MvcResult refreshed = mockMvc.perform(post("/api/v1/auth/refresh")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "refreshToken": "%s"
+								}
+								""".formatted(refreshToken)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accessToken", notNullValue()))
+				.andExpect(jsonPath("$.refreshToken", notNullValue()))
+				.andReturn();
+		String newRefresh = extractJsonString(refreshed.getResponse().getContentAsString(), "refreshToken");
+
+		mockMvc.perform(post("/api/v1/auth/refresh")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "refreshToken": "%s"
+								}
+								""".formatted(refreshToken)))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTHENTICATION_FAILED"));
+
+		mockMvc.perform(get("/api/v1/users")
+						.header("Authorization", "Bearer "
+								+ extractJsonString(refreshed.getResponse().getContentAsString(), "accessToken")))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/v1/auth/refresh")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "refreshToken": "%s"
+								}
+								""".formatted(newRefresh)))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void refresh_shouldReturn401ForInvalidToken() throws Exception {
+		mockMvc.perform(post("/api/v1/auth/refresh")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "refreshToken": "00000000-0000-0000-0000-000000000000"
+								}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTHENTICATION_FAILED"));
+	}
+
+	@Test
+	void logout_thenRefreshShouldFail() throws Exception {
+		MvcResult login = mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "email": "admin@fleetbite.local",
+								  "password": "Fleetbite1!"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andReturn();
+		String refreshToken = extractJsonString(login.getResponse().getContentAsString(), "refreshToken");
+
+		mockMvc.perform(post("/api/v1/auth/logout")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "refreshToken": "%s"
+								}
+								""".formatted(refreshToken)))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(post("/api/v1/auth/logout")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "refreshToken": "%s"
+								}
+								""".formatted(refreshToken)))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(post("/api/v1/auth/refresh")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "refreshToken": "%s"
+								}
+								""".formatted(refreshToken)))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTHENTICATION_FAILED"));
 	}
 
 	@Test

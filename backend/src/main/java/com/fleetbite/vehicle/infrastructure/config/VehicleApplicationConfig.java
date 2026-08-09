@@ -1,5 +1,6 @@
 package com.fleetbite.vehicle.infrastructure.config;
 
+import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.vehicle.application.port.in.ActivateVehicleUseCase;
 import com.fleetbite.vehicle.application.port.in.CreateVehicleUseCase;
 import com.fleetbite.vehicle.application.port.in.DeactivateVehicleUseCase;
@@ -46,8 +47,10 @@ public class VehicleApplicationConfig {
 	}
 
 	@Bean
-	DeleteVehicleUseCase deleteVehicleUseCase(VehicleRepositoryPort vehicleRepositoryPort) {
-		return new DeleteVehicleService(vehicleRepositoryPort);
+	DeleteVehicleUseCase deleteVehicleUseCase(
+			VehicleRepositoryPort vehicleRepositoryPort,
+			DriverRepositoryPort driverRepositoryPort) {
+		return new DeleteVehicleService(vehicleRepositoryPort, driverRepositoryPort);
 	}
 
 	@Bean

@@ -4,9 +4,13 @@ import com.fleetbite.delivery.domain.exception.ActiveAssignmentAlreadyExistsExce
 import com.fleetbite.delivery.domain.exception.DriverNotAssignableException;
 import com.fleetbite.delivery.domain.exception.InvalidAssignmentDataException;
 import com.fleetbite.delivery.domain.exception.OrderNotAssignableException;
+import com.fleetbite.driver.domain.exception.DriverAlreadyLinkedToUserException;
 import com.fleetbite.driver.domain.exception.DriverNotDeletableException;
+import com.fleetbite.driver.domain.exception.DriverUserNotEligibleException;
 import com.fleetbite.driver.domain.exception.DuplicateDriverPhoneException;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
+import com.fleetbite.driver.domain.exception.VehicleAlreadyAssignedException;
+import com.fleetbite.driver.domain.exception.VehicleAssignedToDriverException;
 import com.fleetbite.identity.domain.exception.AuthenticationFailedException;
 import com.fleetbite.identity.domain.exception.DuplicateUserEmailException;
 import com.fleetbite.identity.domain.exception.InvalidUserDataException;
@@ -20,6 +24,8 @@ import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.exception.DomainException;
 import com.fleetbite.vehicle.domain.exception.DuplicateVehiclePlateException;
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleDataException;
+import com.fleetbite.vehicle.domain.exception.InvalidVehicleTransitionException;
+import com.fleetbite.vehicle.domain.exception.VehicleNotAssignableException;
 import com.fleetbite.vehicle.domain.exception.VehicleNotDeletableException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -82,8 +88,14 @@ public class GlobalExceptionHandler {
 			InvalidOrderTransitionException.class,
 			DriverNotDeletableException.class,
 			DuplicateDriverPhoneException.class,
+			DriverUserNotEligibleException.class,
+			DriverAlreadyLinkedToUserException.class,
+			VehicleAlreadyAssignedException.class,
+			VehicleAssignedToDriverException.class,
+			VehicleNotAssignableException.class,
 			VehicleNotDeletableException.class,
 			DuplicateVehiclePlateException.class,
+			InvalidVehicleTransitionException.class,
 			ActiveAssignmentAlreadyExistsException.class,
 			OrderNotAssignableException.class,
 			DriverNotAssignableException.class,

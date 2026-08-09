@@ -4,8 +4,10 @@ import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
+import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -13,6 +15,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -20,6 +23,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,6 +51,9 @@ class DriverRepositoryAdapterIntegrationTest {
 	@Autowired
 	private SpringDataDriverRepository springDataDriverRepository;
 
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
+
 	@Test
 	void saveAndFindById_shouldPersistAndReconstituteDriverWithBusinessOffset() {
 		Driver saved = driverRepositoryPort.save(sampleDriver("999888777", null));
@@ -55,6 +62,7 @@ class DriverRepositoryAdapterIntegrationTest {
 		assertTrue(loaded.isPresent());
 		Driver found = loaded.get();
 		assertEquals(saved.id(), found.id());
+		assertEquals(saved.userId(), found.userId());
 		assertEquals(DriverStatus.OFFLINE, found.status());
 		assertEquals(CREATED_AT, found.createdAt());
 		assertEquals(CREATED_AT, found.updatedAt());
@@ -70,7 +78,7 @@ class DriverRepositoryAdapterIntegrationTest {
 		Driver first = driverRepositoryPort.save(sampleDriver("111111111", null));
 		Driver second = Driver.create(
 				DriverId.generate(),
-				"Luis Gomez",
+				insertDriverUser(),
 				"222222222",
 				null,
 				CREATED_AT.plusMinutes(1));
@@ -88,11 +96,11 @@ class DriverRepositoryAdapterIntegrationTest {
 		Driver saved = driverRepositoryPort.save(sampleDriver("333333333", new Location(-12.10, -77.03)));
 		Long versionBefore = springDataDriverRepository.findById(saved.id().value()).orElseThrow().getVersion();
 
-		saved.updateProfile("Luis Gomez", "333333333", CREATED_AT.plusMinutes(5));
+		saved.updatePhone("333333333", CREATED_AT.plusMinutes(5));
 		saved.goOnline(CREATED_AT.plusMinutes(6));
 		Driver updated = driverRepositoryPort.update(saved);
 
-		assertEquals("Luis Gomez", updated.name());
+		assertEquals("333333333", updated.phone());
 		assertEquals(DriverStatus.AVAILABLE, updated.status());
 		assertEquals(1, springDataDriverRepository.count());
 		Long versionAfter = springDataDriverRepository.findById(saved.id().value()).orElseThrow().getVersion();
@@ -128,8 +136,10 @@ class DriverRepositoryAdapterIntegrationTest {
 	}
 
 	@Test
-	void findAvailableWithLocation_shouldReturnOnlyAvailableDriversWithCoordinates() {
+	void findAvailableWithLocation_shouldReturnOnlyAvailableDriversWithVehicleAndCoordinates() {
+		VehicleId vehicleId = insertVehicle("AVA-001");
 		Driver available = sampleDriver("777777777", new Location(-12.10, -77.03));
+		available.assignVehicle(vehicleId, CREATED_AT.plusSeconds(30));
 		available.goOnline(CREATED_AT.plusMinutes(1));
 		driverRepositoryPort.save(available);
 
@@ -139,7 +149,9 @@ class DriverRepositoryAdapterIntegrationTest {
 		Driver offlineWithoutLocation = sampleDriver("999999999", null);
 		driverRepositoryPort.save(offlineWithoutLocation);
 
+		VehicleId busyVehicleId = insertVehicle("BSY-001");
 		Driver busy = sampleDriver("101010101", new Location(-12.12, -77.05));
+		busy.assignVehicle(busyVehicleId, CREATED_AT.plusSeconds(30));
 		busy.goOnline(CREATED_AT.plusMinutes(1));
 		busy.markBusy(CREATED_AT.plusMinutes(2));
 		driverRepositoryPort.save(busy);
@@ -149,9 +161,38 @@ class DriverRepositoryAdapterIntegrationTest {
 		assertEquals(1, found.size());
 		assertEquals(available.id(), found.getFirst().id());
 		assertEquals(DriverStatus.AVAILABLE, found.getFirst().status());
+		assertEquals(vehicleId, found.getFirst().vehicleId());
 	}
 
-	private static Driver sampleDriver(String phone, Location location) {
-		return Driver.create(DriverId.generate(), "Carlos Perez", phone, location, CREATED_AT);
+	private Driver sampleDriver(String phone, Location location) {
+		return Driver.create(DriverId.generate(), insertDriverUser(), phone, location, CREATED_AT);
+	}
+
+	private UserId insertDriverUser() {
+		UUID id = UUID.randomUUID();
+		jdbcTemplate.update(
+				"""
+						INSERT INTO users (id, email, password_hash, full_name, role, status, created_at, updated_at, version)
+						VALUES (?, ?, 'hash', 'Test Driver', 'DRIVER', 'ACTIVE', ?, ?, 0)
+						""",
+				id,
+				"driver-" + id + "@test.local",
+				CREATED_AT,
+				CREATED_AT);
+		return UserId.of(id);
+	}
+
+	private VehicleId insertVehicle(String plate) {
+		UUID id = UUID.randomUUID();
+		jdbcTemplate.update(
+				"""
+						INSERT INTO vehicles (id, plate, type, status, created_at, updated_at, version)
+						VALUES (?, ?, 'MOTORCYCLE', 'AVAILABLE', ?, ?, 0)
+						""",
+				id,
+				plate,
+				CREATED_AT,
+				CREATED_AT);
+		return VehicleId.of(id);
 	}
 }

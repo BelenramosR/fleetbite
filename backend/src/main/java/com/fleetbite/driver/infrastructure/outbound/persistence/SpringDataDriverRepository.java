@@ -4,6 +4,7 @@ import com.fleetbite.driver.domain.model.DriverStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface SpringDataDriverRepository extends JpaRepository<DriverJpaEntity, UUID> {
@@ -12,6 +13,10 @@ public interface SpringDataDriverRepository extends JpaRepository<DriverJpaEntit
 
 	boolean existsByPhoneAndIdNot(String phone, UUID id);
 
-	List<DriverJpaEntity> findByStatusAndCurrentLatitudeIsNotNullAndCurrentLongitudeIsNotNull(
+	boolean existsByUserId(UUID userId);
+
+	Optional<DriverJpaEntity> findByVehicleId(UUID vehicleId);
+
+	List<DriverJpaEntity> findByStatusAndCurrentLatitudeIsNotNullAndCurrentLongitudeIsNotNullAndVehicleIdIsNotNull(
 			DriverStatus status);
 }

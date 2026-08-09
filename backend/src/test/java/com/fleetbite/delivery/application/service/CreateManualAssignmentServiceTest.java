@@ -11,6 +11,7 @@ import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
+import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
@@ -19,6 +20,7 @@ import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,7 +122,7 @@ class CreateManualAssignmentServiceTest {
 	@Test
 	void execute_shouldRejectDriverWithoutLocation() {
 		Order order = readyOrder();
-		Driver offline = Driver.create(DriverId.generate(), "Carlos", "999888778", null, CREATED);
+		Driver offline = Driver.create(DriverId.generate(), UserId.generate(), "999888778", null, CREATED);
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
 		when(driverRepositoryPort.findById(offline.id())).thenReturn(Optional.of(offline));
 
@@ -195,10 +197,11 @@ class CreateManualAssignmentServiceTest {
 	private static Driver availableDriver() {
 		Driver driver = Driver.create(
 				DriverId.generate(),
-				"Carlos",
+				UserId.generate(),
 				"999888777",
 				new Location(-12.10, -77.03),
 				CREATED);
+		driver.assignVehicle(VehicleId.generate(), CREATED.plusSeconds(30));
 		driver.goOnline(CREATED.plusMinutes(1));
 		return driver;
 	}

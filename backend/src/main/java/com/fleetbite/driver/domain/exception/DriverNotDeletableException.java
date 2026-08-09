@@ -10,4 +10,8 @@ public final class DriverNotDeletableException extends DomainException {
 				"DRIVER_NOT_DELETABLE",
 				"Driver cannot be deleted while in status " + status);
 	}
+
+	public DriverNotDeletableException(String message) {
+		super("DRIVER_NOT_DELETABLE", message);
+	}
 }

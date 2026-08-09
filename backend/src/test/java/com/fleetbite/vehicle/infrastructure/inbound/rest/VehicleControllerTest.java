@@ -102,7 +102,7 @@ class VehicleControllerTest {
 								"""))
 				.andExpect(status().isCreated())
 				.andExpect(header().string("Location", containsString("/api/v1/vehicles/" + result.id())))
-				.andExpect(jsonPath("$.status").value("ACTIVE"))
+				.andExpect(jsonPath("$.status").value("AVAILABLE"))
 				.andExpect(jsonPath("$.createdAt").value("2026-08-08T22:00:00-05:00"));
 	}
 
@@ -212,7 +212,7 @@ class VehicleControllerTest {
 	@Test
 	void deleteVehicle_shouldReturn409WhenNotDeletable() throws Exception {
 		UUID id = UUID.randomUUID();
-		doThrow(new VehicleNotDeletableException(VehicleStatus.ACTIVE))
+		doThrow(new VehicleNotDeletableException(VehicleStatus.AVAILABLE))
 				.when(deleteVehicleUseCase).execute(VehicleId.of(id));
 
 		mockMvc.perform(delete("/api/v1/vehicles/{id}", id))
@@ -237,7 +237,7 @@ class VehicleControllerTest {
 
 		mockMvc.perform(post("/api/v1/vehicles/{id}/activate", result.id()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("ACTIVE"));
+				.andExpect(jsonPath("$.status").value("AVAILABLE"));
 	}
 
 	@Test
@@ -251,13 +251,13 @@ class VehicleControllerTest {
 	}
 
 	@Test
-	void maintenance_shouldReturn400OnInvalidTransition() throws Exception {
+	void maintenance_shouldReturn409OnInvalidTransition() throws Exception {
 		UUID id = UUID.randomUUID();
 		when(sendVehicleToMaintenanceUseCase.execute(VehicleId.of(id)))
 				.thenThrow(new InvalidVehicleTransitionException(VehicleStatus.INACTIVE, VehicleStatus.MAINTENANCE));
 
 		mockMvc.perform(post("/api/v1/vehicles/{id}/maintenance", id))
-				.andExpect(status().isBadRequest())
+				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("INVALID_VEHICLE_TRANSITION"));
 	}
 

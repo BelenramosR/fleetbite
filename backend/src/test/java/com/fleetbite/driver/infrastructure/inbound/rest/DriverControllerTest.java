@@ -4,12 +4,14 @@ import com.fleetbite.driver.application.dto.CreateDriverCommand;
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.dto.UpdateDriverCommand;
 import com.fleetbite.driver.application.dto.UpdateDriverLocationCommand;
+import com.fleetbite.driver.application.port.in.AssignVehicleToDriverUseCase;
 import com.fleetbite.driver.application.port.in.CreateDriverUseCase;
 import com.fleetbite.driver.application.port.in.DeleteDriverUseCase;
 import com.fleetbite.driver.application.port.in.GetDriverByIdUseCase;
 import com.fleetbite.driver.application.port.in.ListDriversUseCase;
 import com.fleetbite.driver.application.port.in.SetDriverOfflineUseCase;
 import com.fleetbite.driver.application.port.in.SetDriverOnlineUseCase;
+import com.fleetbite.driver.application.port.in.UnassignVehicleFromDriverUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverLocationUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverUseCase;
 import com.fleetbite.driver.domain.exception.DriverNotDeletableException;
@@ -18,6 +20,7 @@ import com.fleetbite.driver.domain.exception.InvalidDriverTransitionException;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
+import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -61,6 +64,7 @@ class DriverControllerTest {
 
 	private static final OffsetDateTime CREATED_AT =
 			OffsetDateTime.of(2026, 8, 8, 22, 0, 0, 0, BusinessTime.ZONE_OFFSET);
+	private static final UUID USER_UUID = UUID.fromString("44444444-4444-4444-4444-444444444444");
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -89,6 +93,12 @@ class DriverControllerTest {
 	@MockitoBean
 	private SetDriverOfflineUseCase setDriverOfflineUseCase;
 
+	@MockitoBean
+	private AssignVehicleToDriverUseCase assignVehicleToDriverUseCase;
+
+	@MockitoBean
+	private UnassignVehicleFromDriverUseCase unassignVehicleFromDriverUseCase;
+
 	@Test
 	void createDriver_shouldReturn201WithLocationHeader() throws Exception {
 		DriverResult result = sampleResult(null);
@@ -98,10 +108,10 @@ class DriverControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
-								  "name": "Carlos Perez",
+								  "userId": "%s",
 								  "phone": "999888777"
 								}
-								"""))
+								""".formatted(USER_UUID)))
 				.andExpect(status().isCreated())
 				.andExpect(header().string("Location", containsString("/api/v1/drivers/" + result.id())))
 				.andExpect(jsonPath("$.status").value("OFFLINE"))
@@ -117,10 +127,10 @@ class DriverControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
-								  "name": "Carlos Perez",
+								  "userId": "%s",
 								  "phone": "999888777"
 								}
-								"""))
+								""".formatted(USER_UUID)))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("DUPLICATE_DRIVER_PHONE"));
 	}
@@ -175,7 +185,6 @@ class DriverControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
-								  "name": "Luis Gomez",
 								  "phone": "988000111"
 								}
 								"""))
@@ -191,8 +200,7 @@ class DriverControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
-								  "name": "   ",
-								  "phone": "988000111"
+								  "phone": "   "
 								}
 								"""))
 				.andExpect(status().isBadRequest())
@@ -277,17 +285,18 @@ class DriverControllerTest {
 
 	private static DriverResult sampleResult(Location location) {
 		return DriverResult.from(
-				Driver.create(DriverId.generate(), "Carlos Perez", "999888777", location, CREATED_AT));
+				Driver.create(DriverId.generate(), UserId.of(USER_UUID), "999888777", location, CREATED_AT),
+				"Carlos Perez");
 	}
 
 	private static DriverResult availableResult() {
 		Driver driver = Driver.create(
 				DriverId.generate(),
-				"Carlos Perez",
+				UserId.of(USER_UUID),
 				"999888777",
 				new Location(-12.10, -77.03),
 				CREATED_AT);
 		driver.goOnline(CREATED_AT.plusMinutes(1));
-		return DriverResult.from(driver);
+		return DriverResult.from(driver, "Carlos Perez");
 	}
 }

@@ -1,7 +1,8 @@
 package com.fleetbite.vehicle.domain.model;
 
 public enum VehicleStatus {
-	ACTIVE,
+	AVAILABLE,
+	IN_USE,
 	MAINTENANCE,
 	INACTIVE
 }

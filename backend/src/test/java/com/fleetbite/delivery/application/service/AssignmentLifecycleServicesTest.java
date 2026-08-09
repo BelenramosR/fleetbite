@@ -9,6 +9,7 @@ import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
+import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.domain.model.Money;
@@ -206,7 +207,7 @@ class AssignmentLifecycleServicesTest {
 	private static Driver busyDriver() {
 		Driver driver = Driver.create(
 				DriverId.generate(),
-				"Carlos",
+				UserId.generate(),
 				"999888777",
 				new Location(-12.10, -77.03),
 				CREATED);

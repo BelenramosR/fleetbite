@@ -21,8 +21,8 @@ public class DriverJpaEntity {
 	@Column(name = "id", nullable = false, updatable = false)
 	private UUID id;
 
-	@Column(name = "name", nullable = false, length = 120)
-	private String name;
+	@Column(name = "user_id", nullable = false, unique = true)
+	private UUID userId;
 
 	@Column(name = "phone", nullable = false, unique = true, length = 32)
 	private String phone;
@@ -36,6 +36,9 @@ public class DriverJpaEntity {
 
 	@Column(name = "current_longitude", precision = 10, scale = 7)
 	private BigDecimal currentLongitude;
+
+	@Column(name = "vehicle_id", unique = true)
+	private UUID vehicleId;
 
 	@Column(name = "created_at", nullable = false)
 	private OffsetDateTime createdAt;
@@ -58,12 +61,12 @@ public class DriverJpaEntity {
 		this.id = id;
 	}
 
-	public String getName() {
-		return name;
+	public UUID getUserId() {
+		return userId;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setUserId(UUID userId) {
+		this.userId = userId;
 	}
 
 	public String getPhone() {
@@ -96,6 +99,14 @@ public class DriverJpaEntity {
 
 	public void setCurrentLongitude(BigDecimal currentLongitude) {
 		this.currentLongitude = currentLongitude;
+	}
+
+	public UUID getVehicleId() {
+		return vehicleId;
+	}
+
+	public void setVehicleId(UUID vehicleId) {
+		this.vehicleId = vehicleId;
 	}
 
 	public OffsetDateTime getCreatedAt() {

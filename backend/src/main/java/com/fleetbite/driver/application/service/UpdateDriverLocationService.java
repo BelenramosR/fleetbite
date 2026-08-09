@@ -7,9 +7,11 @@ import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverId;
+import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
+import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -18,10 +20,16 @@ import java.util.Objects;
 public final class UpdateDriverLocationService implements UpdateDriverLocationUseCase {
 
 	private final DriverRepositoryPort driverRepositoryPort;
+	private final DriverResultAssembler resultAssembler;
 	private final Clock clock;
 
-	public UpdateDriverLocationService(DriverRepositoryPort driverRepositoryPort, Clock clock) {
+	public UpdateDriverLocationService(
+			DriverRepositoryPort driverRepositoryPort,
+			UserRepositoryPort userRepositoryPort,
+			VehicleRepositoryPort vehicleRepositoryPort,
+			Clock clock) {
 		this.driverRepositoryPort = Objects.requireNonNull(driverRepositoryPort, "driverRepositoryPort");
+		this.resultAssembler = new DriverResultAssembler(userRepositoryPort, vehicleRepositoryPort);
 		this.clock = Objects.requireNonNull(clock, "clock");
 	}
 
@@ -45,6 +53,6 @@ public final class UpdateDriverLocationService implements UpdateDriverLocationUs
 		driver.updateLocation(location, now);
 
 		Driver updated = driverRepositoryPort.update(driver);
-		return DriverResult.from(updated);
+		return resultAssembler.toResult(updated);
 	}
 }

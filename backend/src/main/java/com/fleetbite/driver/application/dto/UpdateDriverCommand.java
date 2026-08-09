@@ -1,4 +1,4 @@
 package com.fleetbite.driver.application.dto;
 
-public record UpdateDriverCommand(String name, String phone) {
+public record UpdateDriverCommand(String phone) {
 }

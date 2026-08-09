@@ -1,5 +1,6 @@
 package com.fleetbite.vehicle.application.service;
 
+import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
@@ -30,11 +31,14 @@ class DeleteVehicleServiceTest {
 	@Mock
 	private VehicleRepositoryPort vehicleRepositoryPort;
 
+	@Mock
+	private DriverRepositoryPort driverRepositoryPort;
+
 	private DeleteVehicleService deleteVehicleService;
 
 	@BeforeEach
 	void setUp() {
-		deleteVehicleService = new DeleteVehicleService(vehicleRepositoryPort);
+		deleteVehicleService = new DeleteVehicleService(vehicleRepositoryPort, driverRepositoryPort);
 	}
 
 	@Test
@@ -42,6 +46,7 @@ class DeleteVehicleServiceTest {
 		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		vehicle.deactivate(CREATED.plusMinutes(1));
 		when(vehicleRepositoryPort.findById(vehicle.id())).thenReturn(Optional.of(vehicle));
+		when(driverRepositoryPort.findByVehicleId(vehicle.id())).thenReturn(Optional.empty());
 
 		deleteVehicleService.execute(vehicle.id());
 
@@ -49,9 +54,10 @@ class DeleteVehicleServiceTest {
 	}
 
 	@Test
-	void execute_shouldRejectActiveVehicle() {
+	void execute_shouldRejectAvailableVehicle() {
 		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		when(vehicleRepositoryPort.findById(vehicle.id())).thenReturn(Optional.of(vehicle));
+		when(driverRepositoryPort.findByVehicleId(vehicle.id())).thenReturn(Optional.empty());
 
 		assertThrows(VehicleNotDeletableException.class, () -> deleteVehicleService.execute(vehicle.id()));
 		verify(vehicleRepositoryPort, never()).deleteById(vehicle.id());

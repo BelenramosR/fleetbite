@@ -55,7 +55,7 @@ class VehicleRepositoryAdapterIntegrationTest {
 		assertTrue(loaded.isPresent());
 		Vehicle found = loaded.get();
 		assertEquals(saved.id(), found.id());
-		assertEquals(VehicleStatus.ACTIVE, found.status());
+		assertEquals(VehicleStatus.AVAILABLE, found.status());
 		assertEquals(CREATED_AT, found.createdAt());
 		assertEquals(CREATED_AT, found.updatedAt());
 	}

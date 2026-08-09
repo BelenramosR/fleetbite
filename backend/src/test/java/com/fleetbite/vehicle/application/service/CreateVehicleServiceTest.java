@@ -54,7 +54,7 @@ class CreateVehicleServiceTest {
 		verify(vehicleRepositoryPort).save(captor.capture());
 		Vehicle saved = captor.getValue();
 
-		assertEquals(VehicleStatus.ACTIVE, saved.status());
+		assertEquals(VehicleStatus.AVAILABLE, saved.status());
 		assertEquals(FIXED, saved.createdAt());
 		assertEquals("ABC-123", result.plate());
 		assertEquals(VehicleType.MOTORCYCLE, result.type());
