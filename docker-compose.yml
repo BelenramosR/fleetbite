@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: fleetbite-postgres
+    environment:
+      POSTGRES_DB: fleetbite
+      POSTGRES_USER: fleetbite
+      POSTGRES_PASSWORD: fleetbite
+    ports:
+      - "5432:5432"
+    volumes:
+      - fleetbite_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fleetbite -d fleetbite"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  fleetbite_postgres_data:

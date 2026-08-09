@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: fleetbite-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/fleetbite
+    username: fleetbite
+    password: fleetbite
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
