@@ -6,8 +6,11 @@ import com.fleetbite.order.domain.event.OrderReadyEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Objects;
 
@@ -17,9 +20,15 @@ public class OrderReadyEventListener {
 	private static final Logger log = LoggerFactory.getLogger(OrderReadyEventListener.class);
 
 	private final AutoAssignOrderUseCase autoAssignOrderUseCase;
+	private final TransactionTemplate requiresNewTransactionTemplate;
 
-	public OrderReadyEventListener(AutoAssignOrderUseCase autoAssignOrderUseCase) {
+	public OrderReadyEventListener(
+			AutoAssignOrderUseCase autoAssignOrderUseCase,
+			PlatformTransactionManager transactionManager) {
 		this.autoAssignOrderUseCase = Objects.requireNonNull(autoAssignOrderUseCase);
+		Objects.requireNonNull(transactionManager, "transactionManager is required");
+		this.requiresNewTransactionTemplate = new TransactionTemplate(transactionManager);
+		this.requiresNewTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -30,8 +39,9 @@ public class OrderReadyEventListener {
 				event.eventId(),
 				event.orderId().value());
 		try {
-			AutoAssignmentResult result = autoAssignOrderUseCase.execute(event.orderId());
-			if (result.assigned()) {
+			AutoAssignmentResult result = requiresNewTransactionTemplate.execute(
+					status -> autoAssignOrderUseCase.execute(event.orderId()));
+			if (result != null && result.assigned()) {
 				log.info(
 						"ORDER_READY processed: ASSIGNED eventId={} eventType=ORDER_READY orderId={}",
 						event.eventId(),

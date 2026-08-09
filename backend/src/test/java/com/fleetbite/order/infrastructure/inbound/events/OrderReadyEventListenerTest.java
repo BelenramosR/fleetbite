@@ -11,11 +11,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,12 +30,16 @@ class OrderReadyEventListenerTest {
 
 	@Mock
 	private AutoAssignOrderUseCase autoAssignOrderUseCase;
+	@Mock
+	private PlatformTransactionManager transactionManager;
 
 	private OrderReadyEventListener listener;
 
 	@BeforeEach
 	void setUp() {
-		listener = new OrderReadyEventListener(autoAssignOrderUseCase);
+		when(transactionManager.getTransaction(any(TransactionDefinition.class)))
+				.thenReturn(new SimpleTransactionStatus());
+		listener = new OrderReadyEventListener(autoAssignOrderUseCase, transactionManager);
 	}
 
 	@Test
@@ -50,6 +59,7 @@ class OrderReadyEventListenerTest {
 		listener.onOrderReady(event);
 
 		verify(autoAssignOrderUseCase).execute(eq(orderId));
+		verify(transactionManager).commit(any(TransactionStatus.class));
 	}
 
 	@Test
