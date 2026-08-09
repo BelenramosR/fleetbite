@@ -1,5 +1,8 @@
 package com.fleetbite.shared.infrastructure.inbound.rest;
 
+import com.fleetbite.driver.domain.exception.DriverNotDeletableException;
+import com.fleetbite.driver.domain.exception.DuplicateDriverPhoneException;
+import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.OrderNotDeletableException;
 import com.fleetbite.order.domain.exception.OrderNotEditableException;
@@ -32,14 +35,19 @@ public class GlobalExceptionHandler {
 		return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message, request.getRequestURI());
 	}
 
-	@ExceptionHandler(InvalidOrderDataException.class)
-	public ResponseEntity<ApiErrorResponse> handleInvalidOrderData(
-			InvalidOrderDataException exception,
+	@ExceptionHandler({InvalidOrderDataException.class, InvalidDriverDataException.class})
+	public ResponseEntity<ApiErrorResponse> handleInvalidDomainData(
+			DomainException exception,
 			HttpServletRequest request) {
 		return build(HttpStatus.BAD_REQUEST, exception.getCode(), exception.getMessage(), request.getRequestURI());
 	}
 
-	@ExceptionHandler({OrderNotEditableException.class, OrderNotDeletableException.class})
+	@ExceptionHandler({
+			OrderNotEditableException.class,
+			OrderNotDeletableException.class,
+			DriverNotDeletableException.class,
+			DuplicateDriverPhoneException.class
+	})
 	public ResponseEntity<ApiErrorResponse> handleConflict(
 			DomainException exception,
 			HttpServletRequest request) {

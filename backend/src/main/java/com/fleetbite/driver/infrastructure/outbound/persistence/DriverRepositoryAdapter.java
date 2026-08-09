@@ -1,0 +1,80 @@
+package com.fleetbite.driver.infrastructure.outbound.persistence;
+
+import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
+import com.fleetbite.driver.domain.model.Driver;
+import com.fleetbite.driver.domain.model.DriverId;
+import com.fleetbite.shared.application.exception.ResourceNotFoundException;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+@Component
+public class DriverRepositoryAdapter implements DriverRepositoryPort {
+
+	private final SpringDataDriverRepository springDataDriverRepository;
+	private final DriverPersistenceMapper driverPersistenceMapper;
+
+	public DriverRepositoryAdapter(
+			SpringDataDriverRepository springDataDriverRepository,
+			DriverPersistenceMapper driverPersistenceMapper) {
+		this.springDataDriverRepository = Objects.requireNonNull(springDataDriverRepository);
+		this.driverPersistenceMapper = Objects.requireNonNull(driverPersistenceMapper);
+	}
+
+	@Override
+	public Driver save(Driver driver) {
+		Objects.requireNonNull(driver, "driver is required");
+		DriverJpaEntity entity = driverPersistenceMapper.toEntity(driver);
+		DriverJpaEntity saved = springDataDriverRepository.save(entity);
+		return driverPersistenceMapper.toDomain(saved);
+	}
+
+	@Override
+	public Driver update(Driver driver) {
+		Objects.requireNonNull(driver, "driver is required");
+		DriverJpaEntity existing = springDataDriverRepository.findById(driver.id().value())
+				.orElseThrow(() -> new ResourceNotFoundException("Driver", driver.id().value()));
+		driverPersistenceMapper.copyToEntity(driver, existing);
+		DriverJpaEntity saved = springDataDriverRepository.save(existing);
+		return driverPersistenceMapper.toDomain(saved);
+	}
+
+	@Override
+	public Optional<Driver> findById(DriverId id) {
+		Objects.requireNonNull(id, "id is required");
+		return springDataDriverRepository.findById(id.value())
+				.map(driverPersistenceMapper::toDomain);
+	}
+
+	@Override
+	public List<Driver> findAll() {
+		return springDataDriverRepository.findAll(Sort.by(Sort.Direction.ASC, "createdAt")).stream()
+				.map(driverPersistenceMapper::toDomain)
+				.toList();
+	}
+
+	@Override
+	public void deleteById(DriverId id) {
+		Objects.requireNonNull(id, "id is required");
+		if (!springDataDriverRepository.existsById(id.value())) {
+			throw new ResourceNotFoundException("Driver", id.value());
+		}
+		springDataDriverRepository.deleteById(id.value());
+	}
+
+	@Override
+	public boolean existsByPhone(String phone) {
+		Objects.requireNonNull(phone, "phone is required");
+		return springDataDriverRepository.existsByPhone(phone);
+	}
+
+	@Override
+	public boolean existsByPhoneAndIdNot(String phone, DriverId id) {
+		Objects.requireNonNull(phone, "phone is required");
+		Objects.requireNonNull(id, "id is required");
+		return springDataDriverRepository.existsByPhoneAndIdNot(phone, id.value());
+	}
+}
