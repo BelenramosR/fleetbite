@@ -1,23 +1,19 @@
 package com.fleetbite.order.infrastructure.outbound.persistence;
 
-import java.util.UUID;
-
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Mapper(componentModel = "spring")
-public abstract class OrderPersistenceMapper {
+@Component
+public class OrderPersistenceMapper {
 
 	private static final int COORDINATE_SCALE = 7;
 
@@ -44,29 +40,28 @@ public abstract class OrderPersistenceMapper {
 		copyPersistableState(order, existingEntity);
 	}
 
-	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "version", ignore = true)
-	@Mapping(target = "code", expression = "java(order.code().value())")
-	@Mapping(target = "customerName", expression = "java(order.customerName())")
-	@Mapping(target = "customerPhone", expression = "java(order.customerPhone())")
-	@Mapping(target = "deliveryAddress", expression = "java(order.deliveryAddress())")
-	@Mapping(target = "deliveryLatitude", expression = "java(toCoordinate(order.deliveryLocation().latitude()))")
-	@Mapping(target = "deliveryLongitude", expression = "java(toCoordinate(order.deliveryLocation().longitude()))")
-	@Mapping(target = "totalAmount", expression = "java(order.totalAmount().amount())")
-	@Mapping(target = "status", expression = "java(order.status())")
-	@Mapping(target = "priority", expression = "java(order.priority())")
-	@Mapping(target = "promisedDeliveryAt", expression = "java(order.promisedDeliveryAt())")
-	@Mapping(target = "createdAt", expression = "java(order.createdAt())")
-	@Mapping(target = "confirmedAt", expression = "java(order.confirmedAt())")
-	@Mapping(target = "preparationStartedAt", expression = "java(order.preparationStartedAt())")
-	@Mapping(target = "readyAt", expression = "java(order.readyAt())")
-	@Mapping(target = "assignedAt", expression = "java(order.assignedAt())")
-	@Mapping(target = "pickedUpAt", expression = "java(order.pickedUpAt())")
-	@Mapping(target = "inTransitAt", expression = "java(order.inTransitAt())")
-	@Mapping(target = "deliveredAt", expression = "java(order.deliveredAt())")
-	@Mapping(target = "cancelledAt", expression = "java(order.cancelledAt())")
-	@Mapping(target = "failedDeliveryAt", expression = "java(order.failedDeliveryAt())")
-	protected abstract void copyPersistableState(Order order, @MappingTarget OrderJpaEntity entity);
+	private void copyPersistableState(Order order, OrderJpaEntity entity) {
+		entity.setCode(order.code().value());
+		entity.setCustomerName(order.customerName());
+		entity.setCustomerPhone(order.customerPhone());
+		entity.setDeliveryAddress(order.deliveryAddress());
+		entity.setDeliveryLatitude(toCoordinate(order.deliveryLocation().latitude()));
+		entity.setDeliveryLongitude(toCoordinate(order.deliveryLocation().longitude()));
+		entity.setTotalAmount(order.totalAmount().amount());
+		entity.setStatus(order.status());
+		entity.setPriority(order.priority());
+		entity.setPromisedDeliveryAt(order.promisedDeliveryAt());
+		entity.setCreatedAt(order.createdAt());
+		entity.setConfirmedAt(order.confirmedAt());
+		entity.setPreparationStartedAt(order.preparationStartedAt());
+		entity.setReadyAt(order.readyAt());
+		entity.setAssignedAt(order.assignedAt());
+		entity.setPickedUpAt(order.pickedUpAt());
+		entity.setInTransitAt(order.inTransitAt());
+		entity.setDeliveredAt(order.deliveredAt());
+		entity.setCancelledAt(order.cancelledAt());
+		entity.setFailedDeliveryAt(order.failedDeliveryAt());
+	}
 
 	public Order toDomain(OrderJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");
@@ -96,14 +91,14 @@ public abstract class OrderPersistenceMapper {
 				toBusinessOffset(entity.getFailedDeliveryAt()));
 	}
 
-	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
+	private OffsetDateTime toBusinessOffset(OffsetDateTime value) {
 		if (value == null) {
 			return null;
 		}
 		return value.withOffsetSameInstant(BusinessTime.ZONE_OFFSET);
 	}
 
-	protected BigDecimal toCoordinate(double value) {
+	private BigDecimal toCoordinate(double value) {
 		return BigDecimal.valueOf(value).setScale(COORDINATE_SCALE, RoundingMode.HALF_UP);
 	}
 }

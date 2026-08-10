@@ -36,9 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({
 		OrderRepositoryAdapter.class,
-		OrderPersistenceMapperImpl.class,
+		OrderPersistenceMapper.class,
 		OrderHistoryRepositoryAdapter.class,
-		OrderHistoryPersistenceMapperImpl.class
+		OrderHistoryPersistenceMapper.class
 })
 @Testcontainers
 class OrderHistoryRepositoryAdapterIntegrationTest {

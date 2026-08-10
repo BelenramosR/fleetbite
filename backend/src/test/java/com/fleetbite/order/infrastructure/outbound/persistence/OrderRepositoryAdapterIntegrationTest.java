@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 		"spring.flyway.enabled=true"
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({OrderRepositoryAdapter.class, OrderPersistenceMapperImpl.class})
+@Import({OrderRepositoryAdapter.class, OrderPersistenceMapper.class})
 @Testcontainers
 class OrderRepositoryAdapterIntegrationTest {
 

@@ -10,7 +10,6 @@ import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -26,7 +25,7 @@ class OrderPersistenceMapperTest {
 	private static final OffsetDateTime PROMISED_AT =
 			OffsetDateTime.of(2026, 8, 8, 22, 45, 0, 0, BusinessTime.ZONE_OFFSET);
 
-	private final OrderPersistenceMapper mapper = Mappers.getMapper(OrderPersistenceMapper.class);
+	private final OrderPersistenceMapper mapper = new OrderPersistenceMapper();
 
 	@Test
 	void toEntity_shouldMapDomainFieldsAndLeaveVersionNull() {

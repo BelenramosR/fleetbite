@@ -5,15 +5,10 @@ import com.fleetbite.order.application.dto.CreateOrderCommand;
 import com.fleetbite.order.application.dto.OrderHistoryResult;
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.dto.UpdateOrderCommand;
-import com.fleetbite.order.application.port.in.CancelOrderUseCase;
-import com.fleetbite.order.application.port.in.ConfirmOrderUseCase;
 import com.fleetbite.order.application.port.in.CreateOrderUseCase;
 import com.fleetbite.order.application.port.in.DeleteOrderUseCase;
-import com.fleetbite.order.application.port.in.GetOrderByIdUseCase;
-import com.fleetbite.order.application.port.in.GetOrderHistoryUseCase;
-import com.fleetbite.order.application.port.in.ListOrdersUseCase;
-import com.fleetbite.order.application.port.in.MarkOrderReadyUseCase;
-import com.fleetbite.order.application.port.in.StartOrderPreparationUseCase;
+import com.fleetbite.order.application.port.in.OrderQueryUseCase;
+import com.fleetbite.order.application.port.in.OrderWorkflowUseCase;
 import com.fleetbite.order.application.port.in.UpdateOrderUseCase;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
@@ -77,26 +72,16 @@ class OrderControllerTest {
 	private CreateOrderUseCase createOrderUseCase;
 
 	@MockitoBean
-	private GetOrderByIdUseCase getOrderByIdUseCase;
-
-	@MockitoBean
-	private ListOrdersUseCase listOrdersUseCase;
+	private OrderQueryUseCase orderQueryUseCase;
 
 	@MockitoBean
 	private UpdateOrderUseCase updateOrderUseCase;
 
 	@MockitoBean
 	private DeleteOrderUseCase deleteOrderUseCase;
+
 	@MockitoBean
-	private ConfirmOrderUseCase confirmOrderUseCase;
-	@MockitoBean
-	private StartOrderPreparationUseCase startOrderPreparationUseCase;
-	@MockitoBean
-	private MarkOrderReadyUseCase markOrderReadyUseCase;
-	@MockitoBean
-	private CancelOrderUseCase cancelOrderUseCase;
-	@MockitoBean
-	private GetOrderHistoryUseCase getOrderHistoryUseCase;
+	private OrderWorkflowUseCase orderWorkflowUseCase;
 
 	@Test
 	void createOrder_shouldReturn201WithLocationAndBusinessOffsetTimestamps() throws Exception {
@@ -114,7 +99,7 @@ class OrderControllerTest {
 
 	@Test
 	void listOrders_shouldReturn200WithItems() throws Exception {
-		when(listOrdersUseCase.execute()).thenReturn(List.of(sampleResult()));
+		when(orderQueryUseCase.findAll()).thenReturn(List.of(sampleResult()));
 
 		mockMvc.perform(get("/api/v1/orders"))
 				.andExpect(status().isOk())
@@ -124,7 +109,7 @@ class OrderControllerTest {
 
 	@Test
 	void listOrders_shouldReturnEmptyArray() throws Exception {
-		when(listOrdersUseCase.execute()).thenReturn(List.of());
+		when(orderQueryUseCase.findAll()).thenReturn(List.of());
 
 		mockMvc.perform(get("/api/v1/orders"))
 				.andExpect(status().isOk())
@@ -240,7 +225,7 @@ class OrderControllerTest {
 	@Test
 	void getOrderById_shouldReturn200WhenFound() throws Exception {
 		OrderResult result = sampleResult();
-		when(getOrderByIdUseCase.execute(result.id())).thenReturn(result);
+		when(orderQueryUseCase.getById(result.id())).thenReturn(result);
 
 		mockMvc.perform(get("/api/v1/orders/{id}", result.id()))
 				.andExpect(status().isOk())
@@ -250,7 +235,7 @@ class OrderControllerTest {
 	@Test
 	void confirm_shouldReturn200() throws Exception {
 		OrderResult result = sampleResult();
-		when(confirmOrderUseCase.execute(any(UUID.class))).thenReturn(result);
+		when(orderWorkflowUseCase.confirm(any(UUID.class))).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/orders/{id}/confirm", result.id()))
 				.andExpect(status().isOk())
@@ -260,7 +245,7 @@ class OrderControllerTest {
 	@Test
 	void confirm_shouldReturn409OnInvalidTransition() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(confirmOrderUseCase.execute(any(UUID.class)))
+		when(orderWorkflowUseCase.confirm(any(UUID.class)))
 				.thenThrow(new InvalidOrderTransitionException(OrderStatus.CONFIRMED, OrderStatus.CONFIRMED));
 
 		mockMvc.perform(post("/api/v1/orders/{id}/confirm", id))
@@ -271,7 +256,7 @@ class OrderControllerTest {
 	@Test
 	void ready_shouldReturn200() throws Exception {
 		OrderResult result = sampleResult();
-		when(markOrderReadyUseCase.execute(any(UUID.class))).thenReturn(result);
+		when(orderWorkflowUseCase.markReady(any(UUID.class))).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/orders/{id}/ready", result.id()))
 				.andExpect(status().isOk());
@@ -280,7 +265,7 @@ class OrderControllerTest {
 	@Test
 	void cancel_shouldReturn200WithOptionalReason() throws Exception {
 		OrderResult result = sampleResult();
-		when(cancelOrderUseCase.execute(any(UUID.class), any(CancelOrderCommand.class))).thenReturn(result);
+		when(orderWorkflowUseCase.cancel(any(UUID.class), any(CancelOrderCommand.class))).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/orders/{id}/cancel", result.id())
 						.contentType(MediaType.APPLICATION_JSON)
@@ -293,7 +278,7 @@ class OrderControllerTest {
 	@Test
 	void cancel_shouldReturn400WhenReasonBlank() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(cancelOrderUseCase.execute(any(UUID.class), any(CancelOrderCommand.class)))
+		when(orderWorkflowUseCase.cancel(any(UUID.class), any(CancelOrderCommand.class)))
 				.thenThrow(new InvalidOrderDataException("reason must not be blank when provided"));
 
 		mockMvc.perform(post("/api/v1/orders/{id}/cancel", id)
@@ -308,7 +293,7 @@ class OrderControllerTest {
 	@Test
 	void history_shouldReturn200() throws Exception {
 		UUID orderId = UUID.randomUUID();
-		when(getOrderHistoryUseCase.execute(orderId)).thenReturn(List.of(
+		when(orderQueryUseCase.getHistory(orderId)).thenReturn(List.of(
 				new OrderHistoryResult(
 						UUID.randomUUID(),
 						OrderHistoryEventType.ORDER_CREATED,
@@ -327,7 +312,7 @@ class OrderControllerTest {
 	@Test
 	void history_shouldReturn404WhenOrderMissing() throws Exception {
 		UUID orderId = UUID.randomUUID();
-		when(getOrderHistoryUseCase.execute(orderId))
+		when(orderQueryUseCase.getHistory(orderId))
 				.thenThrow(new ResourceNotFoundException("Order", orderId));
 
 		mockMvc.perform(get("/api/v1/orders/{id}/history", orderId))

@@ -53,22 +53,16 @@ class OrderWorkflowServicesTest {
 	@Mock
 	private DomainEventPublisherPort domainEventPublisherPort;
 
-	private ConfirmOrderService confirmOrderService;
-	private StartOrderPreparationService startOrderPreparationService;
-	private MarkOrderReadyService markOrderReadyService;
-	private CancelOrderService cancelOrderService;
+	private OrderWorkflowService orderWorkflowService;
 
 	@BeforeEach
 	void setUp() {
 		OrderHistoryRecorder recorder = new OrderHistoryRecorder(orderHistoryRepositoryPort);
-		confirmOrderService = new ConfirmOrderService(orderRepositoryPort, recorder, FIXED_CLOCK);
-		startOrderPreparationService = new StartOrderPreparationService(orderRepositoryPort, recorder, FIXED_CLOCK);
-		markOrderReadyService = new MarkOrderReadyService(
+		orderWorkflowService = new OrderWorkflowService(
 				orderRepositoryPort,
 				recorder,
 				domainEventPublisherPort,
 				FIXED_CLOCK);
-		cancelOrderService = new CancelOrderService(orderRepositoryPort, recorder, FIXED_CLOCK);
 	}
 
 	@Test
@@ -77,7 +71,7 @@ class OrderWorkflowServicesTest {
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
 		when(orderRepositoryPort.update(any())).thenAnswer(i -> i.getArgument(0));
 
-		var result = confirmOrderService.execute(order.id());
+		var result = orderWorkflowService.confirm(order.id());
 
 		assertEquals(OrderStatus.CONFIRMED, result.status());
 		assertHistory(OrderHistoryEventType.ORDER_CONFIRMED, OrderStatus.CREATED, OrderStatus.CONFIRMED, null);
@@ -89,7 +83,7 @@ class OrderWorkflowServicesTest {
 		order.confirm(CREATED.plusMinutes(1));
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
 
-		assertThrows(InvalidOrderTransitionException.class, () -> confirmOrderService.execute(order.id()));
+		assertThrows(InvalidOrderTransitionException.class, () -> orderWorkflowService.confirm(order.id()));
 		verify(orderHistoryRepositoryPort, never()).save(any());
 	}
 
@@ -100,7 +94,7 @@ class OrderWorkflowServicesTest {
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
 		when(orderRepositoryPort.update(any())).thenAnswer(i -> i.getArgument(0));
 
-		var result = startOrderPreparationService.execute(order.id());
+		var result = orderWorkflowService.startPreparation(order.id());
 
 		assertEquals(OrderStatus.PREPARING, result.status());
 		assertHistory(OrderHistoryEventType.ORDER_PREPARING, OrderStatus.CONFIRMED, OrderStatus.PREPARING, null);
@@ -114,7 +108,7 @@ class OrderWorkflowServicesTest {
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
 		when(orderRepositoryPort.update(any())).thenAnswer(i -> i.getArgument(0));
 
-		var result = markOrderReadyService.execute(order.id());
+		var result = orderWorkflowService.markReady(order.id());
 
 		assertEquals(OrderStatus.READY, result.status());
 		assertHistory(OrderHistoryEventType.ORDER_READY, OrderStatus.PREPARING, OrderStatus.READY, null);
@@ -135,7 +129,7 @@ class OrderWorkflowServicesTest {
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
 		when(orderRepositoryPort.update(any())).thenThrow(new RuntimeException("persist failed"));
 
-		assertThrows(RuntimeException.class, () -> markOrderReadyService.execute(order.id()));
+		assertThrows(RuntimeException.class, () -> orderWorkflowService.markReady(order.id()));
 		verify(domainEventPublisherPort, never()).publish(any());
 		verify(orderHistoryRepositoryPort, never()).save(any());
 	}
@@ -146,7 +140,7 @@ class OrderWorkflowServicesTest {
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
 		when(orderRepositoryPort.update(any())).thenAnswer(i -> i.getArgument(0));
 
-		var result = cancelOrderService.execute(order.id(), new CancelOrderCommand("Customer requested cancellation"));
+		var result = orderWorkflowService.cancel(order.id(), new CancelOrderCommand("Customer requested cancellation"));
 
 		assertEquals(OrderStatus.CANCELLED, result.status());
 		assertHistory(
@@ -162,7 +156,7 @@ class OrderWorkflowServicesTest {
 
 		assertThrows(
 				InvalidOrderDataException.class,
-				() -> cancelOrderService.execute(order.id(), new CancelOrderCommand("   ")));
+				() -> orderWorkflowService.cancel(order.id(), new CancelOrderCommand("   ")));
 		verify(orderRepositoryPort, never()).update(any());
 		verify(orderHistoryRepositoryPort, never()).save(any());
 	}
@@ -177,7 +171,7 @@ class OrderWorkflowServicesTest {
 
 		assertThrows(
 				InvalidOrderTransitionException.class,
-				() -> cancelOrderService.execute(order.id(), new CancelOrderCommand(null)));
+				() -> orderWorkflowService.cancel(order.id(), new CancelOrderCommand(null)));
 	}
 
 	private void assertHistory(

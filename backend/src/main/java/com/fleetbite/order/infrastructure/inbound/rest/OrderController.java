@@ -1,15 +1,10 @@
 package com.fleetbite.order.infrastructure.inbound.rest;
 
 import com.fleetbite.order.application.dto.OrderResult;
-import com.fleetbite.order.application.port.in.CancelOrderUseCase;
-import com.fleetbite.order.application.port.in.ConfirmOrderUseCase;
 import com.fleetbite.order.application.port.in.CreateOrderUseCase;
 import com.fleetbite.order.application.port.in.DeleteOrderUseCase;
-import com.fleetbite.order.application.port.in.GetOrderByIdUseCase;
-import com.fleetbite.order.application.port.in.GetOrderHistoryUseCase;
-import com.fleetbite.order.application.port.in.ListOrdersUseCase;
-import com.fleetbite.order.application.port.in.MarkOrderReadyUseCase;
-import com.fleetbite.order.application.port.in.StartOrderPreparationUseCase;
+import com.fleetbite.order.application.port.in.OrderQueryUseCase;
+import com.fleetbite.order.application.port.in.OrderWorkflowUseCase;
 import com.fleetbite.order.application.port.in.UpdateOrderUseCase;
 import com.fleetbite.order.infrastructure.inbound.rest.request.CancelOrderRequest;
 import com.fleetbite.order.infrastructure.inbound.rest.request.CreateOrderRequest;
@@ -50,39 +45,24 @@ import java.util.UUID;
 public class OrderController {
 
 	private final CreateOrderUseCase createOrderUseCase;
-	private final GetOrderByIdUseCase getOrderByIdUseCase;
-	private final ListOrdersUseCase listOrdersUseCase;
+	private final OrderQueryUseCase orderQueryUseCase;
 	private final UpdateOrderUseCase updateOrderUseCase;
 	private final DeleteOrderUseCase deleteOrderUseCase;
-	private final ConfirmOrderUseCase confirmOrderUseCase;
-	private final StartOrderPreparationUseCase startOrderPreparationUseCase;
-	private final MarkOrderReadyUseCase markOrderReadyUseCase;
-	private final CancelOrderUseCase cancelOrderUseCase;
-	private final GetOrderHistoryUseCase getOrderHistoryUseCase;
+	private final OrderWorkflowUseCase orderWorkflowUseCase;
 	private final OrderHttpMapper orderHttpMapper;
 
 	public OrderController(
 			CreateOrderUseCase createOrderUseCase,
-			GetOrderByIdUseCase getOrderByIdUseCase,
-			ListOrdersUseCase listOrdersUseCase,
+			OrderQueryUseCase orderQueryUseCase,
 			UpdateOrderUseCase updateOrderUseCase,
 			DeleteOrderUseCase deleteOrderUseCase,
-			ConfirmOrderUseCase confirmOrderUseCase,
-			StartOrderPreparationUseCase startOrderPreparationUseCase,
-			MarkOrderReadyUseCase markOrderReadyUseCase,
-			CancelOrderUseCase cancelOrderUseCase,
-			GetOrderHistoryUseCase getOrderHistoryUseCase,
+			OrderWorkflowUseCase orderWorkflowUseCase,
 			OrderHttpMapper orderHttpMapper) {
 		this.createOrderUseCase = Objects.requireNonNull(createOrderUseCase);
-		this.getOrderByIdUseCase = Objects.requireNonNull(getOrderByIdUseCase);
-		this.listOrdersUseCase = Objects.requireNonNull(listOrdersUseCase);
+		this.orderQueryUseCase = Objects.requireNonNull(orderQueryUseCase);
 		this.updateOrderUseCase = Objects.requireNonNull(updateOrderUseCase);
 		this.deleteOrderUseCase = Objects.requireNonNull(deleteOrderUseCase);
-		this.confirmOrderUseCase = Objects.requireNonNull(confirmOrderUseCase);
-		this.startOrderPreparationUseCase = Objects.requireNonNull(startOrderPreparationUseCase);
-		this.markOrderReadyUseCase = Objects.requireNonNull(markOrderReadyUseCase);
-		this.cancelOrderUseCase = Objects.requireNonNull(cancelOrderUseCase);
-		this.getOrderHistoryUseCase = Objects.requireNonNull(getOrderHistoryUseCase);
+		this.orderWorkflowUseCase = Objects.requireNonNull(orderWorkflowUseCase);
 		this.orderHttpMapper = Objects.requireNonNull(orderHttpMapper);
 	}
 
@@ -96,7 +76,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<OrderResponse> listOrders() {
-		return listOrdersUseCase.execute().stream()
+		return orderQueryUseCase.findAll().stream()
 				.map(orderHttpMapper::toResponse)
 				.toList();
 	}
@@ -136,7 +116,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse getOrderById(@PathVariable UUID id) {
-		OrderResult result = getOrderByIdUseCase.execute(id);
+		OrderResult result = orderQueryUseCase.getById(id);
 		return orderHttpMapper.toResponse(result);
 	}
 
@@ -194,7 +174,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse confirm(@PathVariable UUID id) {
-		return orderHttpMapper.toResponse(confirmOrderUseCase.execute(id));
+		return orderHttpMapper.toResponse(orderWorkflowUseCase.confirm(id));
 	}
 
 	@PostMapping("/{id}/start-preparation")
@@ -211,7 +191,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse startPreparation(@PathVariable UUID id) {
-		return orderHttpMapper.toResponse(startOrderPreparationUseCase.execute(id));
+		return orderHttpMapper.toResponse(orderWorkflowUseCase.startPreparation(id));
 	}
 
 	@PostMapping("/{id}/ready")
@@ -238,7 +218,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse markReady(@PathVariable UUID id) {
-		return orderHttpMapper.toResponse(markOrderReadyUseCase.execute(id));
+		return orderHttpMapper.toResponse(orderWorkflowUseCase.markReady(id));
 	}
 
 	@PostMapping("/{id}/cancel")
@@ -261,7 +241,7 @@ public class OrderController {
 			@PathVariable UUID id,
 			@Valid @RequestBody(required = false) CancelOrderRequest request) {
 		return orderHttpMapper.toResponse(
-				cancelOrderUseCase.execute(id, orderHttpMapper.toCommand(request)));
+				orderWorkflowUseCase.cancel(id, orderHttpMapper.toCommand(request)));
 	}
 
 	@GetMapping("/{id}/history")
@@ -276,7 +256,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<OrderHistoryResponse> history(@PathVariable UUID id) {
-		return getOrderHistoryUseCase.execute(id).stream()
+		return orderQueryUseCase.getHistory(id).stream()
 				.map(orderHttpMapper::toResponse)
 				.toList();
 	}

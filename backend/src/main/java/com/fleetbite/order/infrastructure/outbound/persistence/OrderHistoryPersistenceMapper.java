@@ -1,18 +1,14 @@
 package com.fleetbite.order.infrastructure.outbound.persistence;
 
-import java.util.UUID;
-
 import com.fleetbite.order.domain.model.OrderHistoryEvent;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Mapper(componentModel = "spring")
-public abstract class OrderHistoryPersistenceMapper {
+@Component
+public class OrderHistoryPersistenceMapper {
 
 	public OrderHistoryJpaEntity toEntity(OrderHistoryEvent event) {
 		Objects.requireNonNull(event, "event is required");
@@ -22,15 +18,15 @@ public abstract class OrderHistoryPersistenceMapper {
 		return entity;
 	}
 
-	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "orderId", expression = "java(event.orderId())")
-	@Mapping(target = "eventType", expression = "java(event.eventType())")
-	@Mapping(target = "previousStatus", expression = "java(event.previousStatus())")
-	@Mapping(target = "newStatus", expression = "java(event.newStatus())")
-	@Mapping(target = "description", expression = "java(event.description())")
-	@Mapping(target = "performedBy", expression = "java(event.performedBy())")
-	@Mapping(target = "createdAt", expression = "java(event.createdAt())")
-	protected abstract void copyPersistableState(OrderHistoryEvent event, @MappingTarget OrderHistoryJpaEntity entity);
+	private void copyPersistableState(OrderHistoryEvent event, OrderHistoryJpaEntity entity) {
+		entity.setOrderId(event.orderId());
+		entity.setEventType(event.eventType());
+		entity.setPreviousStatus(event.previousStatus());
+		entity.setNewStatus(event.newStatus());
+		entity.setDescription(event.description());
+		entity.setPerformedBy(event.performedBy());
+		entity.setCreatedAt(event.createdAt());
+	}
 
 	public OrderHistoryEvent toDomain(OrderHistoryJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");
@@ -45,7 +41,7 @@ public abstract class OrderHistoryPersistenceMapper {
 				toBusinessOffset(entity.getCreatedAt()));
 	}
 
-	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
+	private OffsetDateTime toBusinessOffset(OffsetDateTime value) {
 		if (value == null) {
 			return null;
 		}

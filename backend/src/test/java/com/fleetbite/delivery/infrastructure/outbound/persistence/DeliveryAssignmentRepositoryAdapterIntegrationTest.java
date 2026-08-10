@@ -11,7 +11,7 @@ import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
-import com.fleetbite.order.infrastructure.outbound.persistence.OrderPersistenceMapperImpl;
+import com.fleetbite.order.infrastructure.outbound.persistence.OrderPersistenceMapper;
 import com.fleetbite.order.infrastructure.outbound.persistence.OrderRepositoryAdapter;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 		DeliveryAssignmentRepositoryAdapter.class,
 		DeliveryAssignmentPersistenceMapperImpl.class,
 		OrderRepositoryAdapter.class,
-		OrderPersistenceMapperImpl.class,
+		OrderPersistenceMapper.class,
 		DriverRepositoryAdapter.class,
 		DriverPersistenceMapperImpl.class
 })
