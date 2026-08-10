@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 /**
  * Calculates approximate distance between two geographic points.
  *
- * <p>For auto-assignment MVP, origin is {@code Driver.currentLocation} and destination is
- * {@code Order.deliveryLocation} (distance toward the final delivery point, not restaurant pickup).
+ * <p>For auto-assignment, origin is {@code Driver.currentLocation} and destination is the
+ * configured restaurant pickup location.
  */
 public interface DistanceCalculatorPort {
 

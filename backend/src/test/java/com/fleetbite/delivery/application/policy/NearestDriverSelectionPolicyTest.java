@@ -25,13 +25,14 @@ class NearestDriverSelectionPolicyTest {
 	private static final OffsetDateTime CREATED =
 			OffsetDateTime.of(2026, 8, 8, 20, 0, 0, 0, BusinessTime.ZONE_OFFSET);
 	private static final Location DESTINATION = new Location(-12.0464, -77.0428);
+	private static final Location RESTAURANT = new Location(-12.0919738, -76.9737017);
 
 	private NearestDriverSelectionPolicy policy;
 
 	@BeforeEach
 	void setUp() {
 		DistanceCalculatorPort distanceCalculatorPort = new HaversineDistanceAdapter();
-		policy = new NearestDriverSelectionPolicy(distanceCalculatorPort);
+		policy = new NearestDriverSelectionPolicy(distanceCalculatorPort, RESTAURANT);
 	}
 
 	@Test
@@ -44,6 +45,21 @@ class NearestDriverSelectionPolicyTest {
 		assertTrue(selected.isPresent());
 		assertEquals(near.id(), selected.get().driver().id());
 		assertEquals(0, selected.get().distanceKm().compareTo(selected.get().score()));
+	}
+
+	@Test
+	void select_shouldMeasureDriverToRestaurantNotDriverToCustomer() {
+		Driver atRestaurant = available(
+				uuid("33333333-3333-3333-3333-333333333333"), RESTAURANT);
+		Driver atCustomer = available(
+				uuid("44444444-4444-4444-4444-444444444444"), DESTINATION);
+
+		Optional<DriverCandidate> selected = policy.select(
+				readyOrder(), List.of(atCustomer, atRestaurant));
+
+		assertTrue(selected.isPresent());
+		assertEquals(atRestaurant.id(), selected.get().driver().id());
+		assertEquals(0, selected.get().distanceKm().compareTo(BigDecimal.ZERO));
 	}
 
 	@Test

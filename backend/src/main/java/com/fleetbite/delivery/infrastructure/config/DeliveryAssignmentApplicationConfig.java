@@ -22,6 +22,8 @@ import com.fleetbite.delivery.infrastructure.transaction.DeliveryTransactionProx
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.application.service.OrderHistoryRecorder;
+import com.fleetbite.shared.domain.model.Location;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -42,8 +44,10 @@ public class DeliveryAssignmentApplicationConfig {
 	}
 
 	@Bean
-	DriverSelectionPolicy driverSelectionPolicy(DistanceCalculatorPort distances) {
-		return new NearestDriverSelectionPolicy(distances);
+	DriverSelectionPolicy driverSelectionPolicy(
+			DistanceCalculatorPort distances,
+			@Qualifier("restaurantLocation") Location restaurantLocation) {
+		return new NearestDriverSelectionPolicy(distances, restaurantLocation);
 	}
 
 	@Bean

@@ -12,6 +12,7 @@ import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.model.User;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
+import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.model.Vehicle;
@@ -25,16 +26,19 @@ public final class AssignVehicleToDriverService {
 	private final DriverRepositoryPort driverRepositoryPort;
 	private final VehicleRepositoryPort vehicleRepositoryPort;
 	private final UserRepositoryPort userRepositoryPort;
+	private final Location restaurantLocation;
 	private final Clock clock;
 
 	public AssignVehicleToDriverService(
 			DriverRepositoryPort driverRepositoryPort,
 			VehicleRepositoryPort vehicleRepositoryPort,
 			UserRepositoryPort userRepositoryPort,
+			Location restaurantLocation,
 			Clock clock) {
 		this.driverRepositoryPort = Objects.requireNonNull(driverRepositoryPort, "driverRepositoryPort");
 		this.vehicleRepositoryPort = Objects.requireNonNull(vehicleRepositoryPort, "vehicleRepositoryPort");
 		this.userRepositoryPort = Objects.requireNonNull(userRepositoryPort, "userRepositoryPort");
+		this.restaurantLocation = Objects.requireNonNull(restaurantLocation, "restaurantLocation");
 		this.clock = Objects.requireNonNull(clock, "clock");
 	}
 
@@ -63,6 +67,7 @@ public final class AssignVehicleToDriverService {
 
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		vehicle.markInUse(now);
+		driver.updateLocation(restaurantLocation, now);
 		driver.assignVehicle(vehicleId, now);
 
 		Vehicle updatedVehicle = vehicleRepositoryPort.update(vehicle);

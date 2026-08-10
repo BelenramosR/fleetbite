@@ -94,7 +94,7 @@ public class AssignmentController {
 			description = """
 					ADMIN/DISPATCHER only.
 					Candidates: drivers with status AVAILABLE and a known location.
-					Distance uses Haversine (km); nearest wins (UUID tie-break).
+					Distance is driver-to-restaurant using Haversine (km); nearest wins (UUID tie-break).
 					assignmentScore currently equals distanceKm.
 					If no driver is found: HTTP 200 with assigned=false, reason=NO_AVAILABLE_DRIVER,
 					and the order transitions to WAITING_FOR_DRIVER.

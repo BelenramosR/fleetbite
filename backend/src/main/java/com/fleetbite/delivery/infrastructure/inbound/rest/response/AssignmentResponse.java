@@ -19,6 +19,6 @@ public record AssignmentResponse(
 		OffsetDateTime pickedUpAt,
 		OffsetDateTime completedAt,
 		String rejectionReason,
-		@Schema(description = "For auto-assign, currently equals distanceKm") BigDecimal assignmentScore,
+		@Schema(description = "For auto-assign, currently equals driver-to-restaurant distanceKm") BigDecimal assignmentScore,
 		@Schema(example = "2026-08-10T18:40:00-05:00") OffsetDateTime createdAt) {
 }

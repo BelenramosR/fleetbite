@@ -13,12 +13,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Deterministic nearest-driver selection using Haversine distance to {@link Order#deliveryLocation()}.
+ * Deterministic nearest-driver selection using Haversine distance to the pickup location.
  *
  * <p>Algorithm:
  * <ol>
  *   <li>Keep only AVAILABLE drivers with a non-null current location</li>
- *   <li>Compute distanceKm from driver location to order delivery location</li>
+ *   <li>Compute distanceKm from driver location to the restaurant pickup location</li>
  *   <li>Pick the smallest distanceKm</li>
  *   <li>On tie, pick the smallest driver UUID</li>
  * </ol>
@@ -28,9 +28,13 @@ import java.util.Optional;
 public final class NearestDriverSelectionPolicy implements DriverSelectionPolicy {
 
 	private final DistanceCalculatorPort distanceCalculatorPort;
+	private final Location pickupLocation;
 
-	public NearestDriverSelectionPolicy(DistanceCalculatorPort distanceCalculatorPort) {
+	public NearestDriverSelectionPolicy(
+			DistanceCalculatorPort distanceCalculatorPort,
+			Location pickupLocation) {
 		this.distanceCalculatorPort = Objects.requireNonNull(distanceCalculatorPort);
+		this.pickupLocation = Objects.requireNonNull(pickupLocation, "pickupLocation is required");
 	}
 
 	@Override
@@ -38,18 +42,13 @@ public final class NearestDriverSelectionPolicy implements DriverSelectionPolicy
 		Objects.requireNonNull(order, "order is required");
 		Objects.requireNonNull(availableDrivers, "availableDrivers is required");
 
-		Location destination = order.deliveryLocation();
-		if (destination == null) {
-			return Optional.empty();
-		}
-
 		return availableDrivers.stream()
 				.filter(driver -> driver.status() == DriverStatus.AVAILABLE)
 				.filter(driver -> driver.currentLocation() != null)
 				.map(driver -> {
 					BigDecimal distanceKm = distanceCalculatorPort.calculateKm(
 							driver.currentLocation(),
-							destination);
+							pickupLocation);
 					return new DriverCandidate(driver, distanceKm, distanceKm);
 				})
 				.min(Comparator

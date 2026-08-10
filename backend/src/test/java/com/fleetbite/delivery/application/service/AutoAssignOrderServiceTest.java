@@ -69,7 +69,8 @@ class AutoAssignOrderServiceTest {
 	@BeforeEach
 	void setUp() {
 		DistanceCalculatorPort distanceCalculatorPort = new HaversineDistanceAdapter();
-		DriverSelectionPolicy policy = new NearestDriverSelectionPolicy(distanceCalculatorPort);
+		DriverSelectionPolicy policy = new NearestDriverSelectionPolicy(
+				distanceCalculatorPort, new Location(-12.0919738, -76.9737017));
 		CreateAssignmentOperation operation = new CreateAssignmentOperation(
 				assignmentRepositoryPort,
 				orderRepositoryPort,

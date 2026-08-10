@@ -27,6 +27,11 @@ management:
         include: health,info
 
 fleetbite:
+  restaurant:
+    location:
+      # Ibuki Sushi Bar, Av. Manuel Olguín 561, Santiago de Surco
+      latitude: ${RESTAURANT_LATITUDE:-12.0919738}
+      longitude: ${RESTAURANT_LONGITUDE:-76.9737017}
   security:
     jwt:
       secret: ${JWT_SECRET:local-dev-only-fleetbite-jwt-secret-32b}

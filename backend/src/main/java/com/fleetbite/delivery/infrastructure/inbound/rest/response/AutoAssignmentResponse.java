@@ -11,7 +11,7 @@ public record AutoAssignmentResponse(
 		UUID orderId,
 		@Schema(description = "Present when assigned=true") UUID assignmentId,
 		@Schema(description = "Present when assigned=true") UUID driverId,
-		@Schema(description = "Haversine distance in km when assigned") BigDecimal distanceKm,
+		@Schema(description = "Driver-to-restaurant Haversine distance in km when assigned") BigDecimal distanceKm,
 		@Schema(description = "Currently equals distanceKm when assigned") BigDecimal score,
 		@Schema(example = "ASSIGNED") String orderStatus,
 		@Schema(description = "NO_AVAILABLE_DRIVER when assigned=false", example = "NO_AVAILABLE_DRIVER")

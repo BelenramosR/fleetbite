@@ -6,7 +6,9 @@ import com.fleetbite.driver.application.service.*;
 import com.fleetbite.identity.application.port.out.DriverProfileProvisionerPort;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.shared.infrastructure.transaction.TransactionProxyFactory;
+import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -74,11 +76,13 @@ public class DriverApplicationConfig {
 	@Bean
 	DriverVehicleUseCase driverVehicleUseCase(
 			DriverRepositoryPort drivers, VehicleRepositoryPort vehicles, UserRepositoryPort users,
+			@Qualifier("restaurantLocation") Location restaurantLocation,
 			Clock clock, PlatformTransactionManager transactions) {
 		return TransactionProxyFactory.readWrite(
 				DriverVehicleUseCase.class,
 				new DriverVehicleService(
-						new AssignVehicleToDriverService(drivers, vehicles, users, clock),
+						new AssignVehicleToDriverService(
+								drivers, vehicles, users, restaurantLocation, clock),
 						new UnassignVehicleFromDriverService(drivers, vehicles, users, clock)), transactions);
 	}
 }
