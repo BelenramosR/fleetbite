@@ -3,7 +3,6 @@ package com.fleetbite.delivery.application.service;
 import java.util.UUID;
 
 import com.fleetbite.delivery.application.dto.AssignmentResult;
-import com.fleetbite.delivery.application.port.in.PickupAssignmentUseCase;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
@@ -18,7 +17,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public final class PickupAssignmentService implements PickupAssignmentUseCase {
+public final class PickupAssignmentService {
 
 	private final DeliveryAssignmentRepositoryPort assignmentRepositoryPort;
 	private final OrderRepositoryPort orderRepositoryPort;
@@ -36,7 +35,6 @@ public final class PickupAssignmentService implements PickupAssignmentUseCase {
 		this.clock = Objects.requireNonNull(clock);
 	}
 
-	@Override
 	public AssignmentResult execute(UUID assignmentId) {
 		Objects.requireNonNull(assignmentId, "assignmentId is required");
 

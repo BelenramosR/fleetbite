@@ -4,7 +4,6 @@ import java.util.UUID;
 
 import com.fleetbite.delivery.application.dto.AssignmentResult;
 import com.fleetbite.delivery.application.dto.RejectAssignmentCommand;
-import com.fleetbite.delivery.application.port.in.RejectAssignmentUseCase;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
@@ -21,7 +20,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public final class RejectAssignmentService implements RejectAssignmentUseCase {
+public final class RejectAssignmentService {
 
 	private final DeliveryAssignmentRepositoryPort assignmentRepositoryPort;
 	private final OrderRepositoryPort orderRepositoryPort;
@@ -42,7 +41,6 @@ public final class RejectAssignmentService implements RejectAssignmentUseCase {
 		this.clock = Objects.requireNonNull(clock);
 	}
 
-	@Override
 	public AssignmentResult execute(UUID assignmentId, RejectAssignmentCommand command) {
 		Objects.requireNonNull(assignmentId, "assignmentId is required");
 		Objects.requireNonNull(command, "command is required");

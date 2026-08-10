@@ -1,4 +1,4 @@
-package com.fleetbite.order.infrastructure.inbound.events;
+package com.fleetbite.delivery.infrastructure.inbound.events;
 
 import com.fleetbite.delivery.application.dto.AutoAssignmentResult;
 import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;

@@ -1,22 +1,17 @@
 package com.fleetbite.delivery.infrastructure.outbound.persistence;
 
-import java.util.UUID;
-
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Mapper(componentModel = "spring")
-public abstract class DeliveryAssignmentPersistenceMapper {
+@Component
+public class DeliveryAssignmentPersistenceMapper {
 
 	public DeliveryAssignmentJpaEntity toEntity(DeliveryAssignment assignment) {
 		Objects.requireNonNull(assignment, "assignment is required");
-
 		DeliveryAssignmentJpaEntity entity = new DeliveryAssignmentJpaEntity();
 		entity.setId(assignment.id());
 		copyPersistableState(assignment, entity);
@@ -32,26 +27,22 @@ public abstract class DeliveryAssignmentPersistenceMapper {
 		copyPersistableState(assignment, existingEntity);
 	}
 
-	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "version", ignore = true)
-	@Mapping(target = "orderId", expression = "java(assignment.orderId())")
-	@Mapping(target = "driverId", expression = "java(assignment.driverId())")
-	@Mapping(target = "status", expression = "java(assignment.status())")
-	@Mapping(target = "assignedAt", expression = "java(assignment.assignedAt())")
-	@Mapping(target = "acceptedAt", expression = "java(assignment.acceptedAt())")
-	@Mapping(target = "rejectedAt", expression = "java(assignment.rejectedAt())")
-	@Mapping(target = "pickedUpAt", expression = "java(assignment.pickedUpAt())")
-	@Mapping(target = "completedAt", expression = "java(assignment.completedAt())")
-	@Mapping(target = "rejectionReason", expression = "java(assignment.rejectionReason())")
-	@Mapping(target = "assignmentScore", expression = "java(assignment.assignmentScore())")
-	@Mapping(target = "createdAt", expression = "java(assignment.createdAt())")
-	protected abstract void copyPersistableState(
-			DeliveryAssignment assignment,
-			@MappingTarget DeliveryAssignmentJpaEntity entity);
+	private void copyPersistableState(DeliveryAssignment assignment, DeliveryAssignmentJpaEntity entity) {
+		entity.setOrderId(assignment.orderId());
+		entity.setDriverId(assignment.driverId());
+		entity.setStatus(assignment.status());
+		entity.setAssignedAt(assignment.assignedAt());
+		entity.setAcceptedAt(assignment.acceptedAt());
+		entity.setRejectedAt(assignment.rejectedAt());
+		entity.setPickedUpAt(assignment.pickedUpAt());
+		entity.setCompletedAt(assignment.completedAt());
+		entity.setRejectionReason(assignment.rejectionReason());
+		entity.setAssignmentScore(assignment.assignmentScore());
+		entity.setCreatedAt(assignment.createdAt());
+	}
 
 	public DeliveryAssignment toDomain(DeliveryAssignmentJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");
-
 		return DeliveryAssignment.reconstitute(
 				entity.getId(),
 				entity.getOrderId(),
@@ -67,10 +58,7 @@ public abstract class DeliveryAssignmentPersistenceMapper {
 				toBusinessOffset(entity.getCreatedAt()));
 	}
 
-	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
-		if (value == null) {
-			return null;
-		}
-		return value.withOffsetSameInstant(BusinessTime.ZONE_OFFSET);
+	private OffsetDateTime toBusinessOffset(OffsetDateTime value) {
+		return value == null ? null : value.withOffsetSameInstant(BusinessTime.ZONE_OFFSET);
 	}
 }

@@ -3,7 +3,6 @@ package com.fleetbite.delivery.application.service;
 import java.util.UUID;
 
 import com.fleetbite.delivery.application.dto.AssignmentResult;
-import com.fleetbite.delivery.application.port.in.StartDeliveryAssignmentUseCase;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.domain.exception.InvalidAssignmentTransitionException;
 import com.fleetbite.delivery.domain.model.AssignmentStatus;
@@ -20,7 +19,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public final class StartDeliveryAssignmentService implements StartDeliveryAssignmentUseCase {
+public final class StartDeliveryAssignmentService {
 
 	private final DeliveryAssignmentRepositoryPort assignmentRepositoryPort;
 	private final OrderRepositoryPort orderRepositoryPort;
@@ -38,7 +37,6 @@ public final class StartDeliveryAssignmentService implements StartDeliveryAssign
 		this.clock = Objects.requireNonNull(clock);
 	}
 
-	@Override
 	public AssignmentResult execute(UUID assignmentId) {
 		Objects.requireNonNull(assignmentId, "assignmentId is required");
 

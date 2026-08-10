@@ -2,15 +2,10 @@ package com.fleetbite.delivery.infrastructure.inbound.rest;
 
 import com.fleetbite.delivery.application.dto.AssignmentResult;
 import com.fleetbite.delivery.application.dto.AutoAssignmentResult;
-import com.fleetbite.delivery.application.port.in.AcceptAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.AssignmentQueryUseCase;
+import com.fleetbite.delivery.application.port.in.AssignmentWorkflowUseCase;
 import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;
-import com.fleetbite.delivery.application.port.in.CompleteAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.CreateManualAssignmentUseCase;
-import com.fleetbite.delivery.application.port.in.GetAssignmentByIdUseCase;
-import com.fleetbite.delivery.application.port.in.ListAssignmentsUseCase;
-import com.fleetbite.delivery.application.port.in.PickupAssignmentUseCase;
-import com.fleetbite.delivery.application.port.in.RejectAssignmentUseCase;
-import com.fleetbite.delivery.application.port.in.StartDeliveryAssignmentUseCase;
 import com.fleetbite.delivery.infrastructure.inbound.rest.request.CreateManualAssignmentRequest;
 import com.fleetbite.delivery.infrastructure.inbound.rest.request.RejectAssignmentRequest;
 import com.fleetbite.delivery.infrastructure.inbound.rest.response.AssignmentResponse;
@@ -45,35 +40,20 @@ public class AssignmentController {
 
 	private final CreateManualAssignmentUseCase createManualAssignmentUseCase;
 	private final AutoAssignOrderUseCase autoAssignOrderUseCase;
-	private final GetAssignmentByIdUseCase getAssignmentByIdUseCase;
-	private final ListAssignmentsUseCase listAssignmentsUseCase;
-	private final AcceptAssignmentUseCase acceptAssignmentUseCase;
-	private final RejectAssignmentUseCase rejectAssignmentUseCase;
-	private final PickupAssignmentUseCase pickupAssignmentUseCase;
-	private final StartDeliveryAssignmentUseCase startDeliveryAssignmentUseCase;
-	private final CompleteAssignmentUseCase completeAssignmentUseCase;
+	private final AssignmentQueryUseCase assignmentQueryUseCase;
+	private final AssignmentWorkflowUseCase assignmentWorkflowUseCase;
 	private final AssignmentHttpMapper assignmentHttpMapper;
 
 	public AssignmentController(
 			CreateManualAssignmentUseCase createManualAssignmentUseCase,
 			AutoAssignOrderUseCase autoAssignOrderUseCase,
-			GetAssignmentByIdUseCase getAssignmentByIdUseCase,
-			ListAssignmentsUseCase listAssignmentsUseCase,
-			AcceptAssignmentUseCase acceptAssignmentUseCase,
-			RejectAssignmentUseCase rejectAssignmentUseCase,
-			PickupAssignmentUseCase pickupAssignmentUseCase,
-			StartDeliveryAssignmentUseCase startDeliveryAssignmentUseCase,
-			CompleteAssignmentUseCase completeAssignmentUseCase,
+			AssignmentQueryUseCase assignmentQueryUseCase,
+			AssignmentWorkflowUseCase assignmentWorkflowUseCase,
 			AssignmentHttpMapper assignmentHttpMapper) {
 		this.createManualAssignmentUseCase = Objects.requireNonNull(createManualAssignmentUseCase);
 		this.autoAssignOrderUseCase = Objects.requireNonNull(autoAssignOrderUseCase);
-		this.getAssignmentByIdUseCase = Objects.requireNonNull(getAssignmentByIdUseCase);
-		this.listAssignmentsUseCase = Objects.requireNonNull(listAssignmentsUseCase);
-		this.acceptAssignmentUseCase = Objects.requireNonNull(acceptAssignmentUseCase);
-		this.rejectAssignmentUseCase = Objects.requireNonNull(rejectAssignmentUseCase);
-		this.pickupAssignmentUseCase = Objects.requireNonNull(pickupAssignmentUseCase);
-		this.startDeliveryAssignmentUseCase = Objects.requireNonNull(startDeliveryAssignmentUseCase);
-		this.completeAssignmentUseCase = Objects.requireNonNull(completeAssignmentUseCase);
+		this.assignmentQueryUseCase = Objects.requireNonNull(assignmentQueryUseCase);
+		this.assignmentWorkflowUseCase = Objects.requireNonNull(assignmentWorkflowUseCase);
 		this.assignmentHttpMapper = Objects.requireNonNull(assignmentHttpMapper);
 	}
 
@@ -147,7 +127,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<AssignmentResponse> listAssignments() {
-		return listAssignmentsUseCase.execute().stream()
+		return assignmentQueryUseCase.findAll().stream()
 				.map(assignmentHttpMapper::toResponse)
 				.toList();
 	}
@@ -165,7 +145,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse getAssignmentById(@PathVariable UUID id) {
-		AssignmentResult result = getAssignmentByIdUseCase.execute(id);
+		AssignmentResult result = assignmentQueryUseCase.getById(id);
 		return assignmentHttpMapper.toResponse(result);
 	}
 
@@ -184,7 +164,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse accept(@PathVariable UUID id) {
-		AssignmentResult result = acceptAssignmentUseCase.execute(id);
+		AssignmentResult result = assignmentWorkflowUseCase.accept(id);
 		return assignmentHttpMapper.toResponse(result);
 	}
 
@@ -207,7 +187,7 @@ public class AssignmentController {
 	public AssignmentResponse reject(
 			@PathVariable UUID id,
 			@Valid @RequestBody RejectAssignmentRequest request) {
-		AssignmentResult result = rejectAssignmentUseCase.execute(
+		AssignmentResult result = assignmentWorkflowUseCase.reject(
 				id,
 				assignmentHttpMapper.toCommand(request));
 		return assignmentHttpMapper.toResponse(result);
@@ -229,7 +209,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse pickup(@PathVariable UUID id) {
-		AssignmentResult result = pickupAssignmentUseCase.execute(id);
+		AssignmentResult result = assignmentWorkflowUseCase.pickup(id);
 		return assignmentHttpMapper.toResponse(result);
 	}
 
@@ -249,7 +229,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse startDelivery(@PathVariable UUID id) {
-		AssignmentResult result = startDeliveryAssignmentUseCase.execute(id);
+		AssignmentResult result = assignmentWorkflowUseCase.startDelivery(id);
 		return assignmentHttpMapper.toResponse(result);
 	}
 
@@ -269,7 +249,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse complete(@PathVariable UUID id) {
-		AssignmentResult result = completeAssignmentUseCase.execute(id);
+		AssignmentResult result = assignmentWorkflowUseCase.complete(id);
 		return assignmentHttpMapper.toResponse(result);
 	}
 }

@@ -1,6 +1,7 @@
 package com.fleetbite.order.infrastructure.inbound.events;
 
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
+import com.fleetbite.delivery.infrastructure.inbound.events.OrderReadyEventListener;
 import com.fleetbite.order.domain.event.OrderReadyEvent;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.time.BusinessTime;

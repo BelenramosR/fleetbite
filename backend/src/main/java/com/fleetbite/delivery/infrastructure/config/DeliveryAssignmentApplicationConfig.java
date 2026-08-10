@@ -2,39 +2,29 @@ package com.fleetbite.delivery.infrastructure.config;
 
 import com.fleetbite.delivery.application.policy.DriverSelectionPolicy;
 import com.fleetbite.delivery.application.policy.NearestDriverSelectionPolicy;
-import com.fleetbite.delivery.application.port.in.AcceptAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.AssignmentQueryUseCase;
+import com.fleetbite.delivery.application.port.in.AssignmentWorkflowUseCase;
 import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;
-import com.fleetbite.delivery.application.port.in.CompleteAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.CreateManualAssignmentUseCase;
-import com.fleetbite.delivery.application.port.in.GetAssignmentByIdUseCase;
-import com.fleetbite.delivery.application.port.in.ListAssignmentsUseCase;
-import com.fleetbite.delivery.application.port.in.PickupAssignmentUseCase;
-import com.fleetbite.delivery.application.port.in.RejectAssignmentUseCase;
-import com.fleetbite.delivery.application.port.in.StartDeliveryAssignmentUseCase;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.application.port.out.DistanceCalculatorPort;
 import com.fleetbite.delivery.application.service.AcceptAssignmentService;
+import com.fleetbite.delivery.application.service.AssignmentQueryService;
+import com.fleetbite.delivery.application.service.AssignmentWorkflowService;
 import com.fleetbite.delivery.application.service.AutoAssignOrderService;
 import com.fleetbite.delivery.application.service.CompleteAssignmentService;
 import com.fleetbite.delivery.application.service.CreateAssignmentOperation;
 import com.fleetbite.delivery.application.service.CreateManualAssignmentService;
-import com.fleetbite.delivery.application.service.GetAssignmentByIdService;
-import com.fleetbite.delivery.application.service.ListAssignmentsService;
 import com.fleetbite.delivery.application.service.PickupAssignmentService;
 import com.fleetbite.delivery.application.service.RejectAssignmentService;
 import com.fleetbite.delivery.application.service.StartDeliveryAssignmentService;
-import com.fleetbite.delivery.infrastructure.transaction.TransactionalAcceptAssignmentUseCase;
-import com.fleetbite.delivery.infrastructure.transaction.TransactionalAutoAssignOrderUseCase;
-import com.fleetbite.delivery.infrastructure.transaction.TransactionalCompleteAssignmentUseCase;
-import com.fleetbite.delivery.infrastructure.transaction.TransactionalCreateManualAssignmentUseCase;
-import com.fleetbite.delivery.infrastructure.transaction.TransactionalPickupAssignmentUseCase;
-import com.fleetbite.delivery.infrastructure.transaction.TransactionalRejectAssignmentUseCase;
-import com.fleetbite.delivery.infrastructure.transaction.TransactionalStartDeliveryAssignmentUseCase;
+import com.fleetbite.delivery.infrastructure.transaction.DeliveryTransactionProxyFactory;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Clock;
 
@@ -43,132 +33,73 @@ public class DeliveryAssignmentApplicationConfig {
 
 	@Bean
 	CreateAssignmentOperation createAssignmentOperation(
-			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
-			OrderRepositoryPort orderRepositoryPort,
-			DriverRepositoryPort driverRepositoryPort,
-			OrderHistoryRecorder orderHistoryRecorder,
+			DeliveryAssignmentRepositoryPort assignments,
+			OrderRepositoryPort orders,
+			DriverRepositoryPort drivers,
+			OrderHistoryRecorder history,
 			Clock clock) {
-		return new CreateAssignmentOperation(
-				assignmentRepositoryPort,
-				orderRepositoryPort,
-				driverRepositoryPort,
-				orderHistoryRecorder,
-				clock);
+		return new CreateAssignmentOperation(assignments, orders, drivers, history, clock);
 	}
 
 	@Bean
-	DriverSelectionPolicy driverSelectionPolicy(DistanceCalculatorPort distanceCalculatorPort) {
-		return new NearestDriverSelectionPolicy(distanceCalculatorPort);
+	DriverSelectionPolicy driverSelectionPolicy(DistanceCalculatorPort distances) {
+		return new NearestDriverSelectionPolicy(distances);
 	}
 
 	@Bean
 	CreateManualAssignmentUseCase createManualAssignmentUseCase(
-			OrderRepositoryPort orderRepositoryPort,
-			DriverRepositoryPort driverRepositoryPort,
-			CreateAssignmentOperation createAssignmentOperation) {
-		return new TransactionalCreateManualAssignmentUseCase(
-				new CreateManualAssignmentService(
-						orderRepositoryPort,
-						driverRepositoryPort,
-						createAssignmentOperation));
+			OrderRepositoryPort orders,
+			DriverRepositoryPort drivers,
+			CreateAssignmentOperation operation,
+			PlatformTransactionManager transactions) {
+		return DeliveryTransactionProxyFactory.readWrite(
+				CreateManualAssignmentUseCase.class,
+				new CreateManualAssignmentService(orders, drivers, operation),
+				transactions);
 	}
 
 	@Bean
 	AutoAssignOrderUseCase autoAssignOrderUseCase(
-			OrderRepositoryPort orderRepositoryPort,
-			DriverRepositoryPort driverRepositoryPort,
-			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
-			DriverSelectionPolicy driverSelectionPolicy,
-			CreateAssignmentOperation createAssignmentOperation,
-			OrderHistoryRecorder orderHistoryRecorder,
-			Clock clock) {
-		return new TransactionalAutoAssignOrderUseCase(
+			OrderRepositoryPort orders,
+			DriverRepositoryPort drivers,
+			DeliveryAssignmentRepositoryPort assignments,
+			DriverSelectionPolicy selectionPolicy,
+			CreateAssignmentOperation operation,
+			OrderHistoryRecorder history,
+			Clock clock,
+			PlatformTransactionManager transactions) {
+		return DeliveryTransactionProxyFactory.requiresNew(
+				AutoAssignOrderUseCase.class,
 				new AutoAssignOrderService(
-						orderRepositoryPort,
-						driverRepositoryPort,
-						assignmentRepositoryPort,
-						driverSelectionPolicy,
-						createAssignmentOperation,
-						orderHistoryRecorder,
-						clock));
+						orders, drivers, assignments, selectionPolicy, operation, history, clock),
+				transactions);
 	}
 
 	@Bean
-	GetAssignmentByIdUseCase getAssignmentByIdUseCase(DeliveryAssignmentRepositoryPort assignmentRepositoryPort) {
-		return new GetAssignmentByIdService(assignmentRepositoryPort);
+	AssignmentQueryUseCase assignmentQueryUseCase(
+			DeliveryAssignmentRepositoryPort assignments,
+			PlatformTransactionManager transactions) {
+		return DeliveryTransactionProxyFactory.readOnly(
+				AssignmentQueryUseCase.class,
+				new AssignmentQueryService(assignments),
+				transactions);
 	}
 
 	@Bean
-	ListAssignmentsUseCase listAssignmentsUseCase(DeliveryAssignmentRepositoryPort assignmentRepositoryPort) {
-		return new ListAssignmentsService(assignmentRepositoryPort);
-	}
-
-	@Bean
-	AcceptAssignmentUseCase acceptAssignmentUseCase(
-			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
-			OrderHistoryRecorder orderHistoryRecorder,
-			Clock clock) {
-		return new TransactionalAcceptAssignmentUseCase(
-				new AcceptAssignmentService(assignmentRepositoryPort, orderHistoryRecorder, clock));
-	}
-
-	@Bean
-	RejectAssignmentUseCase rejectAssignmentUseCase(
-			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
-			OrderRepositoryPort orderRepositoryPort,
-			DriverRepositoryPort driverRepositoryPort,
-			OrderHistoryRecorder orderHistoryRecorder,
-			Clock clock) {
-		return new TransactionalRejectAssignmentUseCase(
-				new RejectAssignmentService(
-						assignmentRepositoryPort,
-						orderRepositoryPort,
-						driverRepositoryPort,
-						orderHistoryRecorder,
-						clock));
-	}
-
-	@Bean
-	PickupAssignmentUseCase pickupAssignmentUseCase(
-			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
-			OrderRepositoryPort orderRepositoryPort,
-			OrderHistoryRecorder orderHistoryRecorder,
-			Clock clock) {
-		return new TransactionalPickupAssignmentUseCase(
-				new PickupAssignmentService(
-						assignmentRepositoryPort,
-						orderRepositoryPort,
-						orderHistoryRecorder,
-						clock));
-	}
-
-	@Bean
-	StartDeliveryAssignmentUseCase startDeliveryAssignmentUseCase(
-			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
-			OrderRepositoryPort orderRepositoryPort,
-			OrderHistoryRecorder orderHistoryRecorder,
-			Clock clock) {
-		return new TransactionalStartDeliveryAssignmentUseCase(
-				new StartDeliveryAssignmentService(
-						assignmentRepositoryPort,
-						orderRepositoryPort,
-						orderHistoryRecorder,
-						clock));
-	}
-
-	@Bean
-	CompleteAssignmentUseCase completeAssignmentUseCase(
-			DeliveryAssignmentRepositoryPort assignmentRepositoryPort,
-			OrderRepositoryPort orderRepositoryPort,
-			DriverRepositoryPort driverRepositoryPort,
-			OrderHistoryRecorder orderHistoryRecorder,
-			Clock clock) {
-		return new TransactionalCompleteAssignmentUseCase(
-				new CompleteAssignmentService(
-						assignmentRepositoryPort,
-						orderRepositoryPort,
-						driverRepositoryPort,
-						orderHistoryRecorder,
-						clock));
+	AssignmentWorkflowUseCase assignmentWorkflowUseCase(
+			DeliveryAssignmentRepositoryPort assignments,
+			OrderRepositoryPort orders,
+			DriverRepositoryPort drivers,
+			OrderHistoryRecorder history,
+			Clock clock,
+			PlatformTransactionManager transactions) {
+		AssignmentWorkflowService workflow = new AssignmentWorkflowService(
+				new AcceptAssignmentService(assignments, history, clock),
+				new RejectAssignmentService(assignments, orders, drivers, history, clock),
+				new PickupAssignmentService(assignments, orders, history, clock),
+				new StartDeliveryAssignmentService(assignments, orders, history, clock),
+				new CompleteAssignmentService(assignments, orders, drivers, history, clock));
+		return DeliveryTransactionProxyFactory.readWrite(
+				AssignmentWorkflowUseCase.class, workflow, transactions);
 	}
 }

@@ -93,4 +93,50 @@ class HexagonalArchitectureTest {
 			.and().resideInAPackage("com.fleetbite..")
 			.should().resideInAPackage("..infrastructure.outbound.persistence..")
 			.because("Los repositorios Spring Data solo viven en adapters de persistencia");
+
+	@ArchTest
+	static final ArchRule orderDependsOnlyOnShared = noClasses()
+			.that().resideInAPackage("com.fleetbite.order..")
+			.should().dependOnClassesThat().resideInAnyPackage(
+					"com.fleetbite.delivery..", "com.fleetbite.driver..",
+					"com.fleetbite.identity..", "com.fleetbite.vehicle..");
+
+	@ArchTest
+	static final ArchRule identityDependsOnlyOnShared = noClasses()
+			.that().resideInAPackage("com.fleetbite.identity..")
+			.should().dependOnClassesThat().resideInAnyPackage(
+					"com.fleetbite.delivery..", "com.fleetbite.driver..",
+					"com.fleetbite.order..", "com.fleetbite.vehicle..");
+
+	@ArchTest
+	static final ArchRule deliveryUsesOnlyOrderAndDriver = noClasses()
+			.that().resideInAPackage("com.fleetbite.delivery..")
+			.should().dependOnClassesThat().resideInAnyPackage(
+					"com.fleetbite.identity..", "com.fleetbite.vehicle..");
+
+	@ArchTest
+	static final ArchRule driverUsesOnlyIdentityAndVehicle = noClasses()
+			.that().resideInAPackage("com.fleetbite.driver..")
+			.should().dependOnClassesThat().resideInAnyPackage(
+					"com.fleetbite.delivery..", "com.fleetbite.order..");
+
+	// Excepción temporal: vehicle todavía consulta DriverRepositoryPort al eliminar.
+	@ArchTest
+	static final ArchRule vehicleUsesOnlyTemporaryDriverDependency = noClasses()
+			.that().resideInAPackage("com.fleetbite.vehicle..")
+			.should().dependOnClassesThat().resideInAnyPackage(
+					"com.fleetbite.delivery..", "com.fleetbite.identity..", "com.fleetbite.order..");
+
+	@ArchTest
+	static final ArchRule sharedCoreIsIndependent = noClasses()
+			.that().resideInAnyPackage(
+					"com.fleetbite.shared.domain..", "com.fleetbite.shared.application..")
+			.should().dependOnClassesThat().resideInAnyPackage(
+					"com.fleetbite.delivery..", "com.fleetbite.driver..",
+					"com.fleetbite.identity..", "com.fleetbite.order..", "com.fleetbite.vehicle..");
+
+	@ArchTest
+	static final ArchRule orderReadyConsumerBelongsToDelivery = classes()
+			.that().haveSimpleName("OrderReadyEventListener")
+			.should().resideInAPackage("com.fleetbite.delivery.infrastructure.inbound.events");
 }

@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({
 		DeliveryAssignmentRepositoryAdapter.class,
-		DeliveryAssignmentPersistenceMapperImpl.class,
+		DeliveryAssignmentPersistenceMapper.class,
 		OrderRepositoryAdapter.class,
 		OrderPersistenceMapper.class,
 		DriverRepositoryAdapter.class,

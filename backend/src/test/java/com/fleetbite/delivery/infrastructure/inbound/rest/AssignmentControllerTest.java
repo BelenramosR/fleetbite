@@ -4,15 +4,10 @@ import com.fleetbite.delivery.application.dto.AssignmentResult;
 import com.fleetbite.delivery.application.dto.AutoAssignmentResult;
 import com.fleetbite.delivery.application.dto.CreateManualAssignmentCommand;
 import com.fleetbite.delivery.application.dto.RejectAssignmentCommand;
-import com.fleetbite.delivery.application.port.in.AcceptAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.AssignmentQueryUseCase;
+import com.fleetbite.delivery.application.port.in.AssignmentWorkflowUseCase;
 import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;
-import com.fleetbite.delivery.application.port.in.CompleteAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.CreateManualAssignmentUseCase;
-import com.fleetbite.delivery.application.port.in.GetAssignmentByIdUseCase;
-import com.fleetbite.delivery.application.port.in.ListAssignmentsUseCase;
-import com.fleetbite.delivery.application.port.in.PickupAssignmentUseCase;
-import com.fleetbite.delivery.application.port.in.RejectAssignmentUseCase;
-import com.fleetbite.delivery.application.port.in.StartDeliveryAssignmentUseCase;
 import com.fleetbite.delivery.domain.exception.ActiveAssignmentAlreadyExistsException;
 import com.fleetbite.delivery.domain.exception.DriverNotAssignableException;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
@@ -62,19 +57,9 @@ class AssignmentControllerTest {
 	@MockitoBean
 	private AutoAssignOrderUseCase autoAssignOrderUseCase;
 	@MockitoBean
-	private GetAssignmentByIdUseCase getAssignmentByIdUseCase;
+	private AssignmentQueryUseCase assignmentQueryUseCase;
 	@MockitoBean
-	private ListAssignmentsUseCase listAssignmentsUseCase;
-	@MockitoBean
-	private AcceptAssignmentUseCase acceptAssignmentUseCase;
-	@MockitoBean
-	private RejectAssignmentUseCase rejectAssignmentUseCase;
-	@MockitoBean
-	private PickupAssignmentUseCase pickupAssignmentUseCase;
-	@MockitoBean
-	private StartDeliveryAssignmentUseCase startDeliveryAssignmentUseCase;
-	@MockitoBean
-	private CompleteAssignmentUseCase completeAssignmentUseCase;
+	private AssignmentWorkflowUseCase assignmentWorkflowUseCase;
 
 	@Test
 	void assign_shouldReturn201() throws Exception {
@@ -160,7 +145,7 @@ class AssignmentControllerTest {
 
 	@Test
 	void list_shouldReturn200() throws Exception {
-		when(listAssignmentsUseCase.execute()).thenReturn(List.of(sampleResult()));
+		when(assignmentQueryUseCase.findAll()).thenReturn(List.of(sampleResult()));
 
 		mockMvc.perform(get("/api/v1/assignments"))
 				.andExpect(status().isOk())
@@ -170,7 +155,7 @@ class AssignmentControllerTest {
 	@Test
 	void getById_shouldReturn404() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(getAssignmentByIdUseCase.execute(id))
+		when(assignmentQueryUseCase.getById(id))
 				.thenThrow(new ResourceNotFoundException("DeliveryAssignment", id));
 
 		mockMvc.perform(get("/api/v1/assignments/{id}", id))
@@ -193,7 +178,7 @@ class AssignmentControllerTest {
 	@Test
 	void reject_shouldReturn200() throws Exception {
 		AssignmentResult result = rejectedResult();
-		when(rejectAssignmentUseCase.execute(eq(result.id()), any(RejectAssignmentCommand.class)))
+		when(assignmentWorkflowUseCase.reject(eq(result.id()), any(RejectAssignmentCommand.class)))
 				.thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/assignments/{id}/reject", result.id())
@@ -208,10 +193,10 @@ class AssignmentControllerTest {
 	@Test
 	void accept_pickup_startDelivery_complete_shouldReturn200() throws Exception {
 		AssignmentResult result = sampleResult();
-		when(acceptAssignmentUseCase.execute(result.id())).thenReturn(result);
-		when(pickupAssignmentUseCase.execute(result.id())).thenReturn(result);
-		when(startDeliveryAssignmentUseCase.execute(result.id())).thenReturn(result);
-		when(completeAssignmentUseCase.execute(result.id())).thenReturn(result);
+		when(assignmentWorkflowUseCase.accept(result.id())).thenReturn(result);
+		when(assignmentWorkflowUseCase.pickup(result.id())).thenReturn(result);
+		when(assignmentWorkflowUseCase.startDelivery(result.id())).thenReturn(result);
+		when(assignmentWorkflowUseCase.complete(result.id())).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/assignments/{id}/accept", result.id())).andExpect(status().isOk());
 		mockMvc.perform(post("/api/v1/assignments/{id}/pickup", result.id())).andExpect(status().isOk());
