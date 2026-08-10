@@ -20,6 +20,7 @@ import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
 import com.fleetbite.order.domain.exception.OrderNotDeletableException;
 import com.fleetbite.order.domain.exception.OrderNotEditableException;
 import com.fleetbite.shared.application.exception.ApplicationException;
+import com.fleetbite.shared.application.exception.ForbiddenOperationException;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.exception.DomainException;
 import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorItem;
@@ -126,6 +127,13 @@ public class GlobalExceptionHandler {
 			ResourceNotFoundException exception,
 			HttpServletRequest request) {
 		return build(HttpStatus.NOT_FOUND, exception.getCode(), exception.getMessage());
+	}
+
+	@ExceptionHandler(ForbiddenOperationException.class)
+	public ResponseEntity<ApiResponse<Void>> handleForbiddenOperation(
+			ForbiddenOperationException exception,
+			HttpServletRequest request) {
+		return build(HttpStatus.FORBIDDEN, exception.getCode(), exception.getMessage());
 	}
 
 	@ExceptionHandler(ApplicationException.class)

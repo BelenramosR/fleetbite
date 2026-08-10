@@ -82,4 +82,12 @@ public class DeliveryAssignmentRepositoryAdapter implements DeliveryAssignmentRe
 				.findFirstByOrderIdAndStatusIn(orderId, ACTIVE_STATUSES)
 				.map(deliveryAssignmentPersistenceMapper::toDomain);
 	}
+
+	@Override
+	public Optional<DeliveryAssignment> findActiveByDriverId(UUID driverId) {
+		Objects.requireNonNull(driverId, "driverId is required");
+		return springDataDeliveryAssignmentRepository
+				.findFirstByDriverIdAndStatusIn(driverId, ACTIVE_STATUSES)
+				.map(deliveryAssignmentPersistenceMapper::toDomain);
+	}
 }

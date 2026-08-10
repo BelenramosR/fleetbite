@@ -6,6 +6,7 @@ import com.fleetbite.delivery.application.port.in.AssignmentQueryUseCase;
 import com.fleetbite.delivery.application.port.in.AssignmentWorkflowUseCase;
 import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;
 import com.fleetbite.delivery.application.port.in.CreateManualAssignmentUseCase;
+import com.fleetbite.delivery.application.port.in.DriverAssignmentUseCase;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.application.port.out.DistanceCalculatorPort;
 import com.fleetbite.delivery.application.service.AcceptAssignmentService;
@@ -15,6 +16,7 @@ import com.fleetbite.delivery.application.service.AutoAssignOrderService;
 import com.fleetbite.delivery.application.service.CompleteAssignmentService;
 import com.fleetbite.delivery.application.service.CreateAssignmentOperation;
 import com.fleetbite.delivery.application.service.CreateManualAssignmentService;
+import com.fleetbite.delivery.application.service.DriverAssignmentService;
 import com.fleetbite.delivery.application.service.PickupAssignmentService;
 import com.fleetbite.delivery.application.service.RejectAssignmentService;
 import com.fleetbite.delivery.application.service.StartDeliveryAssignmentService;
@@ -105,5 +107,16 @@ public class DeliveryAssignmentApplicationConfig {
 				new CompleteAssignmentService(assignments, orders, drivers, history, clock));
 		return DeliveryTransactionProxyFactory.readWrite(
 				AssignmentWorkflowUseCase.class, workflow, transactions);
+	}
+
+	@Bean
+	DriverAssignmentUseCase driverAssignmentUseCase(
+			DriverRepositoryPort drivers,
+			DeliveryAssignmentRepositoryPort assignments,
+			AssignmentWorkflowUseCase workflow,
+			PlatformTransactionManager transactions) {
+		return DeliveryTransactionProxyFactory.readWrite(
+				DriverAssignmentUseCase.class,
+				new DriverAssignmentService(drivers, assignments, workflow), transactions);
 	}
 }

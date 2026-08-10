@@ -15,6 +15,8 @@ public interface DriverRepositoryPort {
 
 	Optional<Driver> findById(UUID id);
 
+	Optional<Driver> findByUserId(UUID userId);
+
 	List<Driver> findAll();
 
 	/**

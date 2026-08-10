@@ -343,6 +343,31 @@ class SecurityIntegrationTest {
 	}
 
 	@Test
+	void driver_shouldAccessOnlySelfServiceEndpoints() throws Exception {
+		String token = login("driver@fleetbite.local");
+
+		mockMvc.perform(get("/api/v1/drivers/me")
+						.header("Authorization", "Bearer " + token))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.userId", notNullValue()));
+
+		mockMvc.perform(get("/api/v1/driver/assignments/active")
+						.header("Authorization", "Bearer " + token))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+	}
+
+	@Test
+	void admin_shouldNotUseDriverSelfServiceEndpoints() throws Exception {
+		String token = login("admin@fleetbite.local");
+
+		mockMvc.perform(get("/api/v1/drivers/me")
+						.header("Authorization", "Bearer " + token))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+	}
+
+	@Test
 	void driver_shouldBeDeniedOrderHistory() throws Exception {
 		String token = login("driver@fleetbite.local");
 

@@ -15,6 +15,8 @@ public interface SpringDataDriverRepository extends JpaRepository<DriverJpaEntit
 
 	boolean existsByUserId(UUID userId);
 
+	Optional<DriverJpaEntity> findByUserId(UUID userId);
+
 	Optional<DriverJpaEntity> findByVehicleId(UUID vehicleId);
 
 	List<DriverJpaEntity> findByStatusAndCurrentLatitudeIsNotNullAndCurrentLongitudeIsNotNullAndVehicleIdIsNotNull(

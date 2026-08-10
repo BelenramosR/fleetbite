@@ -85,4 +85,16 @@ public class DriverApplicationConfig {
 								drivers, vehicles, users, restaurantLocation, clock),
 						new UnassignVehicleFromDriverService(drivers, vehicles, users, clock)), transactions);
 	}
+
+	@Bean
+	DriverSelfUseCase driverSelfUseCase(
+			DriverRepositoryPort drivers,
+			DriverQueryUseCase queries,
+			UpdateDriverLocationUseCase location,
+			DriverAvailabilityUseCase availability,
+			PlatformTransactionManager transactions) {
+		return TransactionProxyFactory.readWrite(
+				DriverSelfUseCase.class,
+				new DriverSelfService(drivers, queries, location, availability), transactions);
+	}
 }

@@ -14,4 +14,8 @@ public interface SpringDataDeliveryAssignmentRepository extends JpaRepository<De
 	Optional<DeliveryAssignmentJpaEntity> findFirstByOrderIdAndStatusIn(
 			UUID orderId,
 			Collection<AssignmentStatus> statuses);
+
+	Optional<DeliveryAssignmentJpaEntity> findFirstByDriverIdAndStatusIn(
+			UUID driverId,
+			Collection<AssignmentStatus> statuses);
 }

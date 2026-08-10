@@ -52,6 +52,13 @@ public class DriverRepositoryAdapter implements DriverRepositoryPort {
 	}
 
 	@Override
+	public Optional<Driver> findByUserId(UUID userId) {
+		Objects.requireNonNull(userId, "userId is required");
+		return springDataDriverRepository.findByUserId(userId)
+				.map(driverPersistenceMapper::toDomain);
+	}
+
+	@Override
 	public List<Driver> findAll() {
 		return springDataDriverRepository.findAll(Sort.by(Sort.Direction.ASC, "createdAt")).stream()
 				.map(driverPersistenceMapper::toDomain)

@@ -20,4 +20,6 @@ public interface DeliveryAssignmentRepositoryPort {
 	boolean existsActiveByOrderId(UUID orderId);
 
 	Optional<DeliveryAssignment> findActiveByOrderId(UUID orderId);
+
+	Optional<DeliveryAssignment> findActiveByDriverId(UUID driverId);
 }
