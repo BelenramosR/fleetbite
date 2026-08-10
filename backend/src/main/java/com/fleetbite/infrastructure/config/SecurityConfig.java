@@ -1,4 +1,4 @@
-package com.fleetbite.shared.infrastructure.config;
+package com.fleetbite.infrastructure.config;
 
 import com.fleetbite.identity.application.port.out.TokenProviderPort;
 import com.fleetbite.identity.infrastructure.security.JwtAuthenticationFilter;

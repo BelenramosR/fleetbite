@@ -1,25 +1,13 @@
 package com.fleetbite.vehicle.infrastructure.config;
 
-import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
-import com.fleetbite.vehicle.application.port.in.ActivateVehicleUseCase;
-import com.fleetbite.vehicle.application.port.in.CreateVehicleUseCase;
-import com.fleetbite.vehicle.application.port.in.DeactivateVehicleUseCase;
-import com.fleetbite.vehicle.application.port.in.DeleteVehicleUseCase;
-import com.fleetbite.vehicle.application.port.in.GetVehicleByIdUseCase;
-import com.fleetbite.vehicle.application.port.in.ListVehiclesUseCase;
-import com.fleetbite.vehicle.application.port.in.SendVehicleToMaintenanceUseCase;
-import com.fleetbite.vehicle.application.port.in.UpdateVehicleUseCase;
+import com.fleetbite.shared.infrastructure.transaction.TransactionProxyFactory;
+import com.fleetbite.vehicle.application.port.in.*;
+import com.fleetbite.vehicle.application.port.out.VehicleAssignmentLookupPort;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
-import com.fleetbite.vehicle.application.service.ActivateVehicleService;
-import com.fleetbite.vehicle.application.service.CreateVehicleService;
-import com.fleetbite.vehicle.application.service.DeactivateVehicleService;
-import com.fleetbite.vehicle.application.service.DeleteVehicleService;
-import com.fleetbite.vehicle.application.service.GetVehicleByIdService;
-import com.fleetbite.vehicle.application.service.ListVehiclesService;
-import com.fleetbite.vehicle.application.service.SendVehicleToMaintenanceService;
-import com.fleetbite.vehicle.application.service.UpdateVehicleService;
+import com.fleetbite.vehicle.application.service.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Clock;
 
@@ -27,46 +15,46 @@ import java.time.Clock;
 public class VehicleApplicationConfig {
 
 	@Bean
-	CreateVehicleUseCase createVehicleUseCase(VehicleRepositoryPort vehicleRepositoryPort, Clock clock) {
-		return new CreateVehicleService(vehicleRepositoryPort, clock);
+	CreateVehicleUseCase createVehicleUseCase(
+			VehicleRepositoryPort vehicles, Clock clock, PlatformTransactionManager transactions) {
+		return TransactionProxyFactory.readWrite(
+				CreateVehicleUseCase.class, new CreateVehicleService(vehicles, clock), transactions);
 	}
 
 	@Bean
-	GetVehicleByIdUseCase getVehicleByIdUseCase(VehicleRepositoryPort vehicleRepositoryPort) {
-		return new GetVehicleByIdService(vehicleRepositoryPort);
+	VehicleQueryUseCase vehicleQueryUseCase(
+			VehicleRepositoryPort vehicles, PlatformTransactionManager transactions) {
+		return TransactionProxyFactory.readOnly(
+				VehicleQueryUseCase.class,
+				new VehicleQueryService(new GetVehicleByIdService(vehicles), new ListVehiclesService(vehicles)),
+				transactions);
 	}
 
 	@Bean
-	ListVehiclesUseCase listVehiclesUseCase(VehicleRepositoryPort vehicleRepositoryPort) {
-		return new ListVehiclesService(vehicleRepositoryPort);
-	}
-
-	@Bean
-	UpdateVehicleUseCase updateVehicleUseCase(VehicleRepositoryPort vehicleRepositoryPort, Clock clock) {
-		return new UpdateVehicleService(vehicleRepositoryPort, clock);
+	UpdateVehicleUseCase updateVehicleUseCase(
+			VehicleRepositoryPort vehicles, Clock clock, PlatformTransactionManager transactions) {
+		return TransactionProxyFactory.readWrite(
+				UpdateVehicleUseCase.class, new UpdateVehicleService(vehicles, clock), transactions);
 	}
 
 	@Bean
 	DeleteVehicleUseCase deleteVehicleUseCase(
-			VehicleRepositoryPort vehicleRepositoryPort,
-			DriverRepositoryPort driverRepositoryPort) {
-		return new DeleteVehicleService(vehicleRepositoryPort, driverRepositoryPort);
+			VehicleRepositoryPort vehicles,
+			VehicleAssignmentLookupPort assignments,
+			PlatformTransactionManager transactions) {
+		return TransactionProxyFactory.readWrite(
+				DeleteVehicleUseCase.class,
+				new DeleteVehicleService(vehicles, assignments), transactions);
 	}
 
 	@Bean
-	SendVehicleToMaintenanceUseCase sendVehicleToMaintenanceUseCase(
-			VehicleRepositoryPort vehicleRepositoryPort,
-			Clock clock) {
-		return new SendVehicleToMaintenanceService(vehicleRepositoryPort, clock);
-	}
-
-	@Bean
-	ActivateVehicleUseCase activateVehicleUseCase(VehicleRepositoryPort vehicleRepositoryPort, Clock clock) {
-		return new ActivateVehicleService(vehicleRepositoryPort, clock);
-	}
-
-	@Bean
-	DeactivateVehicleUseCase deactivateVehicleUseCase(VehicleRepositoryPort vehicleRepositoryPort, Clock clock) {
-		return new DeactivateVehicleService(vehicleRepositoryPort, clock);
+	VehicleLifecycleUseCase vehicleLifecycleUseCase(
+			VehicleRepositoryPort vehicles, Clock clock, PlatformTransactionManager transactions) {
+		return TransactionProxyFactory.readWrite(
+				VehicleLifecycleUseCase.class,
+				new VehicleLifecycleService(
+						new SendVehicleToMaintenanceService(vehicles, clock),
+						new ActivateVehicleService(vehicles, clock),
+						new DeactivateVehicleService(vehicles, clock)), transactions);
 	}
 }

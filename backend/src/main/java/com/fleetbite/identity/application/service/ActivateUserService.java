@@ -3,7 +3,6 @@ package com.fleetbite.identity.application.service;
 import java.util.UUID;
 
 import com.fleetbite.identity.application.dto.UserResult;
-import com.fleetbite.identity.application.port.in.ActivateUserUseCase;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.model.User;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
@@ -13,7 +12,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public final class ActivateUserService implements ActivateUserUseCase {
+public final class ActivateUserService {
 
 	private final UserRepositoryPort userRepositoryPort;
 	private final Clock clock;
@@ -23,7 +22,6 @@ public final class ActivateUserService implements ActivateUserUseCase {
 		this.clock = Objects.requireNonNull(clock);
 	}
 
-	@Override
 	public UserResult execute(UUID userId) {
 		Objects.requireNonNull(userId, "userId is required");
 

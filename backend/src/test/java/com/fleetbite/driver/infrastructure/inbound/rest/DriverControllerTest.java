@@ -3,13 +3,10 @@ package com.fleetbite.driver.infrastructure.inbound.rest;
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.dto.UpdateDriverCommand;
 import com.fleetbite.driver.application.dto.UpdateDriverLocationCommand;
-import com.fleetbite.driver.application.port.in.AssignVehicleToDriverUseCase;
+import com.fleetbite.driver.application.port.in.DriverAvailabilityUseCase;
+import com.fleetbite.driver.application.port.in.DriverQueryUseCase;
+import com.fleetbite.driver.application.port.in.DriverVehicleUseCase;
 import com.fleetbite.driver.application.port.in.DeleteDriverUseCase;
-import com.fleetbite.driver.application.port.in.GetDriverByIdUseCase;
-import com.fleetbite.driver.application.port.in.ListDriversUseCase;
-import com.fleetbite.driver.application.port.in.SetDriverOfflineUseCase;
-import com.fleetbite.driver.application.port.in.SetDriverOnlineUseCase;
-import com.fleetbite.driver.application.port.in.UnassignVehicleFromDriverUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverLocationUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverUseCase;
 import com.fleetbite.driver.domain.exception.DriverNotDeletableException;
@@ -20,7 +17,7 @@ import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
-import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
+import com.fleetbite.infrastructure.inbound.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -63,10 +60,7 @@ class DriverControllerTest {
 	private MockMvc mockMvc;
 
 	@MockitoBean
-	private GetDriverByIdUseCase getDriverByIdUseCase;
-
-	@MockitoBean
-	private ListDriversUseCase listDriversUseCase;
+	private DriverQueryUseCase driverQueryUseCase;
 
 	@MockitoBean
 	private UpdateDriverUseCase updateDriverUseCase;
@@ -78,20 +72,14 @@ class DriverControllerTest {
 	private UpdateDriverLocationUseCase updateDriverLocationUseCase;
 
 	@MockitoBean
-	private SetDriverOnlineUseCase setDriverOnlineUseCase;
+	private DriverAvailabilityUseCase driverAvailabilityUseCase;
 
 	@MockitoBean
-	private SetDriverOfflineUseCase setDriverOfflineUseCase;
-
-	@MockitoBean
-	private AssignVehicleToDriverUseCase assignVehicleToDriverUseCase;
-
-	@MockitoBean
-	private UnassignVehicleFromDriverUseCase unassignVehicleFromDriverUseCase;
+	private DriverVehicleUseCase driverVehicleUseCase;
 
 	@Test
 	void listDrivers_shouldReturn200WithItems() throws Exception {
-		when(listDriversUseCase.execute()).thenReturn(List.of(sampleResult(null)));
+		when(driverQueryUseCase.findAll()).thenReturn(List.of(sampleResult(null)));
 
 		mockMvc.perform(get("/api/v1/drivers"))
 				.andExpect(status().isOk())
@@ -101,7 +89,7 @@ class DriverControllerTest {
 
 	@Test
 	void listDrivers_shouldReturnEmptyArray() throws Exception {
-		when(listDriversUseCase.execute()).thenReturn(List.of());
+		when(driverQueryUseCase.findAll()).thenReturn(List.of());
 
 		mockMvc.perform(get("/api/v1/drivers"))
 				.andExpect(status().isOk())
@@ -111,7 +99,7 @@ class DriverControllerTest {
 	@Test
 	void getDriverById_shouldReturn200() throws Exception {
 		DriverResult result = sampleResult(null);
-		when(getDriverByIdUseCase.execute(result.id())).thenReturn(result);
+		when(driverQueryUseCase.getById(result.id())).thenReturn(result);
 
 		mockMvc.perform(get("/api/v1/drivers/{id}", result.id()))
 				.andExpect(status().isOk())
@@ -121,7 +109,7 @@ class DriverControllerTest {
 	@Test
 	void getDriverById_shouldReturn404() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(getDriverByIdUseCase.execute(id))
+		when(driverQueryUseCase.getById(id))
 				.thenThrow(new ResourceNotFoundException("Driver", id));
 
 		mockMvc.perform(get("/api/v1/drivers/{id}", id))
@@ -208,7 +196,7 @@ class DriverControllerTest {
 	@Test
 	void goOnline_shouldReturn200() throws Exception {
 		DriverResult result = availableResult();
-		when(setDriverOnlineUseCase.execute(result.id())).thenReturn(result);
+		when(driverAvailabilityUseCase.goOnline(result.id())).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/drivers/{id}/online", result.id()))
 				.andExpect(status().isOk())
@@ -218,7 +206,7 @@ class DriverControllerTest {
 	@Test
 	void goOnline_shouldReturn400WithoutLocation() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(setDriverOnlineUseCase.execute(id))
+		when(driverAvailabilityUseCase.goOnline(id))
 				.thenThrow(new InvalidDriverTransitionException(
 						"Driver cannot go online without a valid currentLocation"));
 
@@ -230,7 +218,7 @@ class DriverControllerTest {
 	@Test
 	void goOffline_shouldReturn200() throws Exception {
 		DriverResult result = sampleResult(new Location(-12.10, -77.03));
-		when(setDriverOfflineUseCase.execute(result.id())).thenReturn(result);
+		when(driverAvailabilityUseCase.goOffline(result.id())).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/drivers/{id}/offline", result.id()))
 				.andExpect(status().isOk())

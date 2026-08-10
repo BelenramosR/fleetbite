@@ -1,12 +1,10 @@
 package com.fleetbite.identity.infrastructure.inbound.rest;
 
 import com.fleetbite.identity.application.dto.UserResult;
-import com.fleetbite.identity.application.port.in.ActivateUserUseCase;
 import com.fleetbite.identity.application.port.in.CreateUserUseCase;
-import com.fleetbite.identity.application.port.in.DeactivateUserUseCase;
-import com.fleetbite.identity.application.port.in.GetUserByIdUseCase;
-import com.fleetbite.identity.application.port.in.ListUsersUseCase;
 import com.fleetbite.identity.application.port.in.UpdateUserUseCase;
+import com.fleetbite.identity.application.port.in.UserLifecycleUseCase;
+import com.fleetbite.identity.application.port.in.UserQueryUseCase;
 import com.fleetbite.identity.infrastructure.inbound.rest.request.CreateUserRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.request.UpdateUserRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.response.UserResponse;
@@ -43,27 +41,21 @@ import java.util.UUID;
 public class UserController {
 
 	private final CreateUserUseCase createUserUseCase;
-	private final GetUserByIdUseCase getUserByIdUseCase;
-	private final ListUsersUseCase listUsersUseCase;
+	private final UserQueryUseCase userQueryUseCase;
 	private final UpdateUserUseCase updateUserUseCase;
-	private final ActivateUserUseCase activateUserUseCase;
-	private final DeactivateUserUseCase deactivateUserUseCase;
+	private final UserLifecycleUseCase userLifecycleUseCase;
 	private final IdentityHttpMapper identityHttpMapper;
 
 	public UserController(
 			CreateUserUseCase createUserUseCase,
-			GetUserByIdUseCase getUserByIdUseCase,
-			ListUsersUseCase listUsersUseCase,
+			UserQueryUseCase userQueryUseCase,
 			UpdateUserUseCase updateUserUseCase,
-			ActivateUserUseCase activateUserUseCase,
-			DeactivateUserUseCase deactivateUserUseCase,
+			UserLifecycleUseCase userLifecycleUseCase,
 			IdentityHttpMapper identityHttpMapper) {
 		this.createUserUseCase = Objects.requireNonNull(createUserUseCase);
-		this.getUserByIdUseCase = Objects.requireNonNull(getUserByIdUseCase);
-		this.listUsersUseCase = Objects.requireNonNull(listUsersUseCase);
+		this.userQueryUseCase = Objects.requireNonNull(userQueryUseCase);
 		this.updateUserUseCase = Objects.requireNonNull(updateUserUseCase);
-		this.activateUserUseCase = Objects.requireNonNull(activateUserUseCase);
-		this.deactivateUserUseCase = Objects.requireNonNull(deactivateUserUseCase);
+		this.userLifecycleUseCase = Objects.requireNonNull(userLifecycleUseCase);
 		this.identityHttpMapper = Objects.requireNonNull(identityHttpMapper);
 	}
 
@@ -77,7 +69,7 @@ public class UserController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<UserResponse> listUsers() {
-		return listUsersUseCase.execute().stream()
+		return userQueryUseCase.list().stream()
 				.map(identityHttpMapper::toResponse)
 				.toList();
 	}
@@ -119,7 +111,7 @@ public class UserController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public UserResponse getUserById(@PathVariable UUID id) {
-		return identityHttpMapper.toResponse(getUserByIdUseCase.execute(id));
+		return identityHttpMapper.toResponse(userQueryUseCase.getById(id));
 	}
 
 	@PutMapping("/{id}")
@@ -154,7 +146,7 @@ public class UserController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public UserResponse activate(@PathVariable UUID id) {
-		return identityHttpMapper.toResponse(activateUserUseCase.execute(id));
+		return identityHttpMapper.toResponse(userLifecycleUseCase.activate(id));
 	}
 
 	@PostMapping("/{id}/deactivate")
@@ -169,6 +161,6 @@ public class UserController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public UserResponse deactivate(@PathVariable UUID id) {
-		return identityHttpMapper.toResponse(deactivateUserUseCase.execute(id));
+		return identityHttpMapper.toResponse(userLifecycleUseCase.deactivate(id));
 	}
 }

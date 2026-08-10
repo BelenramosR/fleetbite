@@ -120,20 +120,20 @@ class HexagonalArchitectureTest {
 			.should().dependOnClassesThat().resideInAnyPackage(
 					"com.fleetbite.delivery..", "com.fleetbite.order..");
 
-	// Excepción temporal: vehicle todavía consulta DriverRepositoryPort al eliminar.
 	@ArchTest
-	static final ArchRule vehicleUsesOnlyTemporaryDriverDependency = noClasses()
+	static final ArchRule vehicleDependsOnlyOnShared = noClasses()
 			.that().resideInAPackage("com.fleetbite.vehicle..")
 			.should().dependOnClassesThat().resideInAnyPackage(
-					"com.fleetbite.delivery..", "com.fleetbite.identity..", "com.fleetbite.order..");
+					"com.fleetbite.delivery..", "com.fleetbite.driver..",
+					"com.fleetbite.identity..", "com.fleetbite.order..");
 
 	@ArchTest
-	static final ArchRule sharedCoreIsIndependent = noClasses()
-			.that().resideInAnyPackage(
-					"com.fleetbite.shared.domain..", "com.fleetbite.shared.application..")
+	static final ArchRule sharedIsIndependent = noClasses()
+			.that().resideInAPackage("com.fleetbite.shared..")
 			.should().dependOnClassesThat().resideInAnyPackage(
 					"com.fleetbite.delivery..", "com.fleetbite.driver..",
-					"com.fleetbite.identity..", "com.fleetbite.order..", "com.fleetbite.vehicle..");
+					"com.fleetbite.identity..", "com.fleetbite.order..", "com.fleetbite.vehicle..")
+			.because("Shared debe ser una dependencia base, nunca conocer bounded contexts");
 
 	@ArchTest
 	static final ArchRule orderReadyConsumerBelongsToDelivery = classes()

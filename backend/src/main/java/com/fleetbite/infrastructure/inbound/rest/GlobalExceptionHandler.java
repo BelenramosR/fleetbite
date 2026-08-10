@@ -1,4 +1,4 @@
-package com.fleetbite.shared.infrastructure.inbound.rest;
+package com.fleetbite.infrastructure.inbound.rest;
 
 import com.fleetbite.delivery.domain.exception.ActiveAssignmentAlreadyExistsException;
 import com.fleetbite.delivery.domain.exception.DriverNotAssignableException;
@@ -10,7 +10,7 @@ import com.fleetbite.driver.domain.exception.DriverUserNotEligibleException;
 import com.fleetbite.driver.domain.exception.DuplicateDriverPhoneException;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.driver.domain.exception.VehicleAlreadyAssignedException;
-import com.fleetbite.driver.domain.exception.VehicleAssignedToDriverException;
+import com.fleetbite.vehicle.domain.exception.VehicleAssignedToDriverException;
 import com.fleetbite.identity.domain.exception.AuthenticationFailedException;
 import com.fleetbite.identity.domain.exception.DuplicateUserEmailException;
 import com.fleetbite.identity.domain.exception.InvalidUserDataException;
@@ -22,6 +22,8 @@ import com.fleetbite.order.domain.exception.OrderNotEditableException;
 import com.fleetbite.shared.application.exception.ApplicationException;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.exception.DomainException;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiErrorItem;
+import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse;
 import com.fleetbite.vehicle.domain.exception.DuplicateVehiclePlateException;
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleDataException;
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleTransitionException;
@@ -39,7 +41,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.util.stream.Collectors;
+import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -48,10 +50,10 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiResponse<Void>> handleValidation(
 			MethodArgumentNotValidException exception,
 			HttpServletRequest request) {
-		String message = exception.getBindingResult().getFieldErrors().stream()
-				.map(this::formatFieldError)
-				.collect(Collectors.joining("; "));
-		return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message);
+		List<ApiErrorItem> errors = exception.getBindingResult().getFieldErrors().stream()
+				.map(this::toApiError)
+				.toList();
+		return ResponseEntity.badRequest().body(ApiResponse.failure("VALIDATION_ERROR", errors));
 	}
 
 	@ExceptionHandler({
@@ -167,8 +169,8 @@ public class GlobalExceptionHandler {
 				"Unexpected server error");
 	}
 
-	private String formatFieldError(FieldError error) {
-		return error.getField() + ": " + error.getDefaultMessage();
+	private ApiErrorItem toApiError(FieldError error) {
+		return new ApiErrorItem(error.getField(), error.getDefaultMessage());
 	}
 
 	private ResponseEntity<ApiResponse<Void>> build(HttpStatus status, String code, String message) {

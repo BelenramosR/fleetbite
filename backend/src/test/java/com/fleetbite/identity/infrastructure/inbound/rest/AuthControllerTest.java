@@ -1,13 +1,11 @@
 package com.fleetbite.identity.infrastructure.inbound.rest;
 
 import com.fleetbite.identity.application.dto.LoginResult;
-import com.fleetbite.identity.application.port.in.LoginUseCase;
-import com.fleetbite.identity.application.port.in.LogoutUseCase;
-import com.fleetbite.identity.application.port.in.RefreshAccessTokenUseCase;
+import com.fleetbite.identity.application.port.in.AuthenticationUseCase;
 import com.fleetbite.identity.domain.exception.AuthenticationFailedException;
 import com.fleetbite.identity.domain.exception.UserInactiveException;
 import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
-import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
+import com.fleetbite.infrastructure.inbound.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -22,6 +20,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = AuthController.class)
@@ -33,17 +32,11 @@ class AuthControllerTest {
 	private MockMvc mockMvc;
 
 	@MockitoBean
-	private LoginUseCase loginUseCase;
-
-	@MockitoBean
-	private RefreshAccessTokenUseCase refreshAccessTokenUseCase;
-
-	@MockitoBean
-	private LogoutUseCase logoutUseCase;
+	private AuthenticationUseCase authenticationUseCase;
 
 	@Test
 	void login_shouldReturnToken() throws Exception {
-		when(loginUseCase.execute(any())).thenReturn(
+		when(authenticationUseCase.login(any())).thenReturn(
 				LoginResult.bearer("jwt-token", 3600, "refresh-token-uuid"));
 
 		mockMvc.perform(post("/api/v1/auth/login")
@@ -63,7 +56,7 @@ class AuthControllerTest {
 
 	@Test
 	void login_shouldMapAuthenticationFailedTo401() throws Exception {
-		when(loginUseCase.execute(any())).thenThrow(new AuthenticationFailedException());
+		when(authenticationUseCase.login(any())).thenThrow(new AuthenticationFailedException());
 
 		mockMvc.perform(post("/api/v1/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -79,7 +72,7 @@ class AuthControllerTest {
 
 	@Test
 	void login_shouldMapInactiveUserTo403() throws Exception {
-		when(loginUseCase.execute(any())).thenThrow(new UserInactiveException());
+		when(authenticationUseCase.login(any())).thenThrow(new UserInactiveException());
 
 		mockMvc.perform(post("/api/v1/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -95,7 +88,7 @@ class AuthControllerTest {
 
 	@Test
 	void refresh_shouldReturnNewTokens() throws Exception {
-		when(refreshAccessTokenUseCase.execute(any())).thenReturn(
+		when(authenticationUseCase.refresh(any())).thenReturn(
 				LoginResult.bearer("new-jwt", 3600, "new-refresh"));
 
 		mockMvc.perform(post("/api/v1/auth/refresh")
@@ -112,7 +105,7 @@ class AuthControllerTest {
 
 	@Test
 	void refresh_shouldMapAuthenticationFailedTo401() throws Exception {
-		when(refreshAccessTokenUseCase.execute(any())).thenThrow(new AuthenticationFailedException());
+		when(authenticationUseCase.refresh(any())).thenThrow(new AuthenticationFailedException());
 
 		mockMvc.perform(post("/api/v1/auth/refresh")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -127,7 +120,7 @@ class AuthControllerTest {
 
 	@Test
 	void logout_shouldReturn204() throws Exception {
-		doNothing().when(logoutUseCase).execute(any());
+		doNothing().when(authenticationUseCase).logout(any());
 
 		mockMvc.perform(post("/api/v1/auth/logout")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -136,6 +129,7 @@ class AuthControllerTest {
 								  "refreshToken": "any-refresh"
 								}
 								"""))
-				.andExpect(status().isNoContent());
+				.andExpect(status().isNoContent())
+				.andExpect(content().string(""));
 	}
 }

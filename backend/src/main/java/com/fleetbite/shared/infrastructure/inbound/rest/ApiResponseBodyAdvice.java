@@ -5,6 +5,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
@@ -30,6 +31,10 @@ public class ApiResponseBodyAdvice implements ResponseBodyAdvice<Object> {
 		}
 		if (body instanceof ApiResponse<?>) {
 			return body;
+		}
+		if (response instanceof ServletServerHttpResponse servletResponse
+				&& servletResponse.getServletResponse().getStatus() == 204) {
+			return null;
 		}
 		if (body == null) {
 			return ApiResponse.success(null);

@@ -5,7 +5,6 @@ import java.util.UUID;
 import com.fleetbite.driver.application.dto.AssignVehicleToDriverCommand;
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.dto.VehicleSummary;
-import com.fleetbite.driver.application.port.in.AssignVehicleToDriverUseCase;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.driver.domain.exception.VehicleAlreadyAssignedException;
@@ -21,7 +20,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public final class AssignVehicleToDriverService implements AssignVehicleToDriverUseCase {
+public final class AssignVehicleToDriverService {
 
 	private final DriverRepositoryPort driverRepositoryPort;
 	private final VehicleRepositoryPort vehicleRepositoryPort;
@@ -39,7 +38,6 @@ public final class AssignVehicleToDriverService implements AssignVehicleToDriver
 		this.clock = Objects.requireNonNull(clock, "clock");
 	}
 
-	@Override
 	public DriverResult execute(UUID driverId, AssignVehicleToDriverCommand command) {
 		Objects.requireNonNull(driverId, "driverId is required");
 		Objects.requireNonNull(command, "command is required");

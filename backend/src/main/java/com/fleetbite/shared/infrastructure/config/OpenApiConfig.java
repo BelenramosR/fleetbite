@@ -19,7 +19,9 @@ public class OpenApiConfig {
 		return new OpenAPI()
 				.info(new Info()
 						.title("FleetBite API")
-						.description("Operational order, delivery and fleet management API.")
+						.description("Operational order, delivery and fleet management API. "
+								+ "Every JSON response uses the standard {code, success, data, errors} envelope; "
+								+ "204 responses have no body.")
 						.version("v1"))
 				.addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH))
 				.components(new Components()

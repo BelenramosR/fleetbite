@@ -2,13 +2,10 @@ package com.fleetbite.vehicle.infrastructure.inbound.rest;
 
 import com.fleetbite.shared.infrastructure.config.OpenApiConfig;
 import com.fleetbite.vehicle.application.dto.VehicleResult;
-import com.fleetbite.vehicle.application.port.in.ActivateVehicleUseCase;
 import com.fleetbite.vehicle.application.port.in.CreateVehicleUseCase;
-import com.fleetbite.vehicle.application.port.in.DeactivateVehicleUseCase;
 import com.fleetbite.vehicle.application.port.in.DeleteVehicleUseCase;
-import com.fleetbite.vehicle.application.port.in.GetVehicleByIdUseCase;
-import com.fleetbite.vehicle.application.port.in.ListVehiclesUseCase;
-import com.fleetbite.vehicle.application.port.in.SendVehicleToMaintenanceUseCase;
+import com.fleetbite.vehicle.application.port.in.VehicleLifecycleUseCase;
+import com.fleetbite.vehicle.application.port.in.VehicleQueryUseCase;
 import com.fleetbite.vehicle.application.port.in.UpdateVehicleUseCase;
 import com.fleetbite.vehicle.infrastructure.inbound.rest.request.CreateVehicleRequest;
 import com.fleetbite.vehicle.infrastructure.inbound.rest.request.UpdateVehicleRequest;
@@ -46,33 +43,24 @@ import java.util.UUID;
 public class VehicleController {
 
 	private final CreateVehicleUseCase createVehicleUseCase;
-	private final GetVehicleByIdUseCase getVehicleByIdUseCase;
-	private final ListVehiclesUseCase listVehiclesUseCase;
+	private final VehicleQueryUseCase vehicleQueryUseCase;
 	private final UpdateVehicleUseCase updateVehicleUseCase;
 	private final DeleteVehicleUseCase deleteVehicleUseCase;
-	private final SendVehicleToMaintenanceUseCase sendVehicleToMaintenanceUseCase;
-	private final ActivateVehicleUseCase activateVehicleUseCase;
-	private final DeactivateVehicleUseCase deactivateVehicleUseCase;
+	private final VehicleLifecycleUseCase vehicleLifecycleUseCase;
 	private final VehicleHttpMapper vehicleHttpMapper;
 
 	public VehicleController(
 			CreateVehicleUseCase createVehicleUseCase,
-			GetVehicleByIdUseCase getVehicleByIdUseCase,
-			ListVehiclesUseCase listVehiclesUseCase,
+			VehicleQueryUseCase vehicleQueryUseCase,
 			UpdateVehicleUseCase updateVehicleUseCase,
 			DeleteVehicleUseCase deleteVehicleUseCase,
-			SendVehicleToMaintenanceUseCase sendVehicleToMaintenanceUseCase,
-			ActivateVehicleUseCase activateVehicleUseCase,
-			DeactivateVehicleUseCase deactivateVehicleUseCase,
+			VehicleLifecycleUseCase vehicleLifecycleUseCase,
 			VehicleHttpMapper vehicleHttpMapper) {
 		this.createVehicleUseCase = Objects.requireNonNull(createVehicleUseCase);
-		this.getVehicleByIdUseCase = Objects.requireNonNull(getVehicleByIdUseCase);
-		this.listVehiclesUseCase = Objects.requireNonNull(listVehiclesUseCase);
+		this.vehicleQueryUseCase = Objects.requireNonNull(vehicleQueryUseCase);
 		this.updateVehicleUseCase = Objects.requireNonNull(updateVehicleUseCase);
 		this.deleteVehicleUseCase = Objects.requireNonNull(deleteVehicleUseCase);
-		this.sendVehicleToMaintenanceUseCase = Objects.requireNonNull(sendVehicleToMaintenanceUseCase);
-		this.activateVehicleUseCase = Objects.requireNonNull(activateVehicleUseCase);
-		this.deactivateVehicleUseCase = Objects.requireNonNull(deactivateVehicleUseCase);
+		this.vehicleLifecycleUseCase = Objects.requireNonNull(vehicleLifecycleUseCase);
 		this.vehicleHttpMapper = Objects.requireNonNull(vehicleHttpMapper);
 	}
 
@@ -86,7 +74,7 @@ public class VehicleController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<VehicleResponse> listVehicles() {
-		return listVehiclesUseCase.execute().stream()
+		return vehicleQueryUseCase.findAll().stream()
 				.map(vehicleHttpMapper::toResponse)
 				.toList();
 	}
@@ -127,7 +115,7 @@ public class VehicleController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public VehicleResponse getVehicleById(@PathVariable UUID id) {
-		VehicleResult result = getVehicleByIdUseCase.execute(id);
+		VehicleResult result = vehicleQueryUseCase.getById(id);
 		return vehicleHttpMapper.toResponse(result);
 	}
 
@@ -185,7 +173,7 @@ public class VehicleController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public VehicleResponse sendToMaintenance(@PathVariable UUID id) {
-		VehicleResult result = sendVehicleToMaintenanceUseCase.execute(id);
+		VehicleResult result = vehicleLifecycleUseCase.sendToMaintenance(id);
 		return vehicleHttpMapper.toResponse(result);
 	}
 
@@ -203,7 +191,7 @@ public class VehicleController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public VehicleResponse activate(@PathVariable UUID id) {
-		VehicleResult result = activateVehicleUseCase.execute(id);
+		VehicleResult result = vehicleLifecycleUseCase.activate(id);
 		return vehicleHttpMapper.toResponse(result);
 	}
 
@@ -221,7 +209,7 @@ public class VehicleController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public VehicleResponse deactivate(@PathVariable UUID id) {
-		VehicleResult result = deactivateVehicleUseCase.execute(id);
+		VehicleResult result = vehicleLifecycleUseCase.deactivate(id);
 		return vehicleHttpMapper.toResponse(result);
 	}
 }

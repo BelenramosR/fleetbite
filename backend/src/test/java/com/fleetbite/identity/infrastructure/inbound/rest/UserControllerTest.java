@@ -3,19 +3,17 @@ package com.fleetbite.identity.infrastructure.inbound.rest;
 import com.fleetbite.identity.application.dto.CreateUserCommand;
 import com.fleetbite.identity.application.dto.UpdateUserCommand;
 import com.fleetbite.identity.application.dto.UserResult;
-import com.fleetbite.identity.application.port.in.ActivateUserUseCase;
 import com.fleetbite.identity.application.port.in.CreateUserUseCase;
-import com.fleetbite.identity.application.port.in.DeactivateUserUseCase;
-import com.fleetbite.identity.application.port.in.GetUserByIdUseCase;
-import com.fleetbite.identity.application.port.in.ListUsersUseCase;
 import com.fleetbite.identity.application.port.in.UpdateUserUseCase;
+import com.fleetbite.identity.application.port.in.UserLifecycleUseCase;
+import com.fleetbite.identity.application.port.in.UserQueryUseCase;
 import com.fleetbite.identity.domain.exception.DuplicateUserEmailException;
 import com.fleetbite.identity.domain.model.User;
 import com.fleetbite.identity.domain.model.UserRole;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
-import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
+import com.fleetbite.infrastructure.inbound.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -55,19 +53,15 @@ class UserControllerTest {
 	@MockitoBean
 	private CreateUserUseCase createUserUseCase;
 	@MockitoBean
-	private GetUserByIdUseCase getUserByIdUseCase;
-	@MockitoBean
-	private ListUsersUseCase listUsersUseCase;
+	private UserQueryUseCase userQueryUseCase;
 	@MockitoBean
 	private UpdateUserUseCase updateUserUseCase;
 	@MockitoBean
-	private ActivateUserUseCase activateUserUseCase;
-	@MockitoBean
-	private DeactivateUserUseCase deactivateUserUseCase;
+	private UserLifecycleUseCase userLifecycleUseCase;
 
 	@Test
 	void listUsers_shouldReturnCollection() throws Exception {
-		when(listUsersUseCase.execute()).thenReturn(List.of(sampleResult()));
+		when(userQueryUseCase.list()).thenReturn(List.of(sampleResult()));
 
 		mockMvc.perform(get("/api/v1/users"))
 				.andExpect(status().isOk())
@@ -115,7 +109,7 @@ class UserControllerTest {
 
 	@Test
 	void getUserById_shouldReturn404WhenMissing() throws Exception {
-		when(getUserByIdUseCase.execute(any(UUID.class)))
+		when(userQueryUseCase.getById(any(UUID.class)))
 				.thenThrow(new ResourceNotFoundException("User", USER_ID));
 
 		mockMvc.perform(get("/api/v1/users/{id}", USER_ID))
@@ -149,8 +143,8 @@ class UserControllerTest {
 
 	@Test
 	void activateAndDeactivate_shouldReturnUser() throws Exception {
-		when(activateUserUseCase.execute(USER_ID)).thenReturn(sampleResult());
-		when(deactivateUserUseCase.execute(USER_ID)).thenReturn(sampleResult());
+		when(userLifecycleUseCase.activate(USER_ID)).thenReturn(sampleResult());
+		when(userLifecycleUseCase.deactivate(USER_ID)).thenReturn(sampleResult());
 
 		mockMvc.perform(post("/api/v1/users/{id}/activate", USER_ID))
 				.andExpect(status().isOk())

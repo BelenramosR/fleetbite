@@ -1,7 +1,6 @@
 package com.fleetbite.driver.application.service;
 
 import com.fleetbite.driver.application.dto.DriverResult;
-import com.fleetbite.driver.application.port.in.ListDriversUseCase;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
@@ -9,7 +8,7 @@ import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import java.util.List;
 import java.util.Objects;
 
-public final class ListDriversService implements ListDriversUseCase {
+public final class ListDriversService {
 
 	private final DriverRepositoryPort driverRepositoryPort;
 	private final DriverResultAssembler resultAssembler;
@@ -22,7 +21,6 @@ public final class ListDriversService implements ListDriversUseCase {
 		this.resultAssembler = new DriverResultAssembler(userRepositoryPort, vehicleRepositoryPort);
 	}
 
-	@Override
 	public List<DriverResult> execute() {
 		return driverRepositoryPort.findAll().stream()
 				.map(resultAssembler::toResult)

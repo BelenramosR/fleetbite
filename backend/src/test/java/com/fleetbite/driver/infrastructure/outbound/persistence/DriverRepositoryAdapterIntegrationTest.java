@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 		"spring.flyway.enabled=true"
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({DriverRepositoryAdapter.class, DriverPersistenceMapperImpl.class})
+@Import({DriverRepositoryAdapter.class, DriverPersistenceMapper.class})
 @Testcontainers
 class DriverRepositoryAdapterIntegrationTest {
 

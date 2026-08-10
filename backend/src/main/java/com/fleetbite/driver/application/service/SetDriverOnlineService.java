@@ -3,7 +3,6 @@ package com.fleetbite.driver.application.service;
 import java.util.UUID;
 
 import com.fleetbite.driver.application.dto.DriverResult;
-import com.fleetbite.driver.application.port.in.SetDriverOnlineUseCase;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
@@ -15,7 +14,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public final class SetDriverOnlineService implements SetDriverOnlineUseCase {
+public final class SetDriverOnlineService {
 
 	private final DriverRepositoryPort driverRepositoryPort;
 	private final DriverResultAssembler resultAssembler;
@@ -31,7 +30,6 @@ public final class SetDriverOnlineService implements SetDriverOnlineUseCase {
 		this.clock = Objects.requireNonNull(clock, "clock");
 	}
 
-	@Override
 	public DriverResult execute(UUID driverId) {
 		Objects.requireNonNull(driverId, "driverId is required");
 

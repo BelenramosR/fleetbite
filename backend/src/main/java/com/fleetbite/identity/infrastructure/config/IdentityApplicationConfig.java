@@ -1,118 +1,60 @@
 package com.fleetbite.identity.infrastructure.config;
 
-import com.fleetbite.identity.application.port.in.ActivateUserUseCase;
-import com.fleetbite.identity.application.port.in.CreateUserUseCase;
-import com.fleetbite.identity.application.port.in.DeactivateUserUseCase;
-import com.fleetbite.identity.application.port.in.GetUserByIdUseCase;
-import com.fleetbite.identity.application.port.in.ListUsersUseCase;
-import com.fleetbite.identity.application.port.in.LoginUseCase;
-import com.fleetbite.identity.application.port.in.LogoutUseCase;
-import com.fleetbite.identity.application.port.in.RefreshAccessTokenUseCase;
-import com.fleetbite.identity.application.port.in.UpdateUserUseCase;
-import com.fleetbite.identity.application.port.out.DriverProfileProvisionerPort;
-import com.fleetbite.identity.application.port.out.PasswordEncoderPort;
-import com.fleetbite.identity.application.port.out.RefreshTokenRepositoryPort;
-import com.fleetbite.identity.application.port.out.TokenProviderPort;
-import com.fleetbite.identity.application.port.out.UserRepositoryPort;
-import com.fleetbite.identity.application.service.ActivateUserService;
-import com.fleetbite.identity.application.service.AuthTokenIssuer;
-import com.fleetbite.identity.application.service.CreateUserService;
-import com.fleetbite.identity.application.service.DeactivateUserService;
-import com.fleetbite.identity.application.service.GetUserByIdService;
-import com.fleetbite.identity.application.service.ListUsersService;
-import com.fleetbite.identity.application.service.LoginService;
-import com.fleetbite.identity.application.service.LogoutService;
-import com.fleetbite.identity.application.service.RefreshAccessTokenService;
-import com.fleetbite.identity.application.service.UpdateUserService;
+import com.fleetbite.identity.application.port.in.*;
+import com.fleetbite.identity.application.port.out.*;
+import com.fleetbite.identity.application.service.*;
 import com.fleetbite.identity.infrastructure.jwt.JwtProperties;
-import com.fleetbite.identity.infrastructure.transaction.TransactionalCreateUserUseCase;
-import com.fleetbite.identity.infrastructure.transaction.TransactionalLoginUseCase;
-import com.fleetbite.identity.infrastructure.transaction.TransactionalRefreshAccessTokenUseCase;
+import com.fleetbite.shared.infrastructure.transaction.TransactionProxyFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Clock;
 
 @Configuration
 public class IdentityApplicationConfig {
-
 	@Bean
-	AuthTokenIssuer authTokenIssuer(
-			TokenProviderPort tokenProviderPort,
-			RefreshTokenRepositoryPort refreshTokenRepositoryPort,
-			JwtProperties jwtProperties,
-			Clock clock) {
-		return new AuthTokenIssuer(
-				tokenProviderPort,
-				refreshTokenRepositoryPort,
-				jwtProperties.getRefreshExpirationSeconds(),
-				clock);
+	AuthTokenIssuer authTokenIssuer(TokenProviderPort tokens, RefreshTokenRepositoryPort refreshTokens,
+			JwtProperties properties, Clock clock) {
+		return new AuthTokenIssuer(tokens, refreshTokens, properties.getRefreshExpirationSeconds(), clock);
 	}
 
 	@Bean
-	LoginUseCase loginUseCase(
-			UserRepositoryPort userRepositoryPort,
-			PasswordEncoderPort passwordEncoderPort,
-			AuthTokenIssuer authTokenIssuer) {
-		return new TransactionalLoginUseCase(
-				new LoginService(userRepositoryPort, passwordEncoderPort, authTokenIssuer));
+	AuthenticationUseCase authenticationUseCase(UserRepositoryPort users, PasswordEncoderPort passwords,
+			RefreshTokenRepositoryPort refreshTokens, AuthTokenIssuer issuer, Clock clock,
+			PlatformTransactionManager transactions) {
+		AuthenticationService service = new AuthenticationService(
+				new LoginService(users, passwords, issuer),
+				new RefreshAccessTokenService(refreshTokens, users, issuer, clock),
+				new LogoutService(refreshTokens, clock));
+		return TransactionProxyFactory.readWrite(AuthenticationUseCase.class, service, transactions);
 	}
 
 	@Bean
-	RefreshAccessTokenUseCase refreshAccessTokenUseCase(
-			RefreshTokenRepositoryPort refreshTokenRepositoryPort,
-			UserRepositoryPort userRepositoryPort,
-			AuthTokenIssuer authTokenIssuer,
-			Clock clock) {
-		return new TransactionalRefreshAccessTokenUseCase(
-				new RefreshAccessTokenService(
-						refreshTokenRepositoryPort,
-						userRepositoryPort,
-						authTokenIssuer,
-						clock));
+	CreateUserUseCase createUserUseCase(UserRepositoryPort users, PasswordEncoderPort passwords,
+			DriverProfileProvisionerPort drivers, Clock clock, PlatformTransactionManager transactions) {
+		return TransactionProxyFactory.readWrite(CreateUserUseCase.class,
+				new CreateUserService(users, passwords, drivers, clock), transactions);
 	}
 
 	@Bean
-	LogoutUseCase logoutUseCase(RefreshTokenRepositoryPort refreshTokenRepositoryPort, Clock clock) {
-		return new LogoutService(refreshTokenRepositoryPort, clock);
+	UserQueryUseCase userQueryUseCase(UserRepositoryPort users, PlatformTransactionManager transactions) {
+		UserQueryService service = new UserQueryService(new GetUserByIdService(users), new ListUsersService(users));
+		return TransactionProxyFactory.readOnly(UserQueryUseCase.class, service, transactions);
 	}
 
 	@Bean
-	CreateUserUseCase createUserUseCase(
-			UserRepositoryPort userRepositoryPort,
-			PasswordEncoderPort passwordEncoderPort,
-			DriverProfileProvisionerPort driverProfileProvisionerPort,
-			Clock clock) {
-		return new TransactionalCreateUserUseCase(
-				new CreateUserService(
-						userRepositoryPort,
-						passwordEncoderPort,
-						driverProfileProvisionerPort,
-						clock));
+	UpdateUserUseCase updateUserUseCase(UserRepositoryPort users, Clock clock,
+			PlatformTransactionManager transactions) {
+		return TransactionProxyFactory.readWrite(UpdateUserUseCase.class,
+				new UpdateUserService(users, clock), transactions);
 	}
 
 	@Bean
-	GetUserByIdUseCase getUserByIdUseCase(UserRepositoryPort userRepositoryPort) {
-		return new GetUserByIdService(userRepositoryPort);
-	}
-
-	@Bean
-	ListUsersUseCase listUsersUseCase(UserRepositoryPort userRepositoryPort) {
-		return new ListUsersService(userRepositoryPort);
-	}
-
-	@Bean
-	UpdateUserUseCase updateUserUseCase(UserRepositoryPort userRepositoryPort, Clock clock) {
-		return new UpdateUserService(userRepositoryPort, clock);
-	}
-
-	@Bean
-	ActivateUserUseCase activateUserUseCase(UserRepositoryPort userRepositoryPort, Clock clock) {
-		return new ActivateUserService(userRepositoryPort, clock);
-	}
-
-	@Bean
-	DeactivateUserUseCase deactivateUserUseCase(UserRepositoryPort userRepositoryPort, Clock clock) {
-		return new DeactivateUserService(userRepositoryPort, clock);
+	UserLifecycleUseCase userLifecycleUseCase(UserRepositoryPort users, Clock clock,
+			PlatformTransactionManager transactions) {
+		UserLifecycleService service = new UserLifecycleService(
+				new ActivateUserService(users, clock), new DeactivateUserService(users, clock));
+		return TransactionProxyFactory.readWrite(UserLifecycleUseCase.class, service, transactions);
 	}
 }

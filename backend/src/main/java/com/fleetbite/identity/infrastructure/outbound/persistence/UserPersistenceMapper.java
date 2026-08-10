@@ -1,64 +1,36 @@
 package com.fleetbite.identity.infrastructure.outbound.persistence;
-
-import java.util.UUID;
-
 import com.fleetbite.identity.domain.model.User;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-
+import org.springframework.stereotype.Component;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-@Mapper(componentModel = "spring")
-public abstract class UserPersistenceMapper {
-
+@Component
+public class UserPersistenceMapper {
 	public UserJpaEntity toEntity(User user) {
 		Objects.requireNonNull(user, "user is required");
 		UserJpaEntity entity = new UserJpaEntity();
 		entity.setId(user.id());
-		copyPersistableState(user, entity);
+		copyToEntity(user, entity);
 		return entity;
 	}
-
-	public void copyToEntity(User user, UserJpaEntity existingEntity) {
+	public void copyToEntity(User user, UserJpaEntity entity) {
 		Objects.requireNonNull(user, "user is required");
-		Objects.requireNonNull(existingEntity, "existingEntity is required");
-		if (!existingEntity.getId().equals(user.id())) {
+		Objects.requireNonNull(entity, "entity is required");
+		if (entity.getId() != null && !entity.getId().equals(user.id())) {
 			throw new IllegalArgumentException("cannot copy user onto entity with a different id");
 		}
-		copyPersistableState(user, existingEntity);
+		entity.setEmail(user.email()); entity.setPasswordHash(user.passwordHash());
+		entity.setFullName(user.fullName()); entity.setRole(user.role()); entity.setStatus(user.status());
+		entity.setCreatedAt(user.createdAt()); entity.setUpdatedAt(user.updatedAt());
 	}
-
-	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "version", ignore = true)
-	@Mapping(target = "email", expression = "java(user.email())")
-	@Mapping(target = "passwordHash", expression = "java(user.passwordHash())")
-	@Mapping(target = "fullName", expression = "java(user.fullName())")
-	@Mapping(target = "role", expression = "java(user.role())")
-	@Mapping(target = "status", expression = "java(user.status())")
-	@Mapping(target = "createdAt", expression = "java(user.createdAt())")
-	@Mapping(target = "updatedAt", expression = "java(user.updatedAt())")
-	protected abstract void copyPersistableState(User user, @MappingTarget UserJpaEntity entity);
-
 	public User toDomain(UserJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");
-		return User.reconstitute(
-				entity.getId(),
-				entity.getEmail(),
-				entity.getPasswordHash(),
-				entity.getFullName(),
-				entity.getRole(),
-				entity.getStatus(),
-				toBusinessOffset(entity.getCreatedAt()),
-				toBusinessOffset(entity.getUpdatedAt()));
+		return User.reconstitute(entity.getId(), entity.getEmail(), entity.getPasswordHash(),
+				entity.getFullName(), entity.getRole(), entity.getStatus(),
+				businessTime(entity.getCreatedAt()), businessTime(entity.getUpdatedAt()));
 	}
-
-	protected OffsetDateTime toBusinessOffset(OffsetDateTime value) {
-		if (value == null) {
-			return null;
-		}
-		return value.withOffsetSameInstant(BusinessTime.ZONE_OFFSET);
+	private OffsetDateTime businessTime(OffsetDateTime value) {
+		return value == null ? null : value.withOffsetSameInstant(BusinessTime.ZONE_OFFSET);
 	}
 }

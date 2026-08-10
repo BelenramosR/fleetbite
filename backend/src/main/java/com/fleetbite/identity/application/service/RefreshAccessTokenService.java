@@ -2,7 +2,6 @@ package com.fleetbite.identity.application.service;
 
 import com.fleetbite.identity.application.dto.LoginResult;
 import com.fleetbite.identity.application.dto.RefreshTokenCommand;
-import com.fleetbite.identity.application.port.in.RefreshAccessTokenUseCase;
 import com.fleetbite.identity.application.port.out.RefreshTokenRepositoryPort;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.application.util.RefreshTokenHasher;
@@ -16,7 +15,7 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public final class RefreshAccessTokenService implements RefreshAccessTokenUseCase {
+public final class RefreshAccessTokenService {
 
 	private final RefreshTokenRepositoryPort refreshTokenRepositoryPort;
 	private final UserRepositoryPort userRepositoryPort;
@@ -34,7 +33,6 @@ public final class RefreshAccessTokenService implements RefreshAccessTokenUseCas
 		this.clock = Objects.requireNonNull(clock);
 	}
 
-	@Override
 	public LoginResult execute(RefreshTokenCommand command) {
 		Objects.requireNonNull(command, "command is required");
 		if (command.refreshToken() == null || command.refreshToken().isBlank()) {

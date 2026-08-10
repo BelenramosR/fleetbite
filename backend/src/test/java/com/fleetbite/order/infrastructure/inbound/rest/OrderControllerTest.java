@@ -23,7 +23,7 @@ import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
-import com.fleetbite.shared.infrastructure.inbound.rest.GlobalExceptionHandler;
+import com.fleetbite.infrastructure.inbound.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;

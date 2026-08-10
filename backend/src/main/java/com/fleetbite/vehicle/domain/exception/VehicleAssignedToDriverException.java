@@ -1,4 +1,4 @@
-package com.fleetbite.driver.domain.exception;
+package com.fleetbite.vehicle.domain.exception;
 
 import com.fleetbite.shared.domain.exception.DomainException;
 

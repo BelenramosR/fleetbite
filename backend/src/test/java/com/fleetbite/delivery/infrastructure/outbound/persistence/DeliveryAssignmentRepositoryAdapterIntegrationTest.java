@@ -5,7 +5,7 @@ import com.fleetbite.delivery.domain.model.AssignmentStatus;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.infrastructure.outbound.persistence.DriverPersistenceMapperImpl;
+import com.fleetbite.driver.infrastructure.outbound.persistence.DriverPersistenceMapper;
 import com.fleetbite.driver.infrastructure.outbound.persistence.DriverRepositoryAdapter;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 		OrderRepositoryAdapter.class,
 		OrderPersistenceMapper.class,
 		DriverRepositoryAdapter.class,
-		DriverPersistenceMapperImpl.class
+		DriverPersistenceMapper.class
 })
 @Testcontainers
 class DeliveryAssignmentRepositoryAdapterIntegrationTest {

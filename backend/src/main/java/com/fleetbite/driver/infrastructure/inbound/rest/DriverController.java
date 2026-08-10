@@ -1,13 +1,10 @@
 package com.fleetbite.driver.infrastructure.inbound.rest;
 
 import com.fleetbite.driver.application.dto.DriverResult;
-import com.fleetbite.driver.application.port.in.AssignVehicleToDriverUseCase;
+import com.fleetbite.driver.application.port.in.DriverAvailabilityUseCase;
+import com.fleetbite.driver.application.port.in.DriverQueryUseCase;
+import com.fleetbite.driver.application.port.in.DriverVehicleUseCase;
 import com.fleetbite.driver.application.port.in.DeleteDriverUseCase;
-import com.fleetbite.driver.application.port.in.GetDriverByIdUseCase;
-import com.fleetbite.driver.application.port.in.ListDriversUseCase;
-import com.fleetbite.driver.application.port.in.SetDriverOfflineUseCase;
-import com.fleetbite.driver.application.port.in.SetDriverOnlineUseCase;
-import com.fleetbite.driver.application.port.in.UnassignVehicleFromDriverUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverLocationUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverUseCase;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.AssignVehicleRequest;
@@ -45,37 +42,28 @@ import java.util.UUID;
 @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
 public class DriverController {
 
-	private final GetDriverByIdUseCase getDriverByIdUseCase;
-	private final ListDriversUseCase listDriversUseCase;
+	private final DriverQueryUseCase driverQueryUseCase;
 	private final UpdateDriverUseCase updateDriverUseCase;
 	private final DeleteDriverUseCase deleteDriverUseCase;
 	private final UpdateDriverLocationUseCase updateDriverLocationUseCase;
-	private final SetDriverOnlineUseCase setDriverOnlineUseCase;
-	private final SetDriverOfflineUseCase setDriverOfflineUseCase;
-	private final AssignVehicleToDriverUseCase assignVehicleToDriverUseCase;
-	private final UnassignVehicleFromDriverUseCase unassignVehicleFromDriverUseCase;
+	private final DriverAvailabilityUseCase driverAvailabilityUseCase;
+	private final DriverVehicleUseCase driverVehicleUseCase;
 	private final DriverHttpMapper driverHttpMapper;
 
 	public DriverController(
-			GetDriverByIdUseCase getDriverByIdUseCase,
-			ListDriversUseCase listDriversUseCase,
+			DriverQueryUseCase driverQueryUseCase,
 			UpdateDriverUseCase updateDriverUseCase,
 			DeleteDriverUseCase deleteDriverUseCase,
 			UpdateDriverLocationUseCase updateDriverLocationUseCase,
-			SetDriverOnlineUseCase setDriverOnlineUseCase,
-			SetDriverOfflineUseCase setDriverOfflineUseCase,
-			AssignVehicleToDriverUseCase assignVehicleToDriverUseCase,
-			UnassignVehicleFromDriverUseCase unassignVehicleFromDriverUseCase,
+			DriverAvailabilityUseCase driverAvailabilityUseCase,
+			DriverVehicleUseCase driverVehicleUseCase,
 			DriverHttpMapper driverHttpMapper) {
-		this.getDriverByIdUseCase = Objects.requireNonNull(getDriverByIdUseCase);
-		this.listDriversUseCase = Objects.requireNonNull(listDriversUseCase);
+		this.driverQueryUseCase = Objects.requireNonNull(driverQueryUseCase);
 		this.updateDriverUseCase = Objects.requireNonNull(updateDriverUseCase);
 		this.deleteDriverUseCase = Objects.requireNonNull(deleteDriverUseCase);
 		this.updateDriverLocationUseCase = Objects.requireNonNull(updateDriverLocationUseCase);
-		this.setDriverOnlineUseCase = Objects.requireNonNull(setDriverOnlineUseCase);
-		this.setDriverOfflineUseCase = Objects.requireNonNull(setDriverOfflineUseCase);
-		this.assignVehicleToDriverUseCase = Objects.requireNonNull(assignVehicleToDriverUseCase);
-		this.unassignVehicleFromDriverUseCase = Objects.requireNonNull(unassignVehicleFromDriverUseCase);
+		this.driverAvailabilityUseCase = Objects.requireNonNull(driverAvailabilityUseCase);
+		this.driverVehicleUseCase = Objects.requireNonNull(driverVehicleUseCase);
 		this.driverHttpMapper = Objects.requireNonNull(driverHttpMapper);
 	}
 
@@ -89,7 +77,7 @@ public class DriverController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<DriverResponse> listDrivers() {
-		return listDriversUseCase.execute().stream()
+		return driverQueryUseCase.findAll().stream()
 				.map(driverHttpMapper::toResponse)
 				.toList();
 	}
@@ -106,7 +94,7 @@ public class DriverController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public DriverResponse getDriverById(@PathVariable UUID id) {
-		DriverResult result = getDriverByIdUseCase.execute(id);
+		DriverResult result = driverQueryUseCase.getById(id);
 		return driverHttpMapper.toResponse(result);
 	}
 
@@ -169,7 +157,7 @@ public class DriverController {
 	public DriverResponse assignVehicle(
 			@PathVariable UUID id,
 			@Valid @RequestBody AssignVehicleRequest request) {
-		DriverResult result = assignVehicleToDriverUseCase.execute(
+		DriverResult result = driverVehicleUseCase.assign(
 				id,
 				driverHttpMapper.toCommand(request));
 		return driverHttpMapper.toResponse(result);
@@ -191,7 +179,7 @@ public class DriverController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public DriverResponse unassignVehicle(@PathVariable UUID id) {
-		DriverResult result = unassignVehicleFromDriverUseCase.execute(id);
+		DriverResult result = driverVehicleUseCase.unassign(id);
 		return driverHttpMapper.toResponse(result);
 	}
 
@@ -232,7 +220,7 @@ public class DriverController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public DriverResponse goOnline(@PathVariable UUID id) {
-		DriverResult result = setDriverOnlineUseCase.execute(id);
+		DriverResult result = driverAvailabilityUseCase.goOnline(id);
 		return driverHttpMapper.toResponse(result);
 	}
 
@@ -250,7 +238,7 @@ public class DriverController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public DriverResponse goOffline(@PathVariable UUID id) {
-		DriverResult result = setDriverOfflineUseCase.execute(id);
+		DriverResult result = driverAvailabilityUseCase.goOffline(id);
 		return driverHttpMapper.toResponse(result);
 	}
 }

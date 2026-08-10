@@ -1,9 +1,7 @@
 package com.fleetbite.identity.infrastructure.inbound.rest;
 
 import com.fleetbite.identity.application.dto.LoginResult;
-import com.fleetbite.identity.application.port.in.LoginUseCase;
-import com.fleetbite.identity.application.port.in.LogoutUseCase;
-import com.fleetbite.identity.application.port.in.RefreshAccessTokenUseCase;
+import com.fleetbite.identity.application.port.in.AuthenticationUseCase;
 import com.fleetbite.identity.infrastructure.inbound.rest.request.LoginRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.request.RefreshTokenRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.response.LoginResponse;
@@ -29,19 +27,13 @@ import java.util.Objects;
 @Tag(name = "Authentication")
 public class AuthController {
 
-	private final LoginUseCase loginUseCase;
-	private final RefreshAccessTokenUseCase refreshAccessTokenUseCase;
-	private final LogoutUseCase logoutUseCase;
+	private final AuthenticationUseCase authenticationUseCase;
 	private final IdentityHttpMapper identityHttpMapper;
 
 	public AuthController(
-			LoginUseCase loginUseCase,
-			RefreshAccessTokenUseCase refreshAccessTokenUseCase,
-			LogoutUseCase logoutUseCase,
+			AuthenticationUseCase authenticationUseCase,
 			IdentityHttpMapper identityHttpMapper) {
-		this.loginUseCase = Objects.requireNonNull(loginUseCase);
-		this.refreshAccessTokenUseCase = Objects.requireNonNull(refreshAccessTokenUseCase);
-		this.logoutUseCase = Objects.requireNonNull(logoutUseCase);
+		this.authenticationUseCase = Objects.requireNonNull(authenticationUseCase);
 		this.identityHttpMapper = Objects.requireNonNull(identityHttpMapper);
 	}
 
@@ -60,7 +52,7 @@ public class AuthController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-		LoginResult result = loginUseCase.execute(identityHttpMapper.toCommand(request));
+		LoginResult result = authenticationUseCase.login(identityHttpMapper.toCommand(request));
 		return identityHttpMapper.toResponse(result);
 	}
 
@@ -79,7 +71,7 @@ public class AuthController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public LoginResponse refresh(@Valid @RequestBody RefreshTokenRequest request) {
-		LoginResult result = refreshAccessTokenUseCase.execute(identityHttpMapper.toCommand(request));
+		LoginResult result = authenticationUseCase.refresh(identityHttpMapper.toCommand(request));
 		return identityHttpMapper.toResponse(result);
 	}
 
@@ -94,6 +86,6 @@ public class AuthController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public void logout(@Valid @RequestBody RefreshTokenRequest request) {
-		logoutUseCase.execute(identityHttpMapper.toCommand(request));
+		authenticationUseCase.logout(identityHttpMapper.toCommand(request));
 	}
 }

@@ -2,7 +2,6 @@ package com.fleetbite.identity.application.service;
 
 import com.fleetbite.identity.application.dto.LoginCommand;
 import com.fleetbite.identity.application.dto.LoginResult;
-import com.fleetbite.identity.application.port.in.LoginUseCase;
 import com.fleetbite.identity.application.port.out.PasswordEncoderPort;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.exception.AuthenticationFailedException;
@@ -12,7 +11,7 @@ import com.fleetbite.identity.domain.model.User;
 import java.util.Locale;
 import java.util.Objects;
 
-public final class LoginService implements LoginUseCase {
+public final class LoginService {
 
 	private final UserRepositoryPort userRepositoryPort;
 	private final PasswordEncoderPort passwordEncoderPort;
@@ -27,7 +26,6 @@ public final class LoginService implements LoginUseCase {
 		this.authTokenIssuer = Objects.requireNonNull(authTokenIssuer);
 	}
 
-	@Override
 	public LoginResult execute(LoginCommand command) {
 		Objects.requireNonNull(command, "command is required");
 		if (command.email() == null || command.email().isBlank()) {

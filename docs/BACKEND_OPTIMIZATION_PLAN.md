@@ -12,7 +12,7 @@ infrastructure -> application -> domain
 
 order    -> shared
 identity -> shared
-vehicle  -> shared (temporary dependency on driver)
+vehicle  -> shared
 driver   -> identity, vehicle, shared
 delivery -> order, driver, shared
 ```
@@ -61,12 +61,96 @@ making that change. Do not move business transitions into infrastructure adapter
 
 ## Next phases
 
-1. Remove the remaining `driver <-> vehicle` cycle and define ownership of assignment lookup.
-2. Optimize driver/vehicle transactions, ports, mappers and DTOs.
+1. Optimize driver/vehicle transactions and input-port cohesion.
+2. Review persistence mappers and inter-context result assembly.
 3. Optimize identity while preserving authentication and refresh-token behavior.
 4. Finish shared HTTP error fields and OpenAPI envelope accuracy.
 5. Run the full PostgreSQL/Testcontainers suite, remove empty packages and perform a final
-   global naming/dependency audit.
+global naming/dependency audit.
+
+## In progress: Driver and vehicle
+
+- Removed the `driver <-> vehicle` cycle.
+- Added the vehicle-owned `VehicleAssignmentLookupPort`; its implementation lives in
+  driver outbound infrastructure.
+- Moved `VehicleAssignedToDriverException` to the vehicle domain, which owns deletion rules.
+- Strengthened ArchUnit so vehicle cannot depend on driver again.
+- Converted `DriverResult` and `VehicleResult` to records.
+- Removed redundant Java expressions from both HTTP MapStruct mappers.
+- Verified the cycle/mapping increment with 47 focused and architecture tests.
+- Added the shared infrastructure `TransactionProxyFactory` with commit/rollback tests.
+- Applied read-only transactions to driver and vehicle queries.
+- Applied read-write transactions to every driver/vehicle command and driver provisioning.
+- Removed the two remaining driver transaction decorator classes.
+- Verified the transaction increment with 45 focused and architecture tests.
+- Converted `DriverPersistenceMapper` and `VehiclePersistenceMapper` to explicit Spring
+  components: aggregate reconstitution, business-time normalization, coordinate scale and
+  optimistic-lock preservation are now visible instead of hidden in MapStruct expressions.
+- Restored jMolecules package metadata removed during earlier cleanup; metadata-only
+  `package-info.java` files are architectural code, not empty packages.
+- Verified the persistence/metadata increment from a clean build with 55 focused and
+  architecture tests.
+- Next: consolidate only cohesive query/lifecycle input ports and reduce controller
+  dependencies without creating oversized application services.
+- Consolidated driver queries into `DriverQueryUseCase`, availability transitions into
+  `DriverAvailabilityUseCase`, and vehicle assignment into `DriverVehicleUseCase`.
+- Consolidated vehicle queries into `VehicleQueryUseCase` and status transitions into
+  `VehicleLifecycleUseCase`.
+- Retained focused internal operation services so workflows with different dependencies do
+  not become oversized classes.
+- Reduced `DriverController` functional dependencies from 9 to 6 and `VehicleController`
+  dependencies from 8 to 5.
+- Removed eleven fragmented input-port interfaces while preserving endpoint behavior and
+  transaction boundaries.
+- Verified the cohesion increment from a clean build with 57 focused and architecture tests.
+- Completed the first identity optimization increment:
+  - replaced three bespoke transaction decorators with the shared infrastructure proxy;
+  - made authentication, user commands and lifecycle operations read-write, and user
+    queries explicitly read-only;
+  - consolidated authentication, user-query and user-lifecycle HTTP boundaries while
+    retaining focused internal services;
+  - reduced `AuthController` functional dependencies from three to one and
+    `UserController` dependencies from six to four;
+  - converted `UserResult` to a record and kept HTTP MapStruct mapping structural;
+  - replaced expression-heavy persistence MapStruct mappers with explicit components so
+    aggregate reconstruction, token hashes, business-time normalization and optimistic
+    locking remain visible;
+  - retained the identity-owned `DriverProfileProvisionerPort`: driver implements the
+    outbound contract, so identity does not acquire an invalid dependency on driver;
+  - removed the now-empty identity transaction package and seven fragmented input ports;
+  - verified the increment from a clean compilation with 46 focused and architecture
+    tests (15 application/domain tests plus 31 HTTP/transaction/architecture tests).
+- Completed shared HTTP/OpenAPI consolidation:
+  - retained the infrastructure-only `ApiResponse<T>` envelope because all functional
+    REST adapters already expose it consistently through one `ResponseBodyAdvice`;
+  - explicitly preserved bodyless `204 No Content` responses;
+  - changed validation failures from one concatenated message to structured
+    `{field, message}` error entries while domain/application errors remain fieldless;
+  - added one OpenAPI customizer that represents every JSON `2xx` response as
+    `{code, success, data, errors}`, preserving the endpoint payload schema under `data`;
+  - excluded `204` from OpenAPI wrapping and documented the global response convention;
+  - verified all functional REST adapters and architecture rules with 87 tests.
+- Completed the final global audit:
+  - moved the cross-module HTTP exception routing and security wiring from `shared` to the
+    application composition root (`com.fleetbite.infrastructure`);
+  - strengthened ArchUnit so every `shared` layer, including infrastructure, is forbidden
+    from depending on order, delivery, driver, vehicle or identity;
+  - confirmed that MapStruct remains only in the five purely structural HTTP mappers;
+  - confirmed that persistence mappers with aggregate reconstruction, value conversion or
+    optimistic locking remain explicit;
+  - confirmed Lombok is used deliberately on JPA entities and configuration properties,
+    not in domain/application;
+  - confirmed UUID is used directly and no accidental ID wrapper classes exist;
+  - confirmed there are no empty source packages;
+  - ran the complete clean suite using Docker 28.3, PostgreSQL 17 and all 10 Flyway
+    migrations: 304 tests passed, including Testcontainers integration and 17 ArchUnit
+    rules.
+
+## Final status
+
+The planned backend optimization is complete. Future changes must keep the architecture
+tests green and follow the mapping, transaction, HTTP-envelope and module-ownership
+decisions recorded in this document.
 
 ## Verification workflow
 
