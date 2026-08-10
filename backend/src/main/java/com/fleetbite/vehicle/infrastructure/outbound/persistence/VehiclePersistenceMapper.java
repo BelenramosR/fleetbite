@@ -1,8 +1,9 @@
 package com.fleetbite.vehicle.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -17,7 +18,7 @@ public abstract class VehiclePersistenceMapper {
 		Objects.requireNonNull(vehicle, "vehicle is required");
 
 		VehicleJpaEntity entity = new VehicleJpaEntity();
-		entity.setId(vehicle.id().value());
+		entity.setId(vehicle.id());
 		copyPersistableState(vehicle, entity);
 		return entity;
 	}
@@ -25,7 +26,7 @@ public abstract class VehiclePersistenceMapper {
 	public void copyToEntity(Vehicle vehicle, VehicleJpaEntity existingEntity) {
 		Objects.requireNonNull(vehicle, "vehicle is required");
 		Objects.requireNonNull(existingEntity, "existingEntity is required");
-		if (!existingEntity.getId().equals(vehicle.id().value())) {
+		if (!existingEntity.getId().equals(vehicle.id())) {
 			throw new IllegalArgumentException("cannot copy vehicle onto entity with a different id");
 		}
 		copyPersistableState(vehicle, existingEntity);
@@ -44,7 +45,7 @@ public abstract class VehiclePersistenceMapper {
 		Objects.requireNonNull(entity, "entity is required");
 
 		return Vehicle.reconstitute(
-				VehicleId.of(entity.getId()),
+				entity.getId(),
 				entity.getPlate(),
 				entity.getType(),
 				entity.getStatus(),

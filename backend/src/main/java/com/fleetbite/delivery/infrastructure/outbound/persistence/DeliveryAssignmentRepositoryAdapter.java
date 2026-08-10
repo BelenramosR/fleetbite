@@ -1,10 +1,10 @@
 package com.fleetbite.delivery.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.domain.model.AssignmentStatus;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
@@ -44,17 +44,17 @@ public class DeliveryAssignmentRepositoryAdapter implements DeliveryAssignmentRe
 	public DeliveryAssignment update(DeliveryAssignment assignment) {
 		Objects.requireNonNull(assignment, "assignment is required");
 		DeliveryAssignmentJpaEntity existing = springDataDeliveryAssignmentRepository
-				.findById(assignment.id().value())
-				.orElseThrow(() -> new ResourceNotFoundException("DeliveryAssignment", assignment.id().value()));
+				.findById(assignment.id())
+				.orElseThrow(() -> new ResourceNotFoundException("DeliveryAssignment", assignment.id()));
 		deliveryAssignmentPersistenceMapper.copyToEntity(assignment, existing);
 		DeliveryAssignmentJpaEntity saved = springDataDeliveryAssignmentRepository.save(existing);
 		return deliveryAssignmentPersistenceMapper.toDomain(saved);
 	}
 
 	@Override
-	public Optional<DeliveryAssignment> findById(DeliveryAssignmentId id) {
+	public Optional<DeliveryAssignment> findById(UUID id) {
 		Objects.requireNonNull(id, "id is required");
-		return springDataDeliveryAssignmentRepository.findById(id.value())
+		return springDataDeliveryAssignmentRepository.findById(id)
 				.map(deliveryAssignmentPersistenceMapper::toDomain);
 	}
 
@@ -68,18 +68,18 @@ public class DeliveryAssignmentRepositoryAdapter implements DeliveryAssignmentRe
 	}
 
 	@Override
-	public boolean existsActiveByOrderId(OrderId orderId) {
+	public boolean existsActiveByOrderId(UUID orderId) {
 		Objects.requireNonNull(orderId, "orderId is required");
 		return springDataDeliveryAssignmentRepository.existsByOrderIdAndStatusIn(
-				orderId.value(),
+				orderId,
 				ACTIVE_STATUSES);
 	}
 
 	@Override
-	public Optional<DeliveryAssignment> findActiveByOrderId(OrderId orderId) {
+	public Optional<DeliveryAssignment> findActiveByOrderId(UUID orderId) {
 		Objects.requireNonNull(orderId, "orderId is required");
 		return springDataDeliveryAssignmentRepository
-				.findFirstByOrderIdAndStatusIn(orderId.value(), ACTIVE_STATUSES)
+				.findFirstByOrderIdAndStatusIn(orderId, ACTIVE_STATUSES)
 				.map(deliveryAssignmentPersistenceMapper::toDomain);
 	}
 }

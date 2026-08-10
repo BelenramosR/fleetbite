@@ -10,20 +10,16 @@ import com.fleetbite.delivery.domain.model.DeliveryAssignment;
 import com.fleetbite.delivery.infrastructure.outbound.geo.HaversineDistanceAdapter;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
 import com.fleetbite.order.domain.model.OrderHistoryEventType;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -106,7 +102,7 @@ class AutoAssignOrderServiceTest {
 		var result = service.execute(order.id());
 
 		assertTrue(result.assigned());
-		assertEquals(near.id().value(), result.driverId());
+		assertEquals(near.id(), result.driverId());
 		assertEquals(OrderStatus.ASSIGNED, result.orderStatus());
 		assertEquals(OrderStatus.ASSIGNED, order.status());
 		assertEquals(DriverStatus.BUSY, near.status());
@@ -190,7 +186,7 @@ class AutoAssignOrderServiceTest {
 	@Test
 	void execute_shouldRejectInvalidOrderStatus() {
 		Order order = Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-AUTO1"),
 				"Ana",
 				"999",
@@ -206,7 +202,7 @@ class AutoAssignOrderServiceTest {
 
 	private static Order readyOrder() {
 		Order order = Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-AUTO2"),
 				"Ana",
 				"999",
@@ -223,12 +219,12 @@ class AutoAssignOrderServiceTest {
 
 	private static Driver available(UUID id, Location location) {
 		Driver driver = Driver.create(
-				DriverId.of(id),
-				UserId.generate(),
+				id,
+				UUID.randomUUID(),
 				id.toString().substring(0, 9),
 				location,
 				CREATED);
-		driver.assignVehicle(VehicleId.generate(), CREATED.plusSeconds(30));
+		driver.assignVehicle(UUID.randomUUID(), CREATED.plusSeconds(30));
 		driver.goOnline(CREATED.plusMinutes(1));
 		return driver;
 	}

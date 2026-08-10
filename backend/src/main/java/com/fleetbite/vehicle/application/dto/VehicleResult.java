@@ -35,7 +35,7 @@ public final class VehicleResult {
 	public static VehicleResult from(Vehicle vehicle) {
 		Objects.requireNonNull(vehicle, "vehicle is required");
 		return new VehicleResult(
-				vehicle.id().value(),
+				vehicle.id(),
 				vehicle.plate(),
 				vehicle.type(),
 				vehicle.status(),

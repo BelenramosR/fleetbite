@@ -1,7 +1,8 @@
 package com.fleetbite.identity.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.identity.domain.model.User;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -16,7 +17,7 @@ public abstract class UserPersistenceMapper {
 	public UserJpaEntity toEntity(User user) {
 		Objects.requireNonNull(user, "user is required");
 		UserJpaEntity entity = new UserJpaEntity();
-		entity.setId(user.id().value());
+		entity.setId(user.id());
 		copyPersistableState(user, entity);
 		return entity;
 	}
@@ -24,7 +25,7 @@ public abstract class UserPersistenceMapper {
 	public void copyToEntity(User user, UserJpaEntity existingEntity) {
 		Objects.requireNonNull(user, "user is required");
 		Objects.requireNonNull(existingEntity, "existingEntity is required");
-		if (!existingEntity.getId().equals(user.id().value())) {
+		if (!existingEntity.getId().equals(user.id())) {
 			throw new IllegalArgumentException("cannot copy user onto entity with a different id");
 		}
 		copyPersistableState(user, existingEntity);
@@ -44,7 +45,7 @@ public abstract class UserPersistenceMapper {
 	public User toDomain(UserJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");
 		return User.reconstitute(
-				UserId.of(entity.getId()),
+				entity.getId(),
 				entity.getEmail(),
 				entity.getPasswordHash(),
 				entity.getFullName(),

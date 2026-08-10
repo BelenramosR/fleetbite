@@ -1,5 +1,7 @@
 package com.fleetbite.delivery.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.CreateManualAssignmentCommand;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.domain.exception.ActiveAssignmentAlreadyExistsException;
@@ -9,18 +11,14 @@ import com.fleetbite.delivery.domain.model.AssignmentStatus;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,7 +84,7 @@ class CreateManualAssignmentServiceTest {
 		when(orderRepositoryPort.update(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 		when(driverRepositoryPort.update(any(Driver.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-		var result = service.execute(new CreateManualAssignmentCommand(order.id().value(), driver.id().value()));
+		var result = service.execute(new CreateManualAssignmentCommand(order.id(), driver.id()));
 
 		assertEquals(AssignmentStatus.PENDING, result.status());
 		assertNull(result.assignmentScore());
@@ -100,7 +98,7 @@ class CreateManualAssignmentServiceTest {
 	@Test
 	void execute_shouldRejectOrderNotReadyOrWaiting() {
 		Order order = Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-ASG1"),
 				"Ana",
 				"999",
@@ -115,20 +113,20 @@ class CreateManualAssignmentServiceTest {
 
 		assertThrows(
 				OrderNotAssignableException.class,
-				() -> service.execute(new CreateManualAssignmentCommand(order.id().value(), driver.id().value())));
+				() -> service.execute(new CreateManualAssignmentCommand(order.id(), driver.id())));
 		verify(assignmentRepositoryPort, never()).save(any());
 	}
 
 	@Test
 	void execute_shouldRejectDriverWithoutLocation() {
 		Order order = readyOrder();
-		Driver offline = Driver.create(DriverId.generate(), UserId.generate(), "999888778", null, CREATED);
+		Driver offline = Driver.create(UUID.randomUUID(), UUID.randomUUID(), "999888778", null, CREATED);
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
 		when(driverRepositoryPort.findById(offline.id())).thenReturn(Optional.of(offline));
 
 		assertThrows(
 				DriverNotAssignableException.class,
-				() -> service.execute(new CreateManualAssignmentCommand(order.id().value(), offline.id().value())));
+				() -> service.execute(new CreateManualAssignmentCommand(order.id(), offline.id())));
 	}
 
 	@Test
@@ -141,7 +139,7 @@ class CreateManualAssignmentServiceTest {
 
 		assertThrows(
 				DriverNotAssignableException.class,
-				() -> service.execute(new CreateManualAssignmentCommand(order.id().value(), driver.id().value())));
+				() -> service.execute(new CreateManualAssignmentCommand(order.id(), driver.id())));
 	}
 
 	@Test
@@ -154,7 +152,7 @@ class CreateManualAssignmentServiceTest {
 
 		assertThrows(
 				ActiveAssignmentAlreadyExistsException.class,
-				() -> service.execute(new CreateManualAssignmentCommand(order.id().value(), driver.id().value())));
+				() -> service.execute(new CreateManualAssignmentCommand(order.id(), driver.id())));
 		verify(assignmentRepositoryPort, never()).save(any());
 	}
 
@@ -171,7 +169,7 @@ class CreateManualAssignmentServiceTest {
 		when(orderRepositoryPort.update(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 		when(driverRepositoryPort.update(any(Driver.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-		var result = service.execute(new CreateManualAssignmentCommand(order.id().value(), driver.id().value()));
+		var result = service.execute(new CreateManualAssignmentCommand(order.id(), driver.id()));
 
 		assertEquals(AssignmentStatus.PENDING, result.status());
 		assertEquals(OrderStatus.ASSIGNED, order.status());
@@ -179,7 +177,7 @@ class CreateManualAssignmentServiceTest {
 
 	private static Order readyOrder() {
 		Order order = Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-ASG2"),
 				"Ana",
 				"999",
@@ -196,12 +194,12 @@ class CreateManualAssignmentServiceTest {
 
 	private static Driver availableDriver() {
 		Driver driver = Driver.create(
-				DriverId.generate(),
-				UserId.generate(),
+				UUID.randomUUID(),
+				UUID.randomUUID(),
 				"999888777",
 				new Location(-12.10, -77.03),
 				CREATED);
-		driver.assignVehicle(VehicleId.generate(), CREATED.plusSeconds(30));
+		driver.assignVehicle(UUID.randomUUID(), CREATED.plusSeconds(30));
 		driver.goOnline(CREATED.plusMinutes(1));
 		return driver;
 	}

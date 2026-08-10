@@ -1,8 +1,9 @@
 package com.fleetbite.order.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Order;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
@@ -42,17 +43,17 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 	@Override
 	public Order update(Order order) {
 		Objects.requireNonNull(order, "order is required");
-		OrderJpaEntity existing = springDataOrderRepository.findById(order.id().value())
-				.orElseThrow(() -> new ResourceNotFoundException("Order", order.id().value()));
+		OrderJpaEntity existing = springDataOrderRepository.findById(order.id())
+				.orElseThrow(() -> new ResourceNotFoundException("Order", order.id()));
 		orderPersistenceMapper.copyToEntity(order, existing);
 		OrderJpaEntity saved = springDataOrderRepository.save(existing);
 		return orderPersistenceMapper.toDomain(saved);
 	}
 
 	@Override
-	public Optional<Order> findById(OrderId id) {
+	public Optional<Order> findById(UUID id) {
 		Objects.requireNonNull(id, "id is required");
-		return springDataOrderRepository.findById(id.value())
+		return springDataOrderRepository.findById(id)
 				.map(orderPersistenceMapper::toDomain);
 	}
 
@@ -64,11 +65,11 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 	}
 
 	@Override
-	public void deleteById(OrderId id) {
+	public void deleteById(UUID id) {
 		Objects.requireNonNull(id, "id is required");
-		if (!springDataOrderRepository.existsById(id.value())) {
-			throw new ResourceNotFoundException("Order", id.value());
+		if (!springDataOrderRepository.existsById(id)) {
+			throw new ResourceNotFoundException("Order", id);
 		}
-		springDataOrderRepository.deleteById(id.value());
+		springDataOrderRepository.deleteById(id);
 	}
 }

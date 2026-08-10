@@ -1,11 +1,12 @@
 package com.fleetbite.order.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +50,7 @@ class ListOrdersServiceTest {
 		List<OrderResult> results = listOrdersService.execute();
 
 		assertEquals(1, results.size());
-		assertEquals(order.id().value(), results.getFirst().id());
+		assertEquals(order.id(), results.getFirst().id());
 		verify(orderRepositoryPort).findAll();
 	}
 
@@ -64,7 +65,7 @@ class ListOrdersServiceTest {
 
 	private static Order sampleOrder(String code) {
 		return Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of(code),
 				"Ana Torres",
 				"999999999",

@@ -1,8 +1,9 @@
 package com.fleetbite.delivery.infrastructure.transaction;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.AssignmentResult;
 import com.fleetbite.delivery.application.port.in.CompleteAssignmentUseCase;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
@@ -17,7 +18,7 @@ public class TransactionalCompleteAssignmentUseCase implements CompleteAssignmen
 
 	@Override
 	@Transactional
-	public AssignmentResult execute(DeliveryAssignmentId assignmentId) {
+	public AssignmentResult execute(UUID assignmentId) {
 		return delegate.execute(assignmentId);
 	}
 }

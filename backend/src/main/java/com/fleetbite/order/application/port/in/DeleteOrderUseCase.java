@@ -1,8 +1,9 @@
 package com.fleetbite.order.application.port.in;
 
-import com.fleetbite.order.domain.model.OrderId;
+import java.util.UUID;
+
 
 public interface DeleteOrderUseCase {
 
-	void execute(OrderId orderId);
+	void execute(UUID orderId);
 }

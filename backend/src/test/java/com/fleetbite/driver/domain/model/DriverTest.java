@@ -3,10 +3,8 @@ package com.fleetbite.driver.domain.model;
 import com.fleetbite.driver.domain.exception.DriverNotDeletableException;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.driver.domain.exception.InvalidDriverTransitionException;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -25,11 +23,11 @@ class DriverTest {
 	private static final OffsetDateTime LATER =
 			OffsetDateTime.of(2026, 8, 8, 22, 30, 0, 0, BusinessTime.ZONE_OFFSET);
 	private static final Location LOCATION = new Location(-12.10, -77.03);
-	private static final UserId USER_ID = UserId.of(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+	private static final UUID USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
 	@Test
 	void create_shouldStartOfflineWithoutPhoneOrLocation() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, null, null, CREATED_AT);
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, null, null, CREATED_AT);
 
 		assertEquals(DriverStatus.OFFLINE, driver.status());
 		assertNull(driver.phone());
@@ -42,7 +40,7 @@ class DriverTest {
 
 	@Test
 	void create_shouldAcceptOptionalLocationWhileOffline() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, "999888777", LOCATION, CREATED_AT);
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, "999888777", LOCATION, CREATED_AT);
 
 		assertEquals(DriverStatus.OFFLINE, driver.status());
 		assertEquals(LOCATION, driver.currentLocation());
@@ -52,12 +50,12 @@ class DriverTest {
 	void create_shouldRejectNullUserId() {
 		assertThrows(
 				InvalidDriverDataException.class,
-				() -> Driver.create(DriverId.generate(), null, "999888777", null, CREATED_AT));
+				() -> Driver.create(UUID.randomUUID(), null, "999888777", null, CREATED_AT));
 	}
 
 	@Test
 	void updatePhone_shouldChangePhone() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, null, null, CREATED_AT);
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, null, null, CREATED_AT);
 
 		driver.updatePhone("988000111", LATER);
 
@@ -67,14 +65,14 @@ class DriverTest {
 
 	@Test
 	void goOnline_shouldRequirePhone() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, null, LOCATION, CREATED_AT);
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, null, LOCATION, CREATED_AT);
 
 		assertThrows(InvalidDriverTransitionException.class, () -> driver.goOnline(LATER));
 	}
 
 	@Test
 	void goOnline_shouldRequireLocation() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, "999888777", null, CREATED_AT);
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, "999888777", null, CREATED_AT);
 
 		assertThrows(InvalidDriverTransitionException.class, () -> driver.goOnline(LATER));
 	}
@@ -88,8 +86,8 @@ class DriverTest {
 
 	@Test
 	void assignAndUnassignVehicle_shouldToggleHasVehicle() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, "999888777", null, CREATED_AT);
-		VehicleId vehicleId = VehicleId.generate();
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, "999888777", null, CREATED_AT);
+		UUID vehicleId = UUID.randomUUID();
 
 		driver.assignVehicle(vehicleId, LATER);
 
@@ -111,15 +109,15 @@ class DriverTest {
 
 	@Test
 	void ensureDeletable_shouldRejectWhenVehicleAssigned() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, "999888777", null, CREATED_AT);
-		driver.assignVehicle(VehicleId.generate(), LATER);
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, "999888777", null, CREATED_AT);
+		driver.assignVehicle(UUID.randomUUID(), LATER);
 
 		assertThrows(DriverNotDeletableException.class, driver::ensureDeletable);
 	}
 
 	@Test
 	void ensureDeletable_shouldAllowOfflineWithoutVehicle() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, "999888777", null, CREATED_AT);
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, "999888777", null, CREATED_AT);
 
 		driver.ensureDeletable();
 	}
@@ -136,7 +134,7 @@ class DriverTest {
 	}
 
 	private static Driver onlineDriver() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, "999888777", LOCATION, CREATED_AT);
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, "999888777", LOCATION, CREATED_AT);
 		driver.goOnline(CREATED_AT.plusMinutes(1));
 		return driver;
 	}

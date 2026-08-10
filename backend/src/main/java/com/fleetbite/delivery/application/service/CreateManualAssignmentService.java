@@ -1,15 +1,15 @@
 package com.fleetbite.delivery.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.AssignmentResult;
 import com.fleetbite.delivery.application.dto.CreateManualAssignmentCommand;
 import com.fleetbite.delivery.application.port.in.CreateManualAssignmentUseCase;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Order;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 
 import java.util.Objects;
@@ -35,13 +35,13 @@ public final class CreateManualAssignmentService implements CreateManualAssignme
 		Objects.requireNonNull(command.orderId(), "orderId is required");
 		Objects.requireNonNull(command.driverId(), "driverId is required");
 
-		OrderId orderId = OrderId.of(command.orderId());
-		DriverId driverId = DriverId.of(command.driverId());
+		UUID orderId = command.orderId();
+		UUID driverId = command.driverId();
 
 		Order order = orderRepositoryPort.findById(orderId)
-				.orElseThrow(() -> new ResourceNotFoundException("Order", orderId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
 		Driver driver = driverRepositoryPort.findById(driverId)
-				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId));
 
 		DeliveryAssignment saved = createAssignmentOperation.execute(order, driver, null);
 		return AssignmentResult.from(saved);

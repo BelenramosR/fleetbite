@@ -1,5 +1,7 @@
 package com.fleetbite.order.domain.model;
 
+import java.util.UUID;
+
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
 import com.fleetbite.order.domain.exception.OrderNotDeletableException;
@@ -11,7 +13,7 @@ import java.util.Objects;
 
 public final class Order {
 
-	private final OrderId id;
+	private final UUID id;
 	private final OrderCode code;
 	private String customerName;
 	private String customerPhone;
@@ -34,7 +36,7 @@ public final class Order {
 	private OffsetDateTime failedDeliveryAt;
 
 	private Order(
-			OrderId id,
+			UUID id,
 			OrderCode code,
 			String customerName,
 			String customerPhone,
@@ -77,7 +79,7 @@ public final class Order {
 	}
 
 	public static Order create(
-			OrderId id,
+			UUID id,
 			OrderCode code,
 			String customerName,
 			String customerPhone,
@@ -124,7 +126,7 @@ public final class Order {
 	 * or altering timestamps.
 	 */
 	public static Order reconstitute(
-			OrderId id,
+			UUID id,
 			OrderCode code,
 			String customerName,
 			String customerPhone,
@@ -282,7 +284,7 @@ public final class Order {
 		this.failedDeliveryAt = now;
 	}
 
-	public OrderId id() {
+	public UUID id() {
 		return id;
 	}
 
@@ -384,7 +386,7 @@ public final class Order {
 	}
 
 	private static void validateCreation(
-			OrderId id,
+			UUID id,
 			OrderCode code,
 			String customerName,
 			String customerPhone,

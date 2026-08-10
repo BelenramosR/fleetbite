@@ -1,9 +1,8 @@
 package com.fleetbite.driver.application.port.out;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
-import com.fleetbite.identity.domain.model.UserId;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,7 +13,7 @@ public interface DriverRepositoryPort {
 
 	Driver update(Driver driver);
 
-	Optional<Driver> findById(DriverId id);
+	Optional<Driver> findById(UUID id);
 
 	List<Driver> findAll();
 
@@ -23,13 +22,13 @@ public interface DriverRepositoryPort {
 	 */
 	List<Driver> findAvailableWithLocation();
 
-	Optional<Driver> findByVehicleId(VehicleId vehicleId);
+	Optional<Driver> findByVehicleId(UUID vehicleId);
 
-	void deleteById(DriverId id);
+	void deleteById(UUID id);
 
 	boolean existsByPhone(String phone);
 
-	boolean existsByPhoneAndIdNot(String phone, DriverId id);
+	boolean existsByPhoneAndIdNot(String phone, UUID id);
 
-	boolean existsByUserId(UserId userId);
+	boolean existsByUserId(UUID userId);
 }

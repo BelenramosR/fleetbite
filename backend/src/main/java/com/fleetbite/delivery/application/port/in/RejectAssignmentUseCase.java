@@ -1,10 +1,11 @@
 package com.fleetbite.delivery.application.port.in;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.AssignmentResult;
 import com.fleetbite.delivery.application.dto.RejectAssignmentCommand;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 
 public interface RejectAssignmentUseCase {
 
-	AssignmentResult execute(DeliveryAssignmentId assignmentId, RejectAssignmentCommand command);
+	AssignmentResult execute(UUID assignmentId, RejectAssignmentCommand command);
 }

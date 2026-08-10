@@ -1,10 +1,11 @@
 package com.fleetbite.vehicle.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import com.fleetbite.vehicle.domain.model.VehicleType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,18 +41,18 @@ class GetAndListVehicleServiceTest {
 
 	@Test
 	void get_shouldReturnResult() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		when(vehicleRepositoryPort.findById(vehicle.id())).thenReturn(Optional.of(vehicle));
 
 		var result = getVehicleByIdService.execute(vehicle.id());
 
-		assertEquals(vehicle.id().value(), result.id());
+		assertEquals(vehicle.id(), result.id());
 		assertEquals("ABC-123", result.plate());
 	}
 
 	@Test
 	void get_shouldThrowNotFound() {
-		VehicleId id = VehicleId.generate();
+		UUID id = UUID.randomUUID();
 		when(vehicleRepositoryPort.findById(id)).thenReturn(Optional.empty());
 
 		assertThrows(ResourceNotFoundException.class, () -> getVehicleByIdService.execute(id));
@@ -59,12 +60,12 @@ class GetAndListVehicleServiceTest {
 
 	@Test
 	void list_shouldMapAll() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		when(vehicleRepositoryPort.findAll()).thenReturn(List.of(vehicle));
 
 		var results = listVehiclesService.execute();
 
 		assertEquals(1, results.size());
-		assertEquals(vehicle.id().value(), results.getFirst().id());
+		assertEquals(vehicle.id(), results.getFirst().id());
 	}
 }

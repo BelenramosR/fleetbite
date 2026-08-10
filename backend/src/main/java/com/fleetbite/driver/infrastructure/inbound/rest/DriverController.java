@@ -10,7 +10,6 @@ import com.fleetbite.driver.application.port.in.SetDriverOnlineUseCase;
 import com.fleetbite.driver.application.port.in.UnassignVehicleFromDriverUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverLocationUseCase;
 import com.fleetbite.driver.application.port.in.UpdateDriverUseCase;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.AssignVehicleRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.UpdateDriverLocationRequest;
 import com.fleetbite.driver.infrastructure.inbound.rest.request.UpdateDriverRequest;
@@ -107,7 +106,7 @@ public class DriverController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public DriverResponse getDriverById(@PathVariable UUID id) {
-		DriverResult result = getDriverByIdUseCase.execute(DriverId.of(id));
+		DriverResult result = getDriverByIdUseCase.execute(id);
 		return driverHttpMapper.toResponse(result);
 	}
 
@@ -130,7 +129,7 @@ public class DriverController {
 	public DriverResponse updateDriver(
 			@PathVariable UUID id,
 			@Valid @RequestBody UpdateDriverRequest request) {
-		DriverResult result = updateDriverUseCase.execute(DriverId.of(id), driverHttpMapper.toCommand(request));
+		DriverResult result = updateDriverUseCase.execute(id, driverHttpMapper.toCommand(request));
 		return driverHttpMapper.toResponse(result);
 	}
 
@@ -149,7 +148,7 @@ public class DriverController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public void deleteDriver(@PathVariable UUID id) {
-		deleteDriverUseCase.execute(DriverId.of(id));
+		deleteDriverUseCase.execute(id);
 	}
 
 	@PutMapping("/{id}/vehicle")
@@ -171,7 +170,7 @@ public class DriverController {
 			@PathVariable UUID id,
 			@Valid @RequestBody AssignVehicleRequest request) {
 		DriverResult result = assignVehicleToDriverUseCase.execute(
-				DriverId.of(id),
+				id,
 				driverHttpMapper.toCommand(request));
 		return driverHttpMapper.toResponse(result);
 	}
@@ -192,7 +191,7 @@ public class DriverController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public DriverResponse unassignVehicle(@PathVariable UUID id) {
-		DriverResult result = unassignVehicleFromDriverUseCase.execute(DriverId.of(id));
+		DriverResult result = unassignVehicleFromDriverUseCase.execute(id);
 		return driverHttpMapper.toResponse(result);
 	}
 
@@ -213,7 +212,7 @@ public class DriverController {
 			@PathVariable UUID id,
 			@Valid @RequestBody UpdateDriverLocationRequest request) {
 		DriverResult result = updateDriverLocationUseCase.execute(
-				DriverId.of(id),
+				id,
 				driverHttpMapper.toCommand(request));
 		return driverHttpMapper.toResponse(result);
 	}
@@ -233,7 +232,7 @@ public class DriverController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public DriverResponse goOnline(@PathVariable UUID id) {
-		DriverResult result = setDriverOnlineUseCase.execute(DriverId.of(id));
+		DriverResult result = setDriverOnlineUseCase.execute(id);
 		return driverHttpMapper.toResponse(result);
 	}
 
@@ -251,7 +250,7 @@ public class DriverController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public DriverResponse goOffline(@PathVariable UUID id) {
-		DriverResult result = setDriverOfflineUseCase.execute(DriverId.of(id));
+		DriverResult result = setDriverOfflineUseCase.execute(id);
 		return driverHttpMapper.toResponse(result);
 	}
 }

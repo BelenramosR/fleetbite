@@ -1,5 +1,7 @@
 package com.fleetbite.identity.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.identity.application.dto.CreateUserCommand;
 import com.fleetbite.identity.application.dto.UserResult;
 import com.fleetbite.identity.application.port.in.CreateUserUseCase;
@@ -9,7 +11,6 @@ import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.exception.DuplicateUserEmailException;
 import com.fleetbite.identity.domain.exception.InvalidUserDataException;
 import com.fleetbite.identity.domain.model.User;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.domain.model.UserRole;
 import com.fleetbite.shared.domain.time.BusinessTime;
 
@@ -53,7 +54,7 @@ public final class CreateUserService implements CreateUserUseCase {
 
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		User user = User.create(
-				UserId.generate(),
+				UUID.randomUUID(),
 				email,
 				passwordEncoderPort.hash(command.password()),
 				command.fullName(),

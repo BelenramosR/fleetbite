@@ -16,7 +16,7 @@ public record VehicleSummary(
 	public static VehicleSummary from(Vehicle vehicle) {
 		Objects.requireNonNull(vehicle, "vehicle is required");
 		return new VehicleSummary(
-				vehicle.id().value(),
+				vehicle.id(),
 				vehicle.plate(),
 				vehicle.type(),
 				vehicle.status());

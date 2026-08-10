@@ -1,9 +1,10 @@
 package com.fleetbite.order.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.port.out.OrderHistoryRepositoryPort;
 import com.fleetbite.order.domain.model.OrderHistoryEvent;
 import com.fleetbite.order.domain.model.OrderHistoryEventType;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 
 import java.time.OffsetDateTime;
@@ -21,7 +22,7 @@ public final class OrderHistoryRecorder {
 	}
 
 	public void record(
-			OrderId orderId,
+			UUID orderId,
 			OrderHistoryEventType eventType,
 			OrderStatus previousStatus,
 			OrderStatus newStatus,

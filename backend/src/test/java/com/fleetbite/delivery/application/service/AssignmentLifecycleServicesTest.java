@@ -1,21 +1,19 @@
 package com.fleetbite.delivery.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.RejectAssignmentCommand;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.domain.model.AssignmentStatus;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -93,7 +91,7 @@ class AssignmentLifecycleServicesTest {
 		Order order = assignedOrder();
 		Driver driver = busyDriver();
 		DeliveryAssignment assignment = DeliveryAssignment.create(
-				DeliveryAssignmentId.generate(), order.id(), driver.id(), CREATED.plusMinutes(10));
+				UUID.randomUUID(), order.id(), driver.id(), CREATED.plusMinutes(10));
 
 		when(assignmentRepositoryPort.findById(assignment.id())).thenReturn(Optional.of(assignment));
 		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
@@ -114,7 +112,7 @@ class AssignmentLifecycleServicesTest {
 		Order order = assignedOrder();
 		Driver driver = busyDriver();
 		DeliveryAssignment assignment = DeliveryAssignment.create(
-				DeliveryAssignmentId.generate(), order.id(), driver.id(), CREATED.plusMinutes(10));
+				UUID.randomUUID(), order.id(), driver.id(), CREATED.plusMinutes(10));
 		assignment.accept(CREATED.plusMinutes(11));
 
 		when(assignmentRepositoryPort.findById(assignment.id())).thenReturn(Optional.of(assignment));
@@ -133,7 +131,7 @@ class AssignmentLifecycleServicesTest {
 		Order order = assignedOrder();
 		order.pickUp(CREATED.plusMinutes(12));
 		DeliveryAssignment assignment = DeliveryAssignment.create(
-				DeliveryAssignmentId.generate(), order.id(), DriverId.generate(), CREATED.plusMinutes(10));
+				UUID.randomUUID(), order.id(), UUID.randomUUID(), CREATED.plusMinutes(10));
 		assignment.accept(CREATED.plusMinutes(11));
 		assignment.markPickedUp(CREATED.plusMinutes(12));
 
@@ -153,7 +151,7 @@ class AssignmentLifecycleServicesTest {
 		order.startDelivery(CREATED.plusMinutes(13));
 		Driver driver = busyDriver();
 		DeliveryAssignment assignment = DeliveryAssignment.create(
-				DeliveryAssignmentId.generate(), order.id(), driver.id(), CREATED.plusMinutes(10));
+				UUID.randomUUID(), order.id(), driver.id(), CREATED.plusMinutes(10));
 		assignment.accept(CREATED.plusMinutes(11));
 		assignment.markPickedUp(CREATED.plusMinutes(12));
 
@@ -174,9 +172,9 @@ class AssignmentLifecycleServicesTest {
 	@Test
 	void accept_shouldAcceptPendingAssignment() {
 		DeliveryAssignment assignment = DeliveryAssignment.create(
-				DeliveryAssignmentId.generate(),
-				OrderId.generate(),
-				DriverId.generate(),
+				UUID.randomUUID(),
+				UUID.randomUUID(),
+				UUID.randomUUID(),
 				CREATED.plusMinutes(10));
 		when(assignmentRepositoryPort.findById(assignment.id())).thenReturn(Optional.of(assignment));
 		when(assignmentRepositoryPort.update(any())).thenAnswer(i -> i.getArgument(0));
@@ -188,7 +186,7 @@ class AssignmentLifecycleServicesTest {
 
 	private static Order assignedOrder() {
 		Order order = Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-LIFE1"),
 				"Ana",
 				"999",
@@ -206,8 +204,8 @@ class AssignmentLifecycleServicesTest {
 
 	private static Driver busyDriver() {
 		Driver driver = Driver.create(
-				DriverId.generate(),
-				UserId.generate(),
+				UUID.randomUUID(),
+				UUID.randomUUID(),
 				"999888777",
 				new Location(-12.10, -77.03),
 				CREATED);

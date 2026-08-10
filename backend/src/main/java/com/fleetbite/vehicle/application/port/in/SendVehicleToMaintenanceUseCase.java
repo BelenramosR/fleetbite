@@ -1,9 +1,10 @@
 package com.fleetbite.vehicle.application.port.in;
 
+import java.util.UUID;
+
 import com.fleetbite.vehicle.application.dto.VehicleResult;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 
 public interface SendVehicleToMaintenanceUseCase {
 
-	VehicleResult execute(VehicleId vehicleId);
+	VehicleResult execute(UUID vehicleId);
 }

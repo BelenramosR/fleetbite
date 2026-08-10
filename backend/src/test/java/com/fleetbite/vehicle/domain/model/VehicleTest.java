@@ -1,5 +1,7 @@
 package com.fleetbite.vehicle.domain.model;
 
+import java.util.UUID;
+
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleDataException;
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleTransitionException;
@@ -21,7 +23,7 @@ class VehicleTest {
 
 	@Test
 	void create_shouldStartAvailable() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED_AT);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED_AT);
 
 		assertEquals(VehicleStatus.AVAILABLE, vehicle.status());
 		assertEquals("ABC-123", vehicle.plate());
@@ -34,14 +36,14 @@ class VehicleTest {
 	void create_shouldRejectBlankPlate() {
 		assertThrows(
 				InvalidVehicleDataException.class,
-				() -> Vehicle.create(VehicleId.generate(), "  ", VehicleType.CAR, CREATED_AT));
+				() -> Vehicle.create(UUID.randomUUID(), "  ", VehicleType.CAR, CREATED_AT));
 	}
 
 	@Test
 	void create_shouldRejectNullType() {
 		assertThrows(
 				InvalidVehicleDataException.class,
-				() -> Vehicle.create(VehicleId.generate(), "ABC-123", null, CREATED_AT));
+				() -> Vehicle.create(UUID.randomUUID(), "ABC-123", null, CREATED_AT));
 	}
 
 	@Test
@@ -155,6 +157,6 @@ class VehicleTest {
 	}
 
 	private static Vehicle availableVehicle() {
-		return Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED_AT);
+		return Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED_AT);
 	}
 }

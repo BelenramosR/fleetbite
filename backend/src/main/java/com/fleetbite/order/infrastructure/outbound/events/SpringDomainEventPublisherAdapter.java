@@ -27,6 +27,6 @@ public class SpringDomainEventPublisherAdapter implements DomainEventPublisherPo
 		log.info(
 				"ORDER_READY published eventId={} eventType=ORDER_READY orderId={}",
 				event.eventId(),
-				event.orderId().value());
+				event.orderId());
 	}
 }

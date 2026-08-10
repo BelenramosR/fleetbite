@@ -1,10 +1,11 @@
 package com.fleetbite.vehicle.application.port.in;
 
+import java.util.UUID;
+
 import com.fleetbite.vehicle.application.dto.UpdateVehicleCommand;
 import com.fleetbite.vehicle.application.dto.VehicleResult;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 
 public interface UpdateVehicleUseCase {
 
-	VehicleResult execute(VehicleId vehicleId, UpdateVehicleCommand command);
+	VehicleResult execute(UUID vehicleId, UpdateVehicleCommand command);
 }

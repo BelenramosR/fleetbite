@@ -1,12 +1,13 @@
 package com.fleetbite.vehicle.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.dto.VehicleResult;
 import com.fleetbite.vehicle.application.port.in.DeactivateVehicleUseCase;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -23,11 +24,11 @@ public final class DeactivateVehicleService implements DeactivateVehicleUseCase 
 	}
 
 	@Override
-	public VehicleResult execute(VehicleId vehicleId) {
+	public VehicleResult execute(UUID vehicleId) {
 		Objects.requireNonNull(vehicleId, "vehicleId is required");
 
 		Vehicle vehicle = vehicleRepositoryPort.findById(vehicleId)
-				.orElseThrow(() -> new ResourceNotFoundException("Vehicle", vehicleId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Vehicle", vehicleId));
 
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		vehicle.deactivate(now);

@@ -1,7 +1,8 @@
 package com.fleetbite.identity.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.identity.domain.model.RefreshToken;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -22,7 +23,7 @@ public abstract class RefreshTokenPersistenceMapper {
 	}
 
 	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "userId", expression = "java(refreshToken.userId().value())")
+	@Mapping(target = "userId", expression = "java(refreshToken.userId())")
 	@Mapping(target = "tokenHash", expression = "java(refreshToken.tokenHash())")
 	@Mapping(target = "expiresAt", expression = "java(refreshToken.expiresAt())")
 	@Mapping(target = "createdAt", expression = "java(refreshToken.createdAt())")
@@ -33,7 +34,7 @@ public abstract class RefreshTokenPersistenceMapper {
 		Objects.requireNonNull(entity, "entity is required");
 		return RefreshToken.reconstitute(
 				entity.getId(),
-				UserId.of(entity.getUserId()),
+				entity.getUserId(),
 				entity.getTokenHash(),
 				toBusinessOffset(entity.getExpiresAt()),
 				toBusinessOffset(entity.getCreatedAt()),

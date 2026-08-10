@@ -1,8 +1,9 @@
 package com.fleetbite.driver.application.port.in;
 
-import com.fleetbite.driver.domain.model.DriverId;
+import java.util.UUID;
+
 
 public interface DeleteDriverUseCase {
 
-	void execute(DriverId driverId);
+	void execute(UUID driverId);
 }

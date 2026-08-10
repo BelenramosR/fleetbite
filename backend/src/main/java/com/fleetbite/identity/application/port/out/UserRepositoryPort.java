@@ -1,7 +1,8 @@
 package com.fleetbite.identity.application.port.out;
 
+import java.util.UUID;
+
 import com.fleetbite.identity.domain.model.User;
-import com.fleetbite.identity.domain.model.UserId;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,7 +13,7 @@ public interface UserRepositoryPort {
 
 	User update(User user);
 
-	Optional<User> findById(UserId id);
+	Optional<User> findById(UUID id);
 
 	Optional<User> findByEmail(String email);
 

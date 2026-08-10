@@ -1,8 +1,8 @@
 package com.fleetbite.order.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.order.domain.model.OrderHistoryEvent;
-import com.fleetbite.order.domain.model.OrderHistoryEventId;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -17,13 +17,13 @@ public abstract class OrderHistoryPersistenceMapper {
 	public OrderHistoryJpaEntity toEntity(OrderHistoryEvent event) {
 		Objects.requireNonNull(event, "event is required");
 		OrderHistoryJpaEntity entity = new OrderHistoryJpaEntity();
-		entity.setId(event.id().value());
+		entity.setId(event.id());
 		copyPersistableState(event, entity);
 		return entity;
 	}
 
 	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "orderId", expression = "java(event.orderId().value())")
+	@Mapping(target = "orderId", expression = "java(event.orderId())")
 	@Mapping(target = "eventType", expression = "java(event.eventType())")
 	@Mapping(target = "previousStatus", expression = "java(event.previousStatus())")
 	@Mapping(target = "newStatus", expression = "java(event.newStatus())")
@@ -35,8 +35,8 @@ public abstract class OrderHistoryPersistenceMapper {
 	public OrderHistoryEvent toDomain(OrderHistoryJpaEntity entity) {
 		Objects.requireNonNull(entity, "entity is required");
 		return OrderHistoryEvent.reconstitute(
-				OrderHistoryEventId.of(entity.getId()),
-				OrderId.of(entity.getOrderId()),
+				entity.getId(),
+				entity.getOrderId(),
 				entity.getEventType(),
 				entity.getPreviousStatus(),
 				entity.getNewStatus(),

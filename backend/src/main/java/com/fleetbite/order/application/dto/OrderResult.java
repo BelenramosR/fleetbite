@@ -81,7 +81,7 @@ public final class OrderResult {
 	public static OrderResult from(Order order) {
 		Objects.requireNonNull(order, "order is required");
 		return new OrderResult(
-				order.id().value(),
+				order.id(),
 				order.code().value(),
 				order.customerName(),
 				order.customerPhone(),

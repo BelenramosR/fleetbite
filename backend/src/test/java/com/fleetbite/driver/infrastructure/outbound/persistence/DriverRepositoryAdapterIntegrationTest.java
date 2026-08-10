@@ -2,12 +2,9 @@ package com.fleetbite.driver.infrastructure.outbound.persistence;
 
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -70,7 +67,7 @@ class DriverRepositoryAdapterIntegrationTest {
 
 	@Test
 	void findById_shouldReturnEmptyWhenMissing() {
-		assertTrue(driverRepositoryPort.findById(DriverId.generate()).isEmpty());
+		assertTrue(driverRepositoryPort.findById(UUID.randomUUID()).isEmpty());
 	}
 
 	@Test
@@ -78,7 +75,7 @@ class DriverRepositoryAdapterIntegrationTest {
 		long baseline = springDataDriverRepository.count();
 		Driver first = driverRepositoryPort.save(sampleDriver("111111111", null));
 		Driver second = Driver.create(
-				DriverId.generate(),
+				UUID.randomUUID(),
 				insertDriverUser(),
 				"222222222",
 				null,
@@ -98,7 +95,7 @@ class DriverRepositoryAdapterIntegrationTest {
 	void update_shouldModifyExistingRowAndIncrementVersion() {
 		long baseline = springDataDriverRepository.count();
 		Driver saved = driverRepositoryPort.save(sampleDriver("333333333", new Location(-12.10, -77.03)));
-		Long versionBefore = springDataDriverRepository.findById(saved.id().value()).orElseThrow().getVersion();
+		Long versionBefore = springDataDriverRepository.findById(saved.id()).orElseThrow().getVersion();
 
 		saved.updatePhone("333333333", CREATED_AT.plusMinutes(5));
 		saved.goOnline(CREATED_AT.plusMinutes(6));
@@ -107,7 +104,7 @@ class DriverRepositoryAdapterIntegrationTest {
 		assertEquals("333333333", updated.phone());
 		assertEquals(DriverStatus.AVAILABLE, updated.status());
 		assertEquals(baseline + 1, springDataDriverRepository.count());
-		Long versionAfter = springDataDriverRepository.findById(saved.id().value()).orElseThrow().getVersion();
+		Long versionAfter = springDataDriverRepository.findById(saved.id()).orElseThrow().getVersion();
 		assertEquals(versionBefore + 1, versionAfter);
 	}
 
@@ -142,7 +139,7 @@ class DriverRepositoryAdapterIntegrationTest {
 
 	@Test
 	void findAvailableWithLocation_shouldReturnOnlyAvailableDriversWithVehicleAndCoordinates() {
-		VehicleId vehicleId = insertVehicle("AVA-001");
+		UUID vehicleId = insertVehicle("AVA-001");
 		Driver available = sampleDriver("777777777", new Location(-12.10, -77.03));
 		available.assignVehicle(vehicleId, CREATED_AT.plusSeconds(30));
 		available.goOnline(CREATED_AT.plusMinutes(1));
@@ -154,7 +151,7 @@ class DriverRepositoryAdapterIntegrationTest {
 		Driver offlineWithoutLocation = sampleDriver("999999999", null);
 		driverRepositoryPort.save(offlineWithoutLocation);
 
-		VehicleId busyVehicleId = insertVehicle("BSY-001");
+		UUID busyVehicleId = insertVehicle("BSY-001");
 		Driver busy = sampleDriver("101010101", new Location(-12.12, -77.05));
 		busy.assignVehicle(busyVehicleId, CREATED_AT.plusSeconds(30));
 		busy.goOnline(CREATED_AT.plusMinutes(1));
@@ -170,10 +167,10 @@ class DriverRepositoryAdapterIntegrationTest {
 	}
 
 	private Driver sampleDriver(String phone, Location location) {
-		return Driver.create(DriverId.generate(), insertDriverUser(), phone, location, CREATED_AT);
+		return Driver.create(UUID.randomUUID(), insertDriverUser(), phone, location, CREATED_AT);
 	}
 
-	private static int indexOf(List<Driver> drivers, DriverId id) {
+	private static int indexOf(List<Driver> drivers, UUID id) {
 		for (int i = 0; i < drivers.size(); i++) {
 			if (drivers.get(i).id().equals(id)) {
 				return i;
@@ -182,7 +179,7 @@ class DriverRepositoryAdapterIntegrationTest {
 		return -1;
 	}
 
-	private UserId insertDriverUser() {
+	private UUID insertDriverUser() {
 		UUID id = UUID.randomUUID();
 		jdbcTemplate.update(
 				"""
@@ -193,10 +190,10 @@ class DriverRepositoryAdapterIntegrationTest {
 				"driver-" + id + "@test.local",
 				CREATED_AT,
 				CREATED_AT);
-		return UserId.of(id);
+		return id;
 	}
 
-	private VehicleId insertVehicle(String plate) {
+	private UUID insertVehicle(String plate) {
 		UUID id = UUID.randomUUID();
 		jdbcTemplate.update(
 				"""
@@ -207,6 +204,6 @@ class DriverRepositoryAdapterIntegrationTest {
 				plate,
 				CREATED_AT,
 				CREATED_AT);
-		return VehicleId.of(id);
+		return id;
 	}
 }

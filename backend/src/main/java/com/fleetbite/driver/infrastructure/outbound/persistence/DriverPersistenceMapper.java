@@ -1,11 +1,10 @@
 package com.fleetbite.driver.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -24,7 +23,7 @@ public abstract class DriverPersistenceMapper {
 		Objects.requireNonNull(driver, "driver is required");
 
 		DriverJpaEntity entity = new DriverJpaEntity();
-		entity.setId(driver.id().value());
+		entity.setId(driver.id());
 		copyPersistableState(driver, entity);
 		return entity;
 	}
@@ -32,7 +31,7 @@ public abstract class DriverPersistenceMapper {
 	public void copyToEntity(Driver driver, DriverJpaEntity existingEntity) {
 		Objects.requireNonNull(driver, "driver is required");
 		Objects.requireNonNull(existingEntity, "existingEntity is required");
-		if (!existingEntity.getId().equals(driver.id().value())) {
+		if (!existingEntity.getId().equals(driver.id())) {
 			throw new IllegalArgumentException("cannot copy driver onto entity with a different id");
 		}
 		copyPersistableState(driver, existingEntity);
@@ -40,7 +39,7 @@ public abstract class DriverPersistenceMapper {
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "version", ignore = true)
-	@Mapping(target = "userId", expression = "java(driver.userId().value())")
+	@Mapping(target = "userId", expression = "java(driver.userId())")
 	@Mapping(target = "phone", expression = "java(driver.phone())")
 	@Mapping(target = "status", expression = "java(driver.status())")
 	@Mapping(
@@ -51,7 +50,7 @@ public abstract class DriverPersistenceMapper {
 			expression = "java(driver.currentLocation() == null ? null : toCoordinate(driver.currentLocation().longitude()))")
 	@Mapping(
 			target = "vehicleId",
-			expression = "java(driver.vehicleId() == null ? null : driver.vehicleId().value())")
+			expression = "java(driver.vehicleId() == null ? null : driver.vehicleId())")
 	@Mapping(target = "createdAt", expression = "java(driver.createdAt())")
 	@Mapping(target = "updatedAt", expression = "java(driver.updatedAt())")
 	protected abstract void copyPersistableState(Driver driver, @MappingTarget DriverJpaEntity entity);
@@ -66,11 +65,11 @@ public abstract class DriverPersistenceMapper {
 					entity.getCurrentLongitude().doubleValue());
 		}
 
-		VehicleId vehicleId = entity.getVehicleId() == null ? null : VehicleId.of(entity.getVehicleId());
+		UUID vehicleId = entity.getVehicleId() == null ? null : entity.getVehicleId();
 
 		return Driver.reconstitute(
-				DriverId.of(entity.getId()),
-				UserId.of(entity.getUserId()),
+				entity.getId(),
+				entity.getUserId(),
 				entity.getPhone(),
 				entity.getStatus(),
 				location,

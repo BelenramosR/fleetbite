@@ -8,7 +8,6 @@ import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
 import com.fleetbite.order.domain.model.OrderHistoryEventType;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -44,7 +43,7 @@ public final class CreateOrderService implements CreateOrderUseCase {
 		OffsetDateTime promisedDeliveryAt = BusinessTime.defaultPromisedDeliveryAt(createdAt);
 
 		Order order = Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				generateOrderCode(currentInstant),
 				command.customerName(),
 				command.customerPhone(),

@@ -1,7 +1,8 @@
 package com.fleetbite.order.application.port.out;
 
+import java.util.UUID;
+
 import com.fleetbite.order.domain.model.Order;
-import com.fleetbite.order.domain.model.OrderId;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,9 +19,9 @@ public interface OrderRepositoryPort {
 	 */
 	Order update(Order order);
 
-	Optional<Order> findById(OrderId id);
+	Optional<Order> findById(UUID id);
 
 	List<Order> findAll();
 
-	void deleteById(OrderId id);
+	void deleteById(UUID id);
 }

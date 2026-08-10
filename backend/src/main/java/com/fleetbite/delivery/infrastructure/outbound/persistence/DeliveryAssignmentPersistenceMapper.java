@@ -1,9 +1,8 @@
 package com.fleetbite.delivery.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
-import com.fleetbite.driver.domain.model.DriverId;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -19,7 +18,7 @@ public abstract class DeliveryAssignmentPersistenceMapper {
 		Objects.requireNonNull(assignment, "assignment is required");
 
 		DeliveryAssignmentJpaEntity entity = new DeliveryAssignmentJpaEntity();
-		entity.setId(assignment.id().value());
+		entity.setId(assignment.id());
 		copyPersistableState(assignment, entity);
 		return entity;
 	}
@@ -27,7 +26,7 @@ public abstract class DeliveryAssignmentPersistenceMapper {
 	public void copyToEntity(DeliveryAssignment assignment, DeliveryAssignmentJpaEntity existingEntity) {
 		Objects.requireNonNull(assignment, "assignment is required");
 		Objects.requireNonNull(existingEntity, "existingEntity is required");
-		if (!existingEntity.getId().equals(assignment.id().value())) {
+		if (!existingEntity.getId().equals(assignment.id())) {
 			throw new IllegalArgumentException("cannot copy assignment onto entity with a different id");
 		}
 		copyPersistableState(assignment, existingEntity);
@@ -35,8 +34,8 @@ public abstract class DeliveryAssignmentPersistenceMapper {
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "version", ignore = true)
-	@Mapping(target = "orderId", expression = "java(assignment.orderId().value())")
-	@Mapping(target = "driverId", expression = "java(assignment.driverId().value())")
+	@Mapping(target = "orderId", expression = "java(assignment.orderId())")
+	@Mapping(target = "driverId", expression = "java(assignment.driverId())")
 	@Mapping(target = "status", expression = "java(assignment.status())")
 	@Mapping(target = "assignedAt", expression = "java(assignment.assignedAt())")
 	@Mapping(target = "acceptedAt", expression = "java(assignment.acceptedAt())")
@@ -54,9 +53,9 @@ public abstract class DeliveryAssignmentPersistenceMapper {
 		Objects.requireNonNull(entity, "entity is required");
 
 		return DeliveryAssignment.reconstitute(
-				DeliveryAssignmentId.of(entity.getId()),
-				OrderId.of(entity.getOrderId()),
-				DriverId.of(entity.getDriverId()),
+				entity.getId(),
+				entity.getOrderId(),
+				entity.getDriverId(),
 				entity.getStatus(),
 				toBusinessOffset(entity.getAssignedAt()),
 				toBusinessOffset(entity.getAcceptedAt()),

@@ -1,11 +1,12 @@
 package com.fleetbite.delivery.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.AssignmentResult;
 import com.fleetbite.delivery.application.dto.RejectAssignmentCommand;
 import com.fleetbite.delivery.application.port.in.RejectAssignmentUseCase;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
@@ -42,16 +43,16 @@ public final class RejectAssignmentService implements RejectAssignmentUseCase {
 	}
 
 	@Override
-	public AssignmentResult execute(DeliveryAssignmentId assignmentId, RejectAssignmentCommand command) {
+	public AssignmentResult execute(UUID assignmentId, RejectAssignmentCommand command) {
 		Objects.requireNonNull(assignmentId, "assignmentId is required");
 		Objects.requireNonNull(command, "command is required");
 
 		DeliveryAssignment assignment = assignmentRepositoryPort.findById(assignmentId)
-				.orElseThrow(() -> new ResourceNotFoundException("DeliveryAssignment", assignmentId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("DeliveryAssignment", assignmentId));
 		Order order = orderRepositoryPort.findById(assignment.orderId())
-				.orElseThrow(() -> new ResourceNotFoundException("Order", assignment.orderId().value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Order", assignment.orderId()));
 		Driver driver = driverRepositoryPort.findById(assignment.driverId())
-				.orElseThrow(() -> new ResourceNotFoundException("Driver", assignment.driverId().value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Driver", assignment.driverId()));
 
 		OrderStatus previous = order.status();
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());

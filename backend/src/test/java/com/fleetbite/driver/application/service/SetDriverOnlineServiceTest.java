@@ -1,13 +1,13 @@
 package com.fleetbite.driver.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.exception.InvalidDriverTransitionException;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.model.User;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.domain.model.UserRole;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -36,7 +36,7 @@ class SetDriverOnlineServiceTest {
 	private static final OffsetDateTime NOW =
 			OffsetDateTime.of(2026, 8, 8, 22, 15, 0, 0, BusinessTime.ZONE_OFFSET);
 	private static final Clock FIXED_CLOCK = Clock.fixed(NOW.toInstant(), BusinessTime.ZONE_OFFSET);
-	private static final UserId USER_ID = UserId.generate();
+	private static final UUID USER_ID = UUID.randomUUID();
 
 	@Mock
 	private DriverRepositoryPort driverRepositoryPort;
@@ -61,7 +61,7 @@ class SetDriverOnlineServiceTest {
 	@Test
 	void execute_shouldSetAvailableWhenLocationPresent() {
 		Driver driver = Driver.create(
-				DriverId.generate(),
+				UUID.randomUUID(),
 				USER_ID,
 				"999888777",
 				new Location(-12.10, -77.03),
@@ -79,7 +79,7 @@ class SetDriverOnlineServiceTest {
 
 	@Test
 	void execute_shouldRejectWithoutLocation() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, "999888777", null, CREATED);
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, "999888777", null, CREATED);
 		when(driverRepositoryPort.findById(driver.id())).thenReturn(Optional.of(driver));
 
 		assertThrows(InvalidDriverTransitionException.class, () -> setDriverOnlineService.execute(driver.id()));

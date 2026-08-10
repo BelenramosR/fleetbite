@@ -11,12 +11,10 @@ import com.fleetbite.delivery.application.port.in.ListAssignmentsUseCase;
 import com.fleetbite.delivery.application.port.in.PickupAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.RejectAssignmentUseCase;
 import com.fleetbite.delivery.application.port.in.StartDeliveryAssignmentUseCase;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.delivery.infrastructure.inbound.rest.request.CreateManualAssignmentRequest;
 import com.fleetbite.delivery.infrastructure.inbound.rest.request.RejectAssignmentRequest;
 import com.fleetbite.delivery.infrastructure.inbound.rest.response.AssignmentResponse;
 import com.fleetbite.delivery.infrastructure.inbound.rest.response.AutoAssignmentResponse;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.infrastructure.config.OpenApiConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -134,7 +132,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AutoAssignmentResponse autoAssign(@PathVariable UUID orderId) {
-		AutoAssignmentResult result = autoAssignOrderUseCase.execute(OrderId.of(orderId));
+		AutoAssignmentResult result = autoAssignOrderUseCase.execute(orderId);
 		return assignmentHttpMapper.toResponse(result);
 	}
 
@@ -167,7 +165,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse getAssignmentById(@PathVariable UUID id) {
-		AssignmentResult result = getAssignmentByIdUseCase.execute(DeliveryAssignmentId.of(id));
+		AssignmentResult result = getAssignmentByIdUseCase.execute(id);
 		return assignmentHttpMapper.toResponse(result);
 	}
 
@@ -186,7 +184,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse accept(@PathVariable UUID id) {
-		AssignmentResult result = acceptAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
+		AssignmentResult result = acceptAssignmentUseCase.execute(id);
 		return assignmentHttpMapper.toResponse(result);
 	}
 
@@ -210,7 +208,7 @@ public class AssignmentController {
 			@PathVariable UUID id,
 			@Valid @RequestBody RejectAssignmentRequest request) {
 		AssignmentResult result = rejectAssignmentUseCase.execute(
-				DeliveryAssignmentId.of(id),
+				id,
 				assignmentHttpMapper.toCommand(request));
 		return assignmentHttpMapper.toResponse(result);
 	}
@@ -231,7 +229,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse pickup(@PathVariable UUID id) {
-		AssignmentResult result = pickupAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
+		AssignmentResult result = pickupAssignmentUseCase.execute(id);
 		return assignmentHttpMapper.toResponse(result);
 	}
 
@@ -251,7 +249,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse startDelivery(@PathVariable UUID id) {
-		AssignmentResult result = startDeliveryAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
+		AssignmentResult result = startDeliveryAssignmentUseCase.execute(id);
 		return assignmentHttpMapper.toResponse(result);
 	}
 
@@ -271,7 +269,7 @@ public class AssignmentController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public AssignmentResponse complete(@PathVariable UUID id) {
-		AssignmentResult result = completeAssignmentUseCase.execute(DeliveryAssignmentId.of(id));
+		AssignmentResult result = completeAssignmentUseCase.execute(id);
 		return assignmentHttpMapper.toResponse(result);
 	}
 }

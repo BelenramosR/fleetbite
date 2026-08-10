@@ -1,9 +1,10 @@
 package com.fleetbite.order.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.port.in.GetOrderByIdUseCase;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 
 import java.util.Objects;
@@ -17,11 +18,11 @@ public final class GetOrderByIdService implements GetOrderByIdUseCase {
 	}
 
 	@Override
-	public OrderResult execute(OrderId orderId) {
+	public OrderResult execute(UUID orderId) {
 		Objects.requireNonNull(orderId, "orderId is required");
 
 		return orderRepositoryPort.findById(orderId)
 				.map(OrderResult::from)
-				.orElseThrow(() -> new ResourceNotFoundException("Order", orderId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
 	}
 }

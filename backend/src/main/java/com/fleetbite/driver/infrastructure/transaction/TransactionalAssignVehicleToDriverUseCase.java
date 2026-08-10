@@ -1,9 +1,10 @@
 package com.fleetbite.driver.infrastructure.transaction;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.application.dto.AssignVehicleToDriverCommand;
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.port.in.AssignVehicleToDriverUseCase;
-import com.fleetbite.driver.domain.model.DriverId;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
@@ -18,7 +19,7 @@ public class TransactionalAssignVehicleToDriverUseCase implements AssignVehicleT
 
 	@Override
 	@Transactional
-	public DriverResult execute(DriverId driverId, AssignVehicleToDriverCommand command) {
+	public DriverResult execute(UUID driverId, AssignVehicleToDriverCommand command) {
 		return delegate.execute(driverId, command);
 	}
 }

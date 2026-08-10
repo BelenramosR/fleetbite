@@ -1,12 +1,13 @@
 package com.fleetbite.vehicle.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.exception.VehicleNotDeletableException;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import com.fleetbite.vehicle.domain.model.VehicleType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ class DeleteVehicleServiceTest {
 
 	@Test
 	void execute_shouldDeleteInactiveVehicle() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		vehicle.deactivate(CREATED.plusMinutes(1));
 		when(vehicleRepositoryPort.findById(vehicle.id())).thenReturn(Optional.of(vehicle));
 		when(driverRepositoryPort.findByVehicleId(vehicle.id())).thenReturn(Optional.empty());
@@ -55,7 +56,7 @@ class DeleteVehicleServiceTest {
 
 	@Test
 	void execute_shouldRejectAvailableVehicle() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		when(vehicleRepositoryPort.findById(vehicle.id())).thenReturn(Optional.of(vehicle));
 		when(driverRepositoryPort.findByVehicleId(vehicle.id())).thenReturn(Optional.empty());
 
@@ -65,7 +66,7 @@ class DeleteVehicleServiceTest {
 
 	@Test
 	void execute_shouldThrowNotFound() {
-		VehicleId id = VehicleId.generate();
+		UUID id = UUID.randomUUID();
 		when(vehicleRepositoryPort.findById(id)).thenReturn(Optional.empty());
 
 		assertThrows(ResourceNotFoundException.class, () -> deleteVehicleService.execute(id));

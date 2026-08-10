@@ -3,12 +3,9 @@ package com.fleetbite.delivery.application.policy;
 import com.fleetbite.delivery.application.port.out.DistanceCalculatorPort;
 import com.fleetbite.delivery.infrastructure.outbound.geo.HaversineDistanceAdapter;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,8 +49,8 @@ class NearestDriverSelectionPolicyTest {
 	@Test
 	void select_shouldIgnoreOfflineAndBusy() {
 		Driver offline = Driver.create(
-				DriverId.of(uuid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
-				UserId.generate(),
+				uuid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+				UUID.randomUUID(),
 				"111111111",
 				new Location(-12.0470, -77.0430),
 				CREATED);
@@ -90,7 +87,7 @@ class NearestDriverSelectionPolicyTest {
 
 	private static Order readyOrder() {
 		Order order = Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-POL1"),
 				"Ana",
 				"999",
@@ -107,8 +104,8 @@ class NearestDriverSelectionPolicyTest {
 
 	private static Driver available(UUID id, Location location) {
 		Driver driver = Driver.create(
-				DriverId.of(id),
-				UserId.generate(),
+				id,
+				UUID.randomUUID(),
 				id.toString().substring(0, 9),
 				location,
 				CREATED);

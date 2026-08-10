@@ -1,9 +1,10 @@
 package com.fleetbite.delivery.infrastructure.transaction;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.AssignmentResult;
 import com.fleetbite.delivery.application.dto.RejectAssignmentCommand;
 import com.fleetbite.delivery.application.port.in.RejectAssignmentUseCase;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
@@ -18,7 +19,7 @@ public class TransactionalRejectAssignmentUseCase implements RejectAssignmentUse
 
 	@Override
 	@Transactional
-	public AssignmentResult execute(DeliveryAssignmentId assignmentId, RejectAssignmentCommand command) {
+	public AssignmentResult execute(UUID assignmentId, RejectAssignmentCommand command) {
 		return delegate.execute(assignmentId, command);
 	}
 }

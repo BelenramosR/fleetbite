@@ -1,11 +1,12 @@
 package com.fleetbite.order.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.exception.OrderNotDeletableException;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -54,7 +55,7 @@ class DeleteOrderServiceTest {
 
 	@Test
 	void execute_shouldThrowWhenMissing() {
-		OrderId orderId = OrderId.generate();
+		UUID orderId = UUID.randomUUID();
 		when(orderRepositoryPort.findById(orderId)).thenReturn(Optional.empty());
 
 		assertThrows(ResourceNotFoundException.class, () -> deleteOrderService.execute(orderId));
@@ -73,7 +74,7 @@ class DeleteOrderServiceTest {
 
 	private static Order sampleOrder() {
 		return Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-DEL00001"),
 				"Ana Torres",
 				"999999999",

@@ -1,5 +1,7 @@
 package com.fleetbite.order.domain.model;
 
+import java.util.UUID;
+
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.exception.InvalidOrderTransitionException;
 import com.fleetbite.order.domain.exception.OrderNotDeletableException;
@@ -49,7 +51,7 @@ class OrderTest {
 	@Test
 	void create_shouldRejectBlankCustomerName() {
 		assertThrows(InvalidOrderDataException.class, () -> Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-0001"),
 				"   ",
 				"999999999",
@@ -68,7 +70,7 @@ class OrderTest {
 	@Test
 	void create_shouldRejectPromisedDeliveryAtNotAfterCreatedAt() {
 		assertThrows(InvalidOrderDataException.class, () -> Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-0001"),
 				"Ana Torres",
 				"999999999",
@@ -82,7 +84,7 @@ class OrderTest {
 	@Test
 	void create_shouldRejectNullDeliveryLocation() {
 		assertThrows(InvalidOrderDataException.class, () -> Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-0001"),
 				"Ana Torres",
 				"999999999",
@@ -256,7 +258,7 @@ class OrderTest {
 	@Test
 	void updateDetails_shouldUpdateEditableFieldsInCreated() {
 		Order order = validOrder();
-		OrderId id = order.id();
+		UUID id = order.id();
 		OrderCode code = order.code();
 
 		order.updateDetails(
@@ -316,7 +318,7 @@ class OrderTest {
 
 	private static Order validOrder() {
 		return Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-0001"),
 				"Ana Torres",
 				"999999999",

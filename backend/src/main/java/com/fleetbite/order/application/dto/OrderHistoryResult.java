@@ -19,7 +19,7 @@ public record OrderHistoryResult(
 	public static OrderHistoryResult from(OrderHistoryEvent event) {
 		Objects.requireNonNull(event, "event is required");
 		return new OrderHistoryResult(
-				event.id().value(),
+				event.id(),
 				event.eventType(),
 				event.previousStatus(),
 				event.newStatus(),

@@ -54,6 +54,6 @@ public final class NearestDriverSelectionPolicy implements DriverSelectionPolicy
 				})
 				.min(Comparator
 						.comparing(DriverCandidate::distanceKm)
-						.thenComparing(candidate -> candidate.driver().id().value()));
+						.thenComparing(candidate -> candidate.driver().id()));
 	}
 }

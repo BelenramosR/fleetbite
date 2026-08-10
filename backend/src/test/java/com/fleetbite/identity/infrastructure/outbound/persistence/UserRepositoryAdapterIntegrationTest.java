@@ -2,7 +2,6 @@ package com.fleetbite.identity.infrastructure.outbound.persistence;
 
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.model.User;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.domain.model.UserRole;
 import com.fleetbite.identity.domain.model.UserStatus;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -56,7 +55,7 @@ class UserRepositoryAdapterIntegrationTest {
 
 	@Test
 	void saveAndUpdate_shouldPersistUser() {
-		UserId id = UserId.of(UUID.fromString("55555555-5555-5555-5555-555555555555"));
+		UUID id = UUID.fromString("55555555-5555-5555-5555-555555555555");
 		User saved = userRepositoryPort.save(User.create(
 				id,
 				"new.user@fleetbite.local",

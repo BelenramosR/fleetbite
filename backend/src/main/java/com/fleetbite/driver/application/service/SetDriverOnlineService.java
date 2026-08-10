@@ -1,10 +1,11 @@
 package com.fleetbite.driver.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.port.in.SetDriverOnlineUseCase;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -31,11 +32,11 @@ public final class SetDriverOnlineService implements SetDriverOnlineUseCase {
 	}
 
 	@Override
-	public DriverResult execute(DriverId driverId) {
+	public DriverResult execute(UUID driverId) {
 		Objects.requireNonNull(driverId, "driverId is required");
 
 		Driver driver = driverRepositoryPort.findById(driverId)
-				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId));
 
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		driver.goOnline(now);

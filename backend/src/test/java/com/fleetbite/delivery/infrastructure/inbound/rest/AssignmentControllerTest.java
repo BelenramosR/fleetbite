@@ -16,10 +16,7 @@ import com.fleetbite.delivery.application.port.in.StartDeliveryAssignmentUseCase
 import com.fleetbite.delivery.domain.exception.ActiveAssignmentAlreadyExistsException;
 import com.fleetbite.delivery.domain.exception.DriverNotAssignableException;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.driver.domain.model.DriverStatus;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponseBodyAdvice;
@@ -173,7 +170,7 @@ class AssignmentControllerTest {
 	@Test
 	void getById_shouldReturn404() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(getAssignmentByIdUseCase.execute(DeliveryAssignmentId.of(id)))
+		when(getAssignmentByIdUseCase.execute(id))
 				.thenThrow(new ResourceNotFoundException("DeliveryAssignment", id));
 
 		mockMvc.perform(get("/api/v1/assignments/{id}", id))
@@ -196,7 +193,7 @@ class AssignmentControllerTest {
 	@Test
 	void reject_shouldReturn200() throws Exception {
 		AssignmentResult result = rejectedResult();
-		when(rejectAssignmentUseCase.execute(eq(DeliveryAssignmentId.of(result.id())), any(RejectAssignmentCommand.class)))
+		when(rejectAssignmentUseCase.execute(eq(result.id()), any(RejectAssignmentCommand.class)))
 				.thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/assignments/{id}/reject", result.id())
@@ -211,10 +208,10 @@ class AssignmentControllerTest {
 	@Test
 	void accept_pickup_startDelivery_complete_shouldReturn200() throws Exception {
 		AssignmentResult result = sampleResult();
-		when(acceptAssignmentUseCase.execute(DeliveryAssignmentId.of(result.id()))).thenReturn(result);
-		when(pickupAssignmentUseCase.execute(DeliveryAssignmentId.of(result.id()))).thenReturn(result);
-		when(startDeliveryAssignmentUseCase.execute(DeliveryAssignmentId.of(result.id()))).thenReturn(result);
-		when(completeAssignmentUseCase.execute(DeliveryAssignmentId.of(result.id()))).thenReturn(result);
+		when(acceptAssignmentUseCase.execute(result.id())).thenReturn(result);
+		when(pickupAssignmentUseCase.execute(result.id())).thenReturn(result);
+		when(startDeliveryAssignmentUseCase.execute(result.id())).thenReturn(result);
+		when(completeAssignmentUseCase.execute(result.id())).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/assignments/{id}/accept", result.id())).andExpect(status().isOk());
 		mockMvc.perform(post("/api/v1/assignments/{id}/pickup", result.id())).andExpect(status().isOk());
@@ -239,17 +236,17 @@ class AssignmentControllerTest {
 
 	private static AssignmentResult sampleResult() {
 		return AssignmentResult.from(DeliveryAssignment.create(
-				DeliveryAssignmentId.generate(),
-				OrderId.generate(),
-				DriverId.generate(),
+				UUID.randomUUID(),
+				UUID.randomUUID(),
+				UUID.randomUUID(),
 				ASSIGNED_AT));
 	}
 
 	private static AssignmentResult rejectedResult() {
 		DeliveryAssignment assignment = DeliveryAssignment.create(
-				DeliveryAssignmentId.generate(),
-				OrderId.generate(),
-				DriverId.generate(),
+				UUID.randomUUID(),
+				UUID.randomUUID(),
+				UUID.randomUUID(),
 				ASSIGNED_AT);
 		assignment.reject("Vehicle problem", ASSIGNED_AT.plusMinutes(1));
 		return AssignmentResult.from(assignment);

@@ -1,5 +1,7 @@
 package com.fleetbite.delivery.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.AutoAssignmentResult;
 import com.fleetbite.delivery.application.policy.DriverCandidate;
 import com.fleetbite.delivery.application.policy.DriverSelectionPolicy;
@@ -14,7 +16,6 @@ import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderHistoryEventType;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -53,17 +54,17 @@ public final class AutoAssignOrderService implements AutoAssignOrderUseCase {
 	}
 
 	@Override
-	public AutoAssignmentResult execute(OrderId orderId) {
+	public AutoAssignmentResult execute(UUID orderId) {
 		Objects.requireNonNull(orderId, "orderId is required");
 
 		Order order = orderRepositoryPort.findById(orderId)
-				.orElseThrow(() -> new ResourceNotFoundException("Order", orderId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
 
 		if (order.status() != OrderStatus.READY && order.status() != OrderStatus.WAITING_FOR_DRIVER) {
 			throw new OrderNotAssignableException(order.status());
 		}
 		if (assignmentRepositoryPort.existsActiveByOrderId(orderId)) {
-			throw new ActiveAssignmentAlreadyExistsException(orderId.value());
+			throw new ActiveAssignmentAlreadyExistsException(orderId);
 		}
 
 		List<Driver> candidates = driverRepositoryPort.findAvailableWithLocation();
@@ -83,7 +84,7 @@ public final class AutoAssignOrderService implements AutoAssignOrderUseCase {
 						null,
 						now);
 			}
-			return AutoAssignmentResult.waitingForDriver(orderId.value());
+			return AutoAssignmentResult.waitingForDriver(orderId);
 		}
 
 		DriverCandidate candidate = selected.get();
@@ -93,9 +94,9 @@ public final class AutoAssignOrderService implements AutoAssignOrderUseCase {
 				candidate.score());
 
 		return AutoAssignmentResult.assigned(
-				orderId.value(),
-				assignment.id().value(),
-				candidate.driver().id().value(),
+				orderId,
+				assignment.id(),
+				candidate.driver().id(),
 				candidate.distanceKm(),
 				candidate.score());
 	}

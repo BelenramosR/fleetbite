@@ -1,11 +1,11 @@
 package com.fleetbite.driver.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.exception.DriverAlreadyLinkedToUserException;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.identity.application.port.out.DriverProfileProvisionerPort;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 
 import java.time.Clock;
@@ -26,14 +26,14 @@ public final class ProvisionDriverProfileService implements DriverProfileProvisi
 	}
 
 	@Override
-	public void provisionForDriverUser(UserId userId) {
+	public void provisionForDriverUser(UUID userId) {
 		Objects.requireNonNull(userId, "userId is required");
 		if (driverRepositoryPort.existsByUserId(userId)) {
-			throw new DriverAlreadyLinkedToUserException(userId.value());
+			throw new DriverAlreadyLinkedToUserException(userId);
 		}
 
 		OffsetDateTime createdAt = BusinessTime.toBusinessTime(clock.instant());
-		Driver driver = Driver.create(DriverId.generate(), userId, null, null, createdAt);
+		Driver driver = Driver.create(UUID.randomUUID(), userId, null, null, createdAt);
 		driverRepositoryPort.save(driver);
 	}
 }

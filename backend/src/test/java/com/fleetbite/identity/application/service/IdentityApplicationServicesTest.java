@@ -14,7 +14,6 @@ import com.fleetbite.identity.domain.exception.DuplicateUserEmailException;
 import com.fleetbite.identity.domain.exception.UserInactiveException;
 import com.fleetbite.identity.domain.model.RefreshToken;
 import com.fleetbite.identity.domain.model.User;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.domain.model.UserRole;
 import com.fleetbite.identity.domain.model.UserStatus;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -102,7 +101,7 @@ class IdentityApplicationServicesTest {
 				new CreateUserCommand("driver@fleetbite.local", "Fleetbite1!", "Driver", UserRole.DRIVER));
 
 		assertEquals(UserRole.DRIVER, result.role());
-		verify(driverProfileProvisionerPort).provisionForDriverUser(UserId.of(result.id()));
+		verify(driverProfileProvisionerPort).provisionForDriverUser(result.id());
 	}
 
 	@Test
@@ -253,7 +252,7 @@ class IdentityApplicationServicesTest {
 
 	private static User activeUser() {
 		return User.create(
-				UserId.generate(),
+				UUID.randomUUID(),
 				"admin@fleetbite.local",
 				"$2b$hash",
 				"Admin",

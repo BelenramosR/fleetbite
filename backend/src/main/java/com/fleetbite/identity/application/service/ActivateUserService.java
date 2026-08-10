@@ -1,10 +1,11 @@
 package com.fleetbite.identity.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.identity.application.dto.UserResult;
 import com.fleetbite.identity.application.port.in.ActivateUserUseCase;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.model.User;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 
@@ -23,11 +24,11 @@ public final class ActivateUserService implements ActivateUserUseCase {
 	}
 
 	@Override
-	public UserResult execute(UserId userId) {
+	public UserResult execute(UUID userId) {
 		Objects.requireNonNull(userId, "userId is required");
 
 		User user = userRepositoryPort.findById(userId)
-				.orElseThrow(() -> new ResourceNotFoundException("User", userId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		user.activate(now);

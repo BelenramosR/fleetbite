@@ -1,5 +1,7 @@
 package com.fleetbite.order.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.dto.CancelOrderCommand;
 import com.fleetbite.order.application.port.out.DomainEventPublisherPort;
 import com.fleetbite.order.application.port.out.OrderHistoryRepositoryPort;
@@ -12,7 +14,6 @@ import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
 import com.fleetbite.order.domain.model.OrderHistoryEvent;
 import com.fleetbite.order.domain.model.OrderHistoryEventType;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -196,7 +197,7 @@ class OrderWorkflowServicesTest {
 
 	private static Order createdOrder() {
 		return Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-FLOW1"),
 				"Ana",
 				"999",

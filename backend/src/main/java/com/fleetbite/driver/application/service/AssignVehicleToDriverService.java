@@ -1,5 +1,7 @@
 package com.fleetbite.driver.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.application.dto.AssignVehicleToDriverCommand;
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.dto.VehicleSummary;
@@ -8,14 +10,12 @@ import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.driver.domain.exception.VehicleAlreadyAssignedException;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.model.User;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -40,7 +40,7 @@ public final class AssignVehicleToDriverService implements AssignVehicleToDriver
 	}
 
 	@Override
-	public DriverResult execute(DriverId driverId, AssignVehicleToDriverCommand command) {
+	public DriverResult execute(UUID driverId, AssignVehicleToDriverCommand command) {
 		Objects.requireNonNull(driverId, "driverId is required");
 		Objects.requireNonNull(command, "command is required");
 		if (command.vehicleId() == null) {
@@ -48,8 +48,8 @@ public final class AssignVehicleToDriverService implements AssignVehicleToDriver
 		}
 
 		Driver driver = driverRepositoryPort.findById(driverId)
-				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId.value()));
-		VehicleId vehicleId = VehicleId.of(command.vehicleId());
+				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId));
+		UUID vehicleId = command.vehicleId();
 		Vehicle vehicle = vehicleRepositoryPort.findById(vehicleId)
 				.orElseThrow(() -> new ResourceNotFoundException("Vehicle", command.vehicleId()));
 
@@ -71,7 +71,7 @@ public final class AssignVehicleToDriverService implements AssignVehicleToDriver
 		Driver updatedDriver = driverRepositoryPort.update(driver);
 
 		User user = userRepositoryPort.findById(updatedDriver.userId())
-				.orElseThrow(() -> new ResourceNotFoundException("User", updatedDriver.userId().value()));
+				.orElseThrow(() -> new ResourceNotFoundException("User", updatedDriver.userId()));
 		return DriverResult.from(updatedDriver, user.fullName(), VehicleSummary.from(updatedVehicle));
 	}
 }

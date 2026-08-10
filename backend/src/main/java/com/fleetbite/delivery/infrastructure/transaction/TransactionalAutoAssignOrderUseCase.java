@@ -1,8 +1,9 @@
 package com.fleetbite.delivery.infrastructure.transaction;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.AutoAssignmentResult;
 import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;
-import com.fleetbite.order.domain.model.OrderId;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,7 @@ public class TransactionalAutoAssignOrderUseCase implements AutoAssignOrderUseCa
 	 */
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public AutoAssignmentResult execute(OrderId orderId) {
+	public AutoAssignmentResult execute(UUID orderId) {
 		return delegate.execute(orderId);
 	}
 }

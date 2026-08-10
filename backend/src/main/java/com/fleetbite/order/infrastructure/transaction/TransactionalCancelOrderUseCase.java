@@ -1,9 +1,10 @@
 package com.fleetbite.order.infrastructure.transaction;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.dto.CancelOrderCommand;
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.port.in.CancelOrderUseCase;
-import com.fleetbite.order.domain.model.OrderId;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
@@ -18,7 +19,7 @@ public class TransactionalCancelOrderUseCase implements CancelOrderUseCase {
 
 	@Override
 	@Transactional
-	public OrderResult execute(OrderId orderId, CancelOrderCommand command) {
+	public OrderResult execute(UUID orderId, CancelOrderCommand command) {
 		return delegate.execute(orderId, command);
 	}
 }

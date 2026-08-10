@@ -1,9 +1,10 @@
 package com.fleetbite.driver.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.port.in.GetDriverByIdUseCase;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
@@ -24,10 +25,10 @@ public final class GetDriverByIdService implements GetDriverByIdUseCase {
 	}
 
 	@Override
-	public DriverResult execute(DriverId driverId) {
+	public DriverResult execute(UUID driverId) {
 		Objects.requireNonNull(driverId, "driverId is required");
 		return driverRepositoryPort.findById(driverId)
 				.map(resultAssembler::toResult)
-				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId));
 	}
 }

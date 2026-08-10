@@ -1,9 +1,10 @@
 package com.fleetbite.identity.application.port.in;
 
+import java.util.UUID;
+
 import com.fleetbite.identity.application.dto.UserResult;
-import com.fleetbite.identity.domain.model.UserId;
 
 public interface GetUserByIdUseCase {
 
-	UserResult execute(UserId userId);
+	UserResult execute(UUID userId);
 }

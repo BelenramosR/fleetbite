@@ -1,5 +1,7 @@
 package com.fleetbite.order.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.dto.CancelOrderCommand;
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.port.in.CancelOrderUseCase;
@@ -7,7 +9,6 @@ import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.exception.InvalidOrderDataException;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderHistoryEventType;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -32,7 +33,7 @@ public final class CancelOrderService implements CancelOrderUseCase {
 	}
 
 	@Override
-	public OrderResult execute(OrderId orderId, CancelOrderCommand command) {
+	public OrderResult execute(UUID orderId, CancelOrderCommand command) {
 		Objects.requireNonNull(orderId, "orderId is required");
 		Objects.requireNonNull(command, "command is required");
 
@@ -42,7 +43,7 @@ public final class CancelOrderService implements CancelOrderUseCase {
 		}
 
 		Order order = orderRepositoryPort.findById(orderId)
-				.orElseThrow(() -> new ResourceNotFoundException("Order", orderId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
 
 		OrderStatus previous = order.status();
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());

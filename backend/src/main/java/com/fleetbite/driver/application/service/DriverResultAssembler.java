@@ -23,7 +23,7 @@ final class DriverResultAssembler {
 	DriverResult toResult(Driver driver) {
 		Objects.requireNonNull(driver, "driver is required");
 		User user = userRepositoryPort.findById(driver.userId())
-				.orElseThrow(() -> new ResourceNotFoundException("User", driver.userId().value()));
+				.orElseThrow(() -> new ResourceNotFoundException("User", driver.userId()));
 		VehicleSummary summary = null;
 		if (driver.vehicleId() != null) {
 			summary = vehicleRepositoryPort.findById(driver.vehicleId())

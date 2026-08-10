@@ -1,5 +1,7 @@
 package com.fleetbite.vehicle.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.dto.CreateVehicleCommand;
 import com.fleetbite.vehicle.application.dto.VehicleResult;
@@ -8,7 +10,6 @@ import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.exception.DuplicateVehiclePlateException;
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleDataException;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -37,7 +38,7 @@ public final class CreateVehicleService implements CreateVehicleUseCase {
 		}
 
 		OffsetDateTime createdAt = BusinessTime.toBusinessTime(clock.instant());
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), plate, command.type(), createdAt);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), plate, command.type(), createdAt);
 		Vehicle saved = vehicleRepositoryPort.save(vehicle);
 		return VehicleResult.from(saved);
 	}

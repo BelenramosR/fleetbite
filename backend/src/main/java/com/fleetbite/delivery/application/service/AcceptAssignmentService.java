@@ -1,10 +1,11 @@
 package com.fleetbite.delivery.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.AssignmentResult;
 import com.fleetbite.delivery.application.port.in.AcceptAssignmentUseCase;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.domain.model.OrderHistoryEventType;
 import com.fleetbite.order.domain.model.OrderStatus;
@@ -31,11 +32,11 @@ public final class AcceptAssignmentService implements AcceptAssignmentUseCase {
 	}
 
 	@Override
-	public AssignmentResult execute(DeliveryAssignmentId assignmentId) {
+	public AssignmentResult execute(UUID assignmentId) {
 		Objects.requireNonNull(assignmentId, "assignmentId is required");
 
 		DeliveryAssignment assignment = assignmentRepositoryPort.findById(assignmentId)
-				.orElseThrow(() -> new ResourceNotFoundException("DeliveryAssignment", assignmentId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("DeliveryAssignment", assignmentId));
 
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		assignment.accept(now);

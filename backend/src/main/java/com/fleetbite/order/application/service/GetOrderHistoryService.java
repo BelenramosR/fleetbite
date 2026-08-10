@@ -1,10 +1,11 @@
 package com.fleetbite.order.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.dto.OrderHistoryResult;
 import com.fleetbite.order.application.port.in.GetOrderHistoryUseCase;
 import com.fleetbite.order.application.port.out.OrderHistoryRepositoryPort;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 
 import java.util.List;
@@ -23,10 +24,10 @@ public final class GetOrderHistoryService implements GetOrderHistoryUseCase {
 	}
 
 	@Override
-	public List<OrderHistoryResult> execute(OrderId orderId) {
+	public List<OrderHistoryResult> execute(UUID orderId) {
 		Objects.requireNonNull(orderId, "orderId is required");
 		if (orderRepositoryPort.findById(orderId).isEmpty()) {
-			throw new ResourceNotFoundException("Order", orderId.value());
+			throw new ResourceNotFoundException("Order", orderId);
 		}
 		return orderHistoryRepositoryPort.findByOrderId(orderId).stream()
 				.map(OrderHistoryResult::from)

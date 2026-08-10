@@ -1,5 +1,7 @@
 package com.fleetbite.identity.domain.model;
 
+import java.util.UUID;
+
 import com.fleetbite.identity.domain.exception.InvalidUserDataException;
 import com.fleetbite.identity.domain.exception.UserInactiveException;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -18,7 +20,7 @@ class UserTest {
 	@Test
 	void create_shouldStartActiveAndNormalizeEmail() {
 		User user = User.create(
-				UserId.generate(),
+				UUID.randomUUID(),
 				" Admin@FleetBite.Local ",
 				"$2b$hash",
 				"Admin",
@@ -33,7 +35,7 @@ class UserTest {
 	@Test
 	void deactivate_and_ensureActive_shouldFailWhenInactive() {
 		User user = User.create(
-				UserId.generate(),
+				UUID.randomUUID(),
 				"admin@fleetbite.local",
 				"$2b$hash",
 				"Admin",
@@ -48,7 +50,7 @@ class UserTest {
 	@Test
 	void updateProfile_shouldChangeNameAndRole() {
 		User user = User.create(
-				UserId.generate(),
+				UUID.randomUUID(),
 				"admin@fleetbite.local",
 				"$2b$hash",
 				"Admin",
@@ -66,7 +68,7 @@ class UserTest {
 		assertThrows(
 				InvalidUserDataException.class,
 				() -> User.create(
-						UserId.generate(),
+						UUID.randomUUID(),
 						"not-an-email",
 						"$2b$hash",
 						"Admin",

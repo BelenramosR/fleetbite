@@ -1,5 +1,7 @@
 package com.fleetbite.order.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.port.in.MarkOrderReadyUseCase;
 import com.fleetbite.order.application.port.out.DomainEventPublisherPort;
@@ -7,7 +9,6 @@ import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.event.OrderReadyEvent;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderHistoryEventType;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -35,10 +36,10 @@ public final class MarkOrderReadyService implements MarkOrderReadyUseCase {
 	}
 
 	@Override
-	public OrderResult execute(OrderId orderId) {
+	public OrderResult execute(UUID orderId) {
 		Objects.requireNonNull(orderId, "orderId is required");
 		Order order = orderRepositoryPort.findById(orderId)
-				.orElseThrow(() -> new ResourceNotFoundException("Order", orderId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
 
 		OrderStatus previous = order.status();
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());

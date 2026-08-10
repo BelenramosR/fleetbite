@@ -19,7 +19,6 @@ import com.fleetbite.vehicle.domain.exception.DuplicateVehiclePlateException;
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleTransitionException;
 import com.fleetbite.vehicle.domain.exception.VehicleNotDeletableException;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import com.fleetbite.vehicle.domain.model.VehicleStatus;
 import com.fleetbite.vehicle.domain.model.VehicleType;
 import org.junit.jupiter.api.Test;
@@ -145,7 +144,7 @@ class VehicleControllerTest {
 	@Test
 	void getVehicleById_shouldReturn200() throws Exception {
 		VehicleResult result = sampleResult();
-		when(getVehicleByIdUseCase.execute(VehicleId.of(result.id()))).thenReturn(result);
+		when(getVehicleByIdUseCase.execute(result.id())).thenReturn(result);
 
 		mockMvc.perform(get("/api/v1/vehicles/{id}", result.id()))
 				.andExpect(status().isOk())
@@ -155,7 +154,7 @@ class VehicleControllerTest {
 	@Test
 	void getVehicleById_shouldReturn404() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(getVehicleByIdUseCase.execute(VehicleId.of(id)))
+		when(getVehicleByIdUseCase.execute(id))
 				.thenThrow(new ResourceNotFoundException("Vehicle", id));
 
 		mockMvc.perform(get("/api/v1/vehicles/{id}", id))
@@ -166,7 +165,7 @@ class VehicleControllerTest {
 	@Test
 	void updateVehicle_shouldReturn200() throws Exception {
 		VehicleResult result = sampleResult();
-		when(updateVehicleUseCase.execute(eq(VehicleId.of(result.id())), any(UpdateVehicleCommand.class)))
+		when(updateVehicleUseCase.execute(eq(result.id()), any(UpdateVehicleCommand.class)))
 				.thenReturn(result);
 
 		mockMvc.perform(put("/api/v1/vehicles/{id}", result.id())
@@ -201,19 +200,19 @@ class VehicleControllerTest {
 	@Test
 	void deleteVehicle_shouldReturn204() throws Exception {
 		UUID id = UUID.randomUUID();
-		doNothing().when(deleteVehicleUseCase).execute(VehicleId.of(id));
+		doNothing().when(deleteVehicleUseCase).execute(id);
 
 		mockMvc.perform(delete("/api/v1/vehicles/{id}", id))
 				.andExpect(status().isNoContent());
 
-		verify(deleteVehicleUseCase).execute(VehicleId.of(id));
+		verify(deleteVehicleUseCase).execute(id);
 	}
 
 	@Test
 	void deleteVehicle_shouldReturn409WhenNotDeletable() throws Exception {
 		UUID id = UUID.randomUUID();
 		doThrow(new VehicleNotDeletableException(VehicleStatus.AVAILABLE))
-				.when(deleteVehicleUseCase).execute(VehicleId.of(id));
+				.when(deleteVehicleUseCase).execute(id);
 
 		mockMvc.perform(delete("/api/v1/vehicles/{id}", id))
 				.andExpect(status().isConflict())
@@ -223,7 +222,7 @@ class VehicleControllerTest {
 	@Test
 	void maintenance_shouldReturn200() throws Exception {
 		VehicleResult result = maintenanceResult();
-		when(sendVehicleToMaintenanceUseCase.execute(VehicleId.of(result.id()))).thenReturn(result);
+		when(sendVehicleToMaintenanceUseCase.execute(result.id())).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/vehicles/{id}/maintenance", result.id()))
 				.andExpect(status().isOk())
@@ -233,7 +232,7 @@ class VehicleControllerTest {
 	@Test
 	void activate_shouldReturn200() throws Exception {
 		VehicleResult result = sampleResult();
-		when(activateVehicleUseCase.execute(VehicleId.of(result.id()))).thenReturn(result);
+		when(activateVehicleUseCase.execute(result.id())).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/vehicles/{id}/activate", result.id()))
 				.andExpect(status().isOk())
@@ -243,7 +242,7 @@ class VehicleControllerTest {
 	@Test
 	void deactivate_shouldReturn200() throws Exception {
 		VehicleResult result = inactiveResult();
-		when(deactivateVehicleUseCase.execute(VehicleId.of(result.id()))).thenReturn(result);
+		when(deactivateVehicleUseCase.execute(result.id())).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/vehicles/{id}/deactivate", result.id()))
 				.andExpect(status().isOk())
@@ -253,7 +252,7 @@ class VehicleControllerTest {
 	@Test
 	void maintenance_shouldReturn409OnInvalidTransition() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(sendVehicleToMaintenanceUseCase.execute(VehicleId.of(id)))
+		when(sendVehicleToMaintenanceUseCase.execute(id))
 				.thenThrow(new InvalidVehicleTransitionException(VehicleStatus.INACTIVE, VehicleStatus.MAINTENANCE));
 
 		mockMvc.perform(post("/api/v1/vehicles/{id}/maintenance", id))
@@ -263,17 +262,17 @@ class VehicleControllerTest {
 
 	private static VehicleResult sampleResult() {
 		return VehicleResult.from(
-				Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED_AT));
+				Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED_AT));
 	}
 
 	private static VehicleResult maintenanceResult() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED_AT);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED_AT);
 		vehicle.sendToMaintenance(CREATED_AT.plusMinutes(1));
 		return VehicleResult.from(vehicle);
 	}
 
 	private static VehicleResult inactiveResult() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED_AT);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED_AT);
 		vehicle.deactivate(CREATED_AT.plusMinutes(1));
 		return VehicleResult.from(vehicle);
 	}

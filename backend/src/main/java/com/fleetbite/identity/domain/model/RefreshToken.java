@@ -9,7 +9,7 @@ import java.util.UUID;
 public final class RefreshToken {
 
 	private final UUID id;
-	private final UserId userId;
+	private final UUID userId;
 	private final String tokenHash;
 	private final OffsetDateTime expiresAt;
 	private final OffsetDateTime createdAt;
@@ -17,7 +17,7 @@ public final class RefreshToken {
 
 	private RefreshToken(
 			UUID id,
-			UserId userId,
+			UUID userId,
 			String tokenHash,
 			OffsetDateTime expiresAt,
 			OffsetDateTime createdAt,
@@ -32,7 +32,7 @@ public final class RefreshToken {
 
 	public static RefreshToken issue(
 			UUID id,
-			UserId userId,
+			UUID userId,
 			String tokenHash,
 			OffsetDateTime createdAt,
 			OffsetDateTime expiresAt) {
@@ -59,7 +59,7 @@ public final class RefreshToken {
 
 	public static RefreshToken reconstitute(
 			UUID id,
-			UserId userId,
+			UUID userId,
 			String tokenHash,
 			OffsetDateTime expiresAt,
 			OffsetDateTime createdAt,
@@ -92,7 +92,7 @@ public final class RefreshToken {
 		return id;
 	}
 
-	public UserId userId() {
+	public UUID userId() {
 		return userId;
 	}
 

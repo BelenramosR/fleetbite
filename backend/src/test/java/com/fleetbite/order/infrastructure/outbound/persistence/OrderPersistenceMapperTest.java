@@ -1,9 +1,10 @@
 package com.fleetbite.order.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderPriority;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
@@ -33,7 +34,7 @@ class OrderPersistenceMapperTest {
 
 		OrderJpaEntity entity = mapper.toEntity(order);
 
-		assertEquals(order.id().value(), entity.getId());
+		assertEquals(order.id(), entity.getId());
 		assertEquals(order.code().value(), entity.getCode());
 		assertEquals(order.customerName(), entity.getCustomerName());
 		assertEquals(order.status(), entity.getStatus());
@@ -52,7 +53,7 @@ class OrderPersistenceMapperTest {
 		OffsetDateTime readyUtc = OffsetDateTime.of(2026, 8, 9, 3, 20, 0, 0, ZoneOffset.UTC);
 
 		OrderJpaEntity entity = new OrderJpaEntity();
-		entity.setId(OrderId.generate().value());
+		entity.setId(UUID.randomUUID());
 		entity.setCode("ORD-2026-ABCDEF12");
 		entity.setCustomerName("Ana Torres");
 		entity.setCustomerPhone("999999999");
@@ -94,7 +95,7 @@ class OrderPersistenceMapperTest {
 
 	private static Order createdOrder() {
 		return Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-ABCDEF12"),
 				"Ana Torres",
 				"999999999",

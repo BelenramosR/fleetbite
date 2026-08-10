@@ -1,9 +1,9 @@
 package com.fleetbite.delivery.domain.model;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.domain.exception.InvalidAssignmentDataException;
 import com.fleetbite.delivery.domain.exception.InvalidAssignmentTransitionException;
-import com.fleetbite.driver.domain.model.DriverId;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.Test;
 
@@ -118,9 +118,9 @@ class DeliveryAssignmentTest {
 
 	private static DeliveryAssignment pendingAssignment() {
 		return DeliveryAssignment.create(
-				DeliveryAssignmentId.generate(),
-				OrderId.generate(),
-				DriverId.generate(),
+				UUID.randomUUID(),
+				UUID.randomUUID(),
+				UUID.randomUUID(),
 				ASSIGNED_AT);
 	}
 }

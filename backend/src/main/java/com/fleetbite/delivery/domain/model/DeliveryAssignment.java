@@ -1,9 +1,9 @@
 package com.fleetbite.delivery.domain.model;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.domain.exception.InvalidAssignmentDataException;
 import com.fleetbite.delivery.domain.exception.InvalidAssignmentTransitionException;
-import com.fleetbite.driver.domain.model.DriverId;
-import com.fleetbite.order.domain.model.OrderId;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -11,9 +11,9 @@ import java.util.Objects;
 
 public final class DeliveryAssignment {
 
-	private final DeliveryAssignmentId id;
-	private final OrderId orderId;
-	private final DriverId driverId;
+	private final UUID id;
+	private final UUID orderId;
+	private final UUID driverId;
 	private AssignmentStatus status;
 	private final OffsetDateTime assignedAt;
 	private OffsetDateTime acceptedAt;
@@ -25,9 +25,9 @@ public final class DeliveryAssignment {
 	private final OffsetDateTime createdAt;
 
 	private DeliveryAssignment(
-			DeliveryAssignmentId id,
-			OrderId orderId,
-			DriverId driverId,
+			UUID id,
+			UUID orderId,
+			UUID driverId,
 			AssignmentStatus status,
 			OffsetDateTime assignedAt,
 			OffsetDateTime acceptedAt,
@@ -52,9 +52,9 @@ public final class DeliveryAssignment {
 	}
 
 	public static DeliveryAssignment create(
-			DeliveryAssignmentId id,
-			OrderId orderId,
-			DriverId driverId,
+			UUID id,
+			UUID orderId,
+			UUID driverId,
 			OffsetDateTime assignedAt) {
 		return create(id, orderId, driverId, assignedAt, null);
 	}
@@ -67,9 +67,9 @@ public final class DeliveryAssignment {
 	 *                        weighted score (workload + SLA).
 	 */
 	public static DeliveryAssignment create(
-			DeliveryAssignmentId id,
-			OrderId orderId,
-			DriverId driverId,
+			UUID id,
+			UUID orderId,
+			UUID driverId,
 			OffsetDateTime assignedAt,
 			BigDecimal assignmentScore) {
 		if (id == null) {
@@ -100,9 +100,9 @@ public final class DeliveryAssignment {
 	}
 
 	public static DeliveryAssignment reconstitute(
-			DeliveryAssignmentId id,
-			OrderId orderId,
-			DriverId driverId,
+			UUID id,
+			UUID orderId,
+			UUID driverId,
 			AssignmentStatus status,
 			OffsetDateTime assignedAt,
 			OffsetDateTime acceptedAt,
@@ -209,15 +209,15 @@ public final class DeliveryAssignment {
 		return value.trim();
 	}
 
-	public DeliveryAssignmentId id() {
+	public UUID id() {
 		return id;
 	}
 
-	public OrderId orderId() {
+	public UUID orderId() {
 		return orderId;
 	}
 
-	public DriverId driverId() {
+	public UUID driverId() {
 		return driverId;
 	}
 

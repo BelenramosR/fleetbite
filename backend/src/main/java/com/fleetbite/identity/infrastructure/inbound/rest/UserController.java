@@ -7,7 +7,6 @@ import com.fleetbite.identity.application.port.in.DeactivateUserUseCase;
 import com.fleetbite.identity.application.port.in.GetUserByIdUseCase;
 import com.fleetbite.identity.application.port.in.ListUsersUseCase;
 import com.fleetbite.identity.application.port.in.UpdateUserUseCase;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.infrastructure.inbound.rest.request.CreateUserRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.request.UpdateUserRequest;
 import com.fleetbite.identity.infrastructure.inbound.rest.response.UserResponse;
@@ -120,7 +119,7 @@ public class UserController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public UserResponse getUserById(@PathVariable UUID id) {
-		return identityHttpMapper.toResponse(getUserByIdUseCase.execute(UserId.of(id)));
+		return identityHttpMapper.toResponse(getUserByIdUseCase.execute(id));
 	}
 
 	@PutMapping("/{id}")
@@ -139,7 +138,7 @@ public class UserController {
 	public UserResponse updateUser(
 			@PathVariable UUID id,
 			@Valid @RequestBody UpdateUserRequest request) {
-		UserResult result = updateUserUseCase.execute(UserId.of(id), identityHttpMapper.toCommand(request));
+		UserResult result = updateUserUseCase.execute(id, identityHttpMapper.toCommand(request));
 		return identityHttpMapper.toResponse(result);
 	}
 
@@ -155,7 +154,7 @@ public class UserController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public UserResponse activate(@PathVariable UUID id) {
-		return identityHttpMapper.toResponse(activateUserUseCase.execute(UserId.of(id)));
+		return identityHttpMapper.toResponse(activateUserUseCase.execute(id));
 	}
 
 	@PostMapping("/{id}/deactivate")
@@ -170,6 +169,6 @@ public class UserController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public UserResponse deactivate(@PathVariable UUID id) {
-		return identityHttpMapper.toResponse(deactivateUserUseCase.execute(UserId.of(id)));
+		return identityHttpMapper.toResponse(deactivateUserUseCase.execute(id));
 	}
 }

@@ -1,10 +1,11 @@
 package com.fleetbite.order.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -65,14 +66,14 @@ class OrderRepositoryAdapterIntegrationTest {
 
 	@Test
 	void findById_shouldReturnEmptyWhenMissing() {
-		assertTrue(orderRepositoryPort.findById(OrderId.generate()).isEmpty());
+		assertTrue(orderRepositoryPort.findById(UUID.randomUUID()).isEmpty());
 	}
 
 	@Test
 	void findAll_shouldReturnOrdersOrderedByCreatedAt() {
 		Order first = orderRepositoryPort.save(sampleOrder("ORD-2026-LIST0001"));
 		Order second = Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-LIST0002"),
 				"Luis Gomez",
 				"988000111",
@@ -93,7 +94,7 @@ class OrderRepositoryAdapterIntegrationTest {
 	@Test
 	void update_shouldModifyExistingRowAndIncrementVersion() {
 		Order saved = orderRepositoryPort.save(sampleOrder("ORD-2026-UPD00001"));
-		Long versionBefore = springDataOrderRepository.findById(saved.id().value()).orElseThrow().getVersion();
+		Long versionBefore = springDataOrderRepository.findById(saved.id()).orElseThrow().getVersion();
 
 		saved.updateDetails(
 				"Luis Gomez",
@@ -106,7 +107,7 @@ class OrderRepositoryAdapterIntegrationTest {
 		assertEquals("Luis Gomez", updated.customerName());
 		assertEquals(0, updated.totalAmount().amount().compareTo(new BigDecimal("40.00")));
 		assertEquals(1, springDataOrderRepository.count());
-		Long versionAfter = springDataOrderRepository.findById(saved.id().value()).orElseThrow().getVersion();
+		Long versionAfter = springDataOrderRepository.findById(saved.id()).orElseThrow().getVersion();
 		assertEquals(versionBefore + 1, versionAfter);
 	}
 
@@ -122,7 +123,7 @@ class OrderRepositoryAdapterIntegrationTest {
 
 	private static Order sampleOrder(String code) {
 		return Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of(code),
 				"Ana Torres",
 				"999999999",

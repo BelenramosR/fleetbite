@@ -1,11 +1,12 @@
 package com.fleetbite.order.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.model.Location;
@@ -50,7 +51,7 @@ class GetOrderByIdServiceTest {
 
 		OrderResult result = getOrderByIdService.execute(order.id());
 
-		assertEquals(order.id().value(), result.id());
+		assertEquals(order.id(), result.id());
 		assertEquals(order.code().value(), result.code());
 		assertEquals(OrderStatus.CREATED, result.status());
 		assertEquals(CREATED_AT, result.createdAt());
@@ -60,7 +61,7 @@ class GetOrderByIdServiceTest {
 
 	@Test
 	void execute_shouldThrowWhenOrderDoesNotExist() {
-		OrderId orderId = OrderId.generate();
+		UUID orderId = UUID.randomUUID();
 		when(orderRepositoryPort.findById(orderId)).thenReturn(Optional.empty());
 
 		ResourceNotFoundException exception = assertThrows(
@@ -72,7 +73,7 @@ class GetOrderByIdServiceTest {
 
 	private static Order existingOrder() {
 		return Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-ABCDEF12"),
 				"Ana Torres",
 				"999999999",

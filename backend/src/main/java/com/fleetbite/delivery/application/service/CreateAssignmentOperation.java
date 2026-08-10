@@ -1,11 +1,12 @@
 package com.fleetbite.delivery.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.domain.exception.ActiveAssignmentAlreadyExistsException;
 import com.fleetbite.delivery.domain.exception.DriverNotAssignableException;
 import com.fleetbite.delivery.domain.exception.OrderNotAssignableException;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
 import com.fleetbite.driver.domain.model.DriverStatus;
@@ -65,13 +66,13 @@ public final class CreateAssignmentOperation {
 			throw new DriverNotAssignableException("Driver cannot be assigned without a vehicle");
 		}
 		if (assignmentRepositoryPort.existsActiveByOrderId(order.id())) {
-			throw new ActiveAssignmentAlreadyExistsException(order.id().value());
+			throw new ActiveAssignmentAlreadyExistsException(order.id());
 		}
 
 		OrderStatus previous = order.status();
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		DeliveryAssignment assignment = DeliveryAssignment.create(
-				DeliveryAssignmentId.generate(),
+				UUID.randomUUID(),
 				order.id(),
 				driver.id(),
 				now,

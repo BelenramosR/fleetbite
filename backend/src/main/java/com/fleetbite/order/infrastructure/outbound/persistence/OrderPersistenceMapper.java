@@ -1,9 +1,10 @@
 package com.fleetbite.order.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.model.Location;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.mapstruct.Mapper;
@@ -24,7 +25,7 @@ public abstract class OrderPersistenceMapper {
 		Objects.requireNonNull(order, "order is required");
 
 		OrderJpaEntity entity = new OrderJpaEntity();
-		entity.setId(order.id().value());
+		entity.setId(order.id());
 		copyPersistableState(order, entity);
 		// version remains null so Spring Data treats this as a new entity (CREATE)
 		return entity;
@@ -37,7 +38,7 @@ public abstract class OrderPersistenceMapper {
 	public void copyToEntity(Order order, OrderJpaEntity existingEntity) {
 		Objects.requireNonNull(order, "order is required");
 		Objects.requireNonNull(existingEntity, "existingEntity is required");
-		if (!existingEntity.getId().equals(order.id().value())) {
+		if (!existingEntity.getId().equals(order.id())) {
 			throw new IllegalArgumentException("cannot copy order onto entity with a different id");
 		}
 		copyPersistableState(order, existingEntity);
@@ -71,7 +72,7 @@ public abstract class OrderPersistenceMapper {
 		Objects.requireNonNull(entity, "entity is required");
 
 		return Order.reconstitute(
-				OrderId.of(entity.getId()),
+				entity.getId(),
 				OrderCode.of(entity.getCode()),
 				entity.getCustomerName(),
 				entity.getCustomerPhone(),

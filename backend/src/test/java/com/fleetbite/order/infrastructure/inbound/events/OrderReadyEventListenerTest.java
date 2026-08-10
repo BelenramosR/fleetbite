@@ -4,7 +4,6 @@ import com.fleetbite.delivery.application.dto.AutoAssignmentResult;
 import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;
 import com.fleetbite.delivery.domain.exception.ActiveAssignmentAlreadyExistsException;
 import com.fleetbite.order.domain.event.OrderReadyEvent;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,13 +43,13 @@ class OrderReadyEventListenerTest {
 
 	@Test
 	void onOrderReady_shouldDelegateToAutoAssignWithSameOrderId() {
-		OrderId orderId = OrderId.of(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+		UUID orderId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 		OrderReadyEvent event = OrderReadyEvent.of(
 				orderId,
 				OffsetDateTime.of(2026, 8, 8, 22, 0, 0, 0, BusinessTime.ZONE_OFFSET));
 		when(autoAssignOrderUseCase.execute(orderId))
 				.thenReturn(AutoAssignmentResult.assigned(
-						orderId.value(),
+						orderId,
 						UUID.randomUUID(),
 						UUID.randomUUID(),
 						null,
@@ -64,12 +63,12 @@ class OrderReadyEventListenerTest {
 
 	@Test
 	void onOrderReady_shouldNotRethrowWhenAutoAssignFails() {
-		OrderId orderId = OrderId.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+		UUID orderId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 		OrderReadyEvent event = OrderReadyEvent.of(
 				orderId,
 				OffsetDateTime.of(2026, 8, 8, 22, 0, 0, 0, BusinessTime.ZONE_OFFSET));
 		when(autoAssignOrderUseCase.execute(orderId))
-				.thenThrow(new ActiveAssignmentAlreadyExistsException(orderId.value()));
+				.thenThrow(new ActiveAssignmentAlreadyExistsException(orderId));
 
 		assertDoesNotThrow(() -> listener.onOrderReady(event));
 		verify(autoAssignOrderUseCase).execute(eq(orderId));

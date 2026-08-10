@@ -11,7 +11,6 @@ import com.fleetbite.identity.application.port.in.ListUsersUseCase;
 import com.fleetbite.identity.application.port.in.UpdateUserUseCase;
 import com.fleetbite.identity.domain.exception.DuplicateUserEmailException;
 import com.fleetbite.identity.domain.model.User;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.domain.model.UserRole;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -116,7 +115,7 @@ class UserControllerTest {
 
 	@Test
 	void getUserById_shouldReturn404WhenMissing() throws Exception {
-		when(getUserByIdUseCase.execute(any(UserId.class)))
+		when(getUserByIdUseCase.execute(any(UUID.class)))
 				.thenThrow(new ResourceNotFoundException("User", USER_ID));
 
 		mockMvc.perform(get("/api/v1/users/{id}", USER_ID))
@@ -127,13 +126,13 @@ class UserControllerTest {
 	@Test
 	void updateUser_shouldReturnUpdatedProfile() throws Exception {
 		UserResult updated = UserResult.from(User.create(
-				UserId.of(USER_ID),
+				USER_ID,
 				"admin@fleetbite.local",
 				"$2a$hash",
 				"Updated Admin",
 				UserRole.DISPATCHER,
 				CREATED_AT));
-		when(updateUserUseCase.execute(eq(UserId.of(USER_ID)), any(UpdateUserCommand.class))).thenReturn(updated);
+		when(updateUserUseCase.execute(eq(USER_ID), any(UpdateUserCommand.class))).thenReturn(updated);
 
 		mockMvc.perform(put("/api/v1/users/{id}", USER_ID)
 						.contentType(MediaType.APPLICATION_JSON)
@@ -150,8 +149,8 @@ class UserControllerTest {
 
 	@Test
 	void activateAndDeactivate_shouldReturnUser() throws Exception {
-		when(activateUserUseCase.execute(UserId.of(USER_ID))).thenReturn(sampleResult());
-		when(deactivateUserUseCase.execute(UserId.of(USER_ID))).thenReturn(sampleResult());
+		when(activateUserUseCase.execute(USER_ID)).thenReturn(sampleResult());
+		when(deactivateUserUseCase.execute(USER_ID)).thenReturn(sampleResult());
 
 		mockMvc.perform(post("/api/v1/users/{id}/activate", USER_ID))
 				.andExpect(status().isOk())
@@ -164,7 +163,7 @@ class UserControllerTest {
 
 	private static UserResult sampleResult() {
 		return UserResult.from(User.create(
-				UserId.of(USER_ID),
+				USER_ID,
 				"admin@fleetbite.local",
 				"$2a$hash",
 				"FleetBite Admin",

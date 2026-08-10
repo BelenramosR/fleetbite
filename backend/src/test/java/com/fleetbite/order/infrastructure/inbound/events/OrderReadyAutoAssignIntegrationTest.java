@@ -2,7 +2,6 @@ package com.fleetbite.order.infrastructure.inbound.events;
 
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.order.domain.event.OrderReadyEvent;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.Test;
@@ -76,7 +75,7 @@ class OrderReadyAutoAssignIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.status").value("BUSY"));
 
-		assertThat(assignmentRepositoryPort.findActiveByOrderId(OrderId.of(orderId)))
+		assertThat(assignmentRepositoryPort.findActiveByOrderId(orderId))
 				.isPresent()
 				.get()
 				.extracting(a -> a.status().name())
@@ -121,21 +120,21 @@ class OrderReadyAutoAssignIntegrationTest {
 						.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk());
 
-		assertThat(assignmentRepositoryPort.existsActiveByOrderId(OrderId.of(orderId))).isTrue();
+		assertThat(assignmentRepositoryPort.existsActiveByOrderId(orderId)).isTrue();
 
 		OrderReadyEvent duplicate = OrderReadyEvent.of(
-				OrderId.of(orderId),
+				orderId,
 				OffsetDateTime.of(2026, 8, 8, 23, 0, 0, 0, BusinessTime.ZONE_OFFSET));
 		orderReadyEventListener.onOrderReady(duplicate);
 
 		AtomicInteger activeCount = new AtomicInteger();
 		assignmentRepositoryPort.findAll().forEach(assignment -> {
-			if (assignment.orderId().equals(OrderId.of(orderId)) && assignment.status().isActive()) {
+			if (assignment.orderId().equals(orderId) && assignment.status().isActive()) {
 				activeCount.incrementAndGet();
 			}
 		});
 		assertThat(activeCount.get()).isEqualTo(1);
-		assertThat(assignmentRepositoryPort.existsActiveByOrderId(OrderId.of(orderId))).isTrue();
+		assertThat(assignmentRepositoryPort.existsActiveByOrderId(orderId)).isTrue();
 	}
 
 	private UUID createPreparingOrder(String token) throws Exception {

@@ -37,7 +37,7 @@ public class OrderReadyEventListener {
 		log.info(
 				"ORDER_READY processing started eventId={} eventType=ORDER_READY orderId={}",
 				event.eventId(),
-				event.orderId().value());
+				event.orderId());
 		try {
 			AutoAssignmentResult result = requiresNewTransactionTemplate.execute(
 					status -> autoAssignOrderUseCase.execute(event.orderId()));
@@ -45,20 +45,20 @@ public class OrderReadyEventListener {
 				log.info(
 						"ORDER_READY processed: ASSIGNED eventId={} eventType=ORDER_READY orderId={}",
 						event.eventId(),
-						event.orderId().value());
+						event.orderId());
 			}
 			else {
 				log.info(
 						"ORDER_READY processed: WAITING_FOR_DRIVER eventId={} eventType=ORDER_READY orderId={}",
 						event.eventId(),
-						event.orderId().value());
+						event.orderId());
 			}
 		}
 		catch (RuntimeException ex) {
 			log.error(
 					"ORDER_READY processing failed eventId={} eventType=ORDER_READY orderId={}",
 					event.eventId(),
-					event.orderId().value(),
+					event.orderId(),
 					ex);
 		}
 	}

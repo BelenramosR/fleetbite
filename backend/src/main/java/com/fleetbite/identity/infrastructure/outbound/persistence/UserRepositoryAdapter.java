@@ -1,8 +1,9 @@
 package com.fleetbite.identity.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.model.User;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
@@ -36,17 +37,17 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
 	@Override
 	public User update(User user) {
 		Objects.requireNonNull(user, "user is required");
-		UserJpaEntity existing = springDataUserRepository.findById(user.id().value())
-				.orElseThrow(() -> new ResourceNotFoundException("User", user.id().value()));
+		UserJpaEntity existing = springDataUserRepository.findById(user.id())
+				.orElseThrow(() -> new ResourceNotFoundException("User", user.id()));
 		userPersistenceMapper.copyToEntity(user, existing);
 		UserJpaEntity saved = springDataUserRepository.save(existing);
 		return userPersistenceMapper.toDomain(saved);
 	}
 
 	@Override
-	public Optional<User> findById(UserId id) {
+	public Optional<User> findById(UUID id) {
 		Objects.requireNonNull(id, "id is required");
-		return springDataUserRepository.findById(id.value())
+		return springDataUserRepository.findById(id)
 				.map(userPersistenceMapper::toDomain);
 	}
 

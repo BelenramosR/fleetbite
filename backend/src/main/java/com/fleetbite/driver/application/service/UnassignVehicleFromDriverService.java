@@ -1,18 +1,18 @@
 package com.fleetbite.driver.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.port.in.UnassignVehicleFromDriverUseCase;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.model.User;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -37,19 +37,19 @@ public final class UnassignVehicleFromDriverService implements UnassignVehicleFr
 	}
 
 	@Override
-	public DriverResult execute(DriverId driverId) {
+	public DriverResult execute(UUID driverId) {
 		Objects.requireNonNull(driverId, "driverId is required");
 
 		Driver driver = driverRepositoryPort.findById(driverId)
-				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId));
 
-		VehicleId vehicleId = driver.vehicleId();
+		UUID vehicleId = driver.vehicleId();
 		if (vehicleId == null) {
 			throw new InvalidDriverDataException("Driver has no vehicle assigned");
 		}
 
 		Vehicle vehicle = vehicleRepositoryPort.findById(vehicleId)
-				.orElseThrow(() -> new ResourceNotFoundException("Vehicle", vehicleId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Vehicle", vehicleId));
 
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		driver.unassignVehicle(now);
@@ -59,7 +59,7 @@ public final class UnassignVehicleFromDriverService implements UnassignVehicleFr
 		Driver updatedDriver = driverRepositoryPort.update(driver);
 
 		User user = userRepositoryPort.findById(updatedDriver.userId())
-				.orElseThrow(() -> new ResourceNotFoundException("User", updatedDriver.userId().value()));
+				.orElseThrow(() -> new ResourceNotFoundException("User", updatedDriver.userId()));
 		return DriverResult.from(updatedDriver, user.fullName());
 	}
 }

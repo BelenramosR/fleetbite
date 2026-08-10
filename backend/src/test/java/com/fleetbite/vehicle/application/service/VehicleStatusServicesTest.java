@@ -1,9 +1,10 @@
 package com.fleetbite.vehicle.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import com.fleetbite.vehicle.domain.model.VehicleStatus;
 import com.fleetbite.vehicle.domain.model.VehicleType;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,7 @@ class VehicleStatusServicesTest {
 
 	@Test
 	void maintenance_shouldSetMaintenance() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		when(vehicleRepositoryPort.findById(vehicle.id())).thenReturn(Optional.of(vehicle));
 		when(vehicleRepositoryPort.update(any(Vehicle.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -57,7 +58,7 @@ class VehicleStatusServicesTest {
 
 	@Test
 	void activate_shouldSetActiveFromMaintenance() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		vehicle.sendToMaintenance(CREATED.plusMinutes(1));
 		when(vehicleRepositoryPort.findById(vehicle.id())).thenReturn(Optional.of(vehicle));
 		when(vehicleRepositoryPort.update(any(Vehicle.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -69,7 +70,7 @@ class VehicleStatusServicesTest {
 
 	@Test
 	void deactivate_shouldSetInactive() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		when(vehicleRepositoryPort.findById(vehicle.id())).thenReturn(Optional.of(vehicle));
 		when(vehicleRepositoryPort.update(any(Vehicle.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

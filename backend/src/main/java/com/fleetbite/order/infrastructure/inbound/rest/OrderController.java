@@ -11,7 +11,6 @@ import com.fleetbite.order.application.port.in.ListOrdersUseCase;
 import com.fleetbite.order.application.port.in.MarkOrderReadyUseCase;
 import com.fleetbite.order.application.port.in.StartOrderPreparationUseCase;
 import com.fleetbite.order.application.port.in.UpdateOrderUseCase;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.infrastructure.inbound.rest.request.CancelOrderRequest;
 import com.fleetbite.order.infrastructure.inbound.rest.request.CreateOrderRequest;
 import com.fleetbite.order.infrastructure.inbound.rest.request.UpdateOrderRequest;
@@ -137,7 +136,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse getOrderById(@PathVariable UUID id) {
-		OrderResult result = getOrderByIdUseCase.execute(OrderId.of(id));
+		OrderResult result = getOrderByIdUseCase.execute(id);
 		return orderHttpMapper.toResponse(result);
 	}
 
@@ -159,7 +158,7 @@ public class OrderController {
 	public OrderResponse updateOrder(
 			@PathVariable UUID id,
 			@Valid @RequestBody UpdateOrderRequest request) {
-		OrderResult result = updateOrderUseCase.execute(OrderId.of(id), orderHttpMapper.toCommand(request));
+		OrderResult result = updateOrderUseCase.execute(id, orderHttpMapper.toCommand(request));
 		return orderHttpMapper.toResponse(result);
 	}
 
@@ -178,7 +177,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public void deleteOrder(@PathVariable UUID id) {
-		deleteOrderUseCase.execute(OrderId.of(id));
+		deleteOrderUseCase.execute(id);
 	}
 
 	@PostMapping("/{id}/confirm")
@@ -195,7 +194,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse confirm(@PathVariable UUID id) {
-		return orderHttpMapper.toResponse(confirmOrderUseCase.execute(OrderId.of(id)));
+		return orderHttpMapper.toResponse(confirmOrderUseCase.execute(id));
 	}
 
 	@PostMapping("/{id}/start-preparation")
@@ -212,7 +211,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse startPreparation(@PathVariable UUID id) {
-		return orderHttpMapper.toResponse(startOrderPreparationUseCase.execute(OrderId.of(id)));
+		return orderHttpMapper.toResponse(startOrderPreparationUseCase.execute(id));
 	}
 
 	@PostMapping("/{id}/ready")
@@ -239,7 +238,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public OrderResponse markReady(@PathVariable UUID id) {
-		return orderHttpMapper.toResponse(markOrderReadyUseCase.execute(OrderId.of(id)));
+		return orderHttpMapper.toResponse(markOrderReadyUseCase.execute(id));
 	}
 
 	@PostMapping("/{id}/cancel")
@@ -262,7 +261,7 @@ public class OrderController {
 			@PathVariable UUID id,
 			@Valid @RequestBody(required = false) CancelOrderRequest request) {
 		return orderHttpMapper.toResponse(
-				cancelOrderUseCase.execute(OrderId.of(id), orderHttpMapper.toCommand(request)));
+				cancelOrderUseCase.execute(id, orderHttpMapper.toCommand(request)));
 	}
 
 	@GetMapping("/{id}/history")
@@ -277,7 +276,7 @@ public class OrderController {
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
 	public List<OrderHistoryResponse> history(@PathVariable UUID id) {
-		return getOrderHistoryUseCase.execute(OrderId.of(id)).stream()
+		return getOrderHistoryUseCase.execute(id).stream()
 				.map(orderHttpMapper::toResponse)
 				.toList();
 	}

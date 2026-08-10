@@ -1,6 +1,5 @@
 package com.fleetbite.order.domain.event;
 
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.shared.domain.event.DomainEvent;
 
 import java.time.OffsetDateTime;
@@ -13,7 +12,7 @@ import java.util.UUID;
  */
 public record OrderReadyEvent(
 		UUID eventId,
-		OrderId orderId,
+		UUID orderId,
 		OffsetDateTime occurredAt) implements DomainEvent {
 
 	public OrderReadyEvent {
@@ -22,7 +21,7 @@ public record OrderReadyEvent(
 		Objects.requireNonNull(occurredAt, "occurredAt is required");
 	}
 
-	public static OrderReadyEvent of(OrderId orderId, OffsetDateTime occurredAt) {
+	public static OrderReadyEvent of(UUID orderId, OffsetDateTime occurredAt) {
 		return new OrderReadyEvent(UUID.randomUUID(), orderId, occurredAt);
 	}
 }

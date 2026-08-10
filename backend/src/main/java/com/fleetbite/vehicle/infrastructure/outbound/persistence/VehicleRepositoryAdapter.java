@@ -1,9 +1,10 @@
 package com.fleetbite.vehicle.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
@@ -35,17 +36,17 @@ public class VehicleRepositoryAdapter implements VehicleRepositoryPort {
 	@Override
 	public Vehicle update(Vehicle vehicle) {
 		Objects.requireNonNull(vehicle, "vehicle is required");
-		VehicleJpaEntity existing = springDataVehicleRepository.findById(vehicle.id().value())
-				.orElseThrow(() -> new ResourceNotFoundException("Vehicle", vehicle.id().value()));
+		VehicleJpaEntity existing = springDataVehicleRepository.findById(vehicle.id())
+				.orElseThrow(() -> new ResourceNotFoundException("Vehicle", vehicle.id()));
 		vehiclePersistenceMapper.copyToEntity(vehicle, existing);
 		VehicleJpaEntity saved = springDataVehicleRepository.save(existing);
 		return vehiclePersistenceMapper.toDomain(saved);
 	}
 
 	@Override
-	public Optional<Vehicle> findById(VehicleId id) {
+	public Optional<Vehicle> findById(UUID id) {
 		Objects.requireNonNull(id, "id is required");
-		return springDataVehicleRepository.findById(id.value())
+		return springDataVehicleRepository.findById(id)
 				.map(vehiclePersistenceMapper::toDomain);
 	}
 
@@ -57,12 +58,12 @@ public class VehicleRepositoryAdapter implements VehicleRepositoryPort {
 	}
 
 	@Override
-	public void deleteById(VehicleId id) {
+	public void deleteById(UUID id) {
 		Objects.requireNonNull(id, "id is required");
-		if (!springDataVehicleRepository.existsById(id.value())) {
-			throw new ResourceNotFoundException("Vehicle", id.value());
+		if (!springDataVehicleRepository.existsById(id)) {
+			throw new ResourceNotFoundException("Vehicle", id);
 		}
-		springDataVehicleRepository.deleteById(id.value());
+		springDataVehicleRepository.deleteById(id);
 	}
 
 	@Override
@@ -72,9 +73,9 @@ public class VehicleRepositoryAdapter implements VehicleRepositoryPort {
 	}
 
 	@Override
-	public boolean existsByPlateAndIdNot(String plate, VehicleId id) {
+	public boolean existsByPlateAndIdNot(String plate, UUID id) {
 		Objects.requireNonNull(plate, "plate is required");
 		Objects.requireNonNull(id, "id is required");
-		return springDataVehicleRepository.existsByPlateAndIdNot(plate, id.value());
+		return springDataVehicleRepository.existsByPlateAndIdNot(plate, id);
 	}
 }

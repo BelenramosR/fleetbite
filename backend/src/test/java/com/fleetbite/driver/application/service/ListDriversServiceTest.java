@@ -1,11 +1,11 @@
 package com.fleetbite.driver.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.identity.domain.model.User;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.domain.model.UserRole;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
@@ -27,7 +27,7 @@ class ListDriversServiceTest {
 
 	private static final OffsetDateTime CREATED =
 			OffsetDateTime.of(2026, 8, 8, 22, 0, 0, 0, BusinessTime.ZONE_OFFSET);
-	private static final UserId USER_ID = UserId.generate();
+	private static final UUID USER_ID = UUID.randomUUID();
 
 	@Mock
 	private DriverRepositoryPort driverRepositoryPort;
@@ -50,14 +50,14 @@ class ListDriversServiceTest {
 
 	@Test
 	void execute_shouldMapAllDrivers() {
-		Driver driver = Driver.create(DriverId.generate(), USER_ID, "999888777", null, CREATED);
+		Driver driver = Driver.create(UUID.randomUUID(), USER_ID, "999888777", null, CREATED);
 		when(driverRepositoryPort.findAll()).thenReturn(List.of(driver));
 		when(userRepositoryPort.findById(USER_ID)).thenReturn(Optional.of(driverUser()));
 
 		var results = listDriversService.execute();
 
 		assertEquals(1, results.size());
-		assertEquals(driver.id().value(), results.getFirst().id());
+		assertEquals(driver.id(), results.getFirst().id());
 		assertEquals("Carlos Perez", results.getFirst().name());
 	}
 

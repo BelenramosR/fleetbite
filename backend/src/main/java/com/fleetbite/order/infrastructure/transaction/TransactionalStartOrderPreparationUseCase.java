@@ -1,8 +1,9 @@
 package com.fleetbite.order.infrastructure.transaction;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.dto.OrderResult;
 import com.fleetbite.order.application.port.in.StartOrderPreparationUseCase;
-import com.fleetbite.order.domain.model.OrderId;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
@@ -17,7 +18,7 @@ public class TransactionalStartOrderPreparationUseCase implements StartOrderPrep
 
 	@Override
 	@Transactional
-	public OrderResult execute(OrderId orderId) {
+	public OrderResult execute(UUID orderId) {
 		return delegate.execute(orderId);
 	}
 }

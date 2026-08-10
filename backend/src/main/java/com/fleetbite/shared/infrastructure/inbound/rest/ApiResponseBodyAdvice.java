@@ -32,7 +32,7 @@ public class ApiResponseBodyAdvice implements ResponseBodyAdvice<Object> {
 			return body;
 		}
 		if (body == null) {
-			return null;
+			return ApiResponse.success(null);
 		}
 		return ApiResponse.success(body);
 	}

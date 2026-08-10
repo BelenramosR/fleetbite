@@ -11,8 +11,8 @@ import java.util.UUID;
  */
 public final class OrderHistoryEvent {
 
-	private final OrderHistoryEventId id;
-	private final OrderId orderId;
+	private final UUID id;
+	private final UUID orderId;
 	private final OrderHistoryEventType eventType;
 	private final OrderStatus previousStatus;
 	private final OrderStatus newStatus;
@@ -21,8 +21,8 @@ public final class OrderHistoryEvent {
 	private final OffsetDateTime createdAt;
 
 	private OrderHistoryEvent(
-			OrderHistoryEventId id,
-			OrderId orderId,
+			UUID id,
+			UUID orderId,
 			OrderHistoryEventType eventType,
 			OrderStatus previousStatus,
 			OrderStatus newStatus,
@@ -40,7 +40,7 @@ public final class OrderHistoryEvent {
 	}
 
 	public static OrderHistoryEvent record(
-			OrderId orderId,
+			UUID orderId,
 			OrderHistoryEventType eventType,
 			OrderStatus previousStatus,
 			OrderStatus newStatus,
@@ -50,7 +50,7 @@ public final class OrderHistoryEvent {
 	}
 
 	public static OrderHistoryEvent record(
-			OrderId orderId,
+			UUID orderId,
 			OrderHistoryEventType eventType,
 			OrderStatus previousStatus,
 			OrderStatus newStatus,
@@ -80,7 +80,7 @@ public final class OrderHistoryEvent {
 			}
 		}
 		return new OrderHistoryEvent(
-				OrderHistoryEventId.generate(),
+				UUID.randomUUID(),
 				orderId,
 				eventType,
 				previousStatus,
@@ -91,8 +91,8 @@ public final class OrderHistoryEvent {
 	}
 
 	public static OrderHistoryEvent reconstitute(
-			OrderHistoryEventId id,
-			OrderId orderId,
+			UUID id,
+			UUID orderId,
 			OrderHistoryEventType eventType,
 			OrderStatus previousStatus,
 			OrderStatus newStatus,
@@ -125,11 +125,11 @@ public final class OrderHistoryEvent {
 				createdAt);
 	}
 
-	public OrderHistoryEventId id() {
+	public UUID id() {
 		return id;
 	}
 
-	public OrderId orderId() {
+	public UUID orderId() {
 		return orderId;
 	}
 

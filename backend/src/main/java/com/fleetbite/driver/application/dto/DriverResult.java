@@ -55,10 +55,10 @@ public final class DriverResult {
 		Objects.requireNonNull(fullName, "fullName is required");
 		Double latitude = driver.currentLocation() == null ? null : driver.currentLocation().latitude();
 		Double longitude = driver.currentLocation() == null ? null : driver.currentLocation().longitude();
-		UUID linkedVehicleId = driver.vehicleId() == null ? null : driver.vehicleId().value();
+		UUID linkedVehicleId = driver.vehicleId() == null ? null : driver.vehicleId();
 		return new DriverResult(
-				driver.id().value(),
-				driver.userId().value(),
+				driver.id(),
+				driver.userId(),
 				fullName,
 				driver.phone(),
 				driver.status(),

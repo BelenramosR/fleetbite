@@ -3,7 +3,6 @@ package com.fleetbite.order.infrastructure.inbound.events;
 import com.fleetbite.delivery.application.port.in.AutoAssignOrderUseCase;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.event.OrderReadyEvent;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import org.junit.jupiter.api.Test;
@@ -66,7 +65,7 @@ class OrderReadyEventTransactionIntegrationTest {
 
 	@Test
 	void rollbackBeforeCommit_shouldNotInvokeAutoAssignListener() {
-		OrderId orderId = OrderId.of(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
+		UUID orderId = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
 		OrderReadyEvent event = OrderReadyEvent.of(
 				orderId,
 				BusinessTime.toBusinessTime(java.time.Instant.parse("2026-08-09T03:00:00Z")));
@@ -92,9 +91,9 @@ class OrderReadyEventTransactionIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.status").value("READY"));
 
-		verify(autoAssignOrderUseCase).execute(OrderId.of(orderId));
+		verify(autoAssignOrderUseCase).execute(orderId);
 
-		assertThat(orderRepositoryPort.findById(OrderId.of(orderId)))
+		assertThat(orderRepositoryPort.findById(orderId))
 				.isPresent()
 				.get()
 				.extracting(order -> order.status())

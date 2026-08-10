@@ -53,9 +53,9 @@ public final class AssignmentResult {
 	public static AssignmentResult from(DeliveryAssignment assignment) {
 		Objects.requireNonNull(assignment, "assignment is required");
 		return new AssignmentResult(
-				assignment.id().value(),
-				assignment.orderId().value(),
-				assignment.driverId().value(),
+				assignment.id(),
+				assignment.orderId(),
+				assignment.driverId(),
 				assignment.status(),
 				assignment.assignedAt(),
 				assignment.acceptedAt(),

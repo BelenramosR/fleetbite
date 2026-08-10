@@ -23,7 +23,6 @@ import com.fleetbite.order.domain.model.Money;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.order.domain.model.OrderCode;
 import com.fleetbite.order.domain.model.OrderHistoryEventType;
-import com.fleetbite.order.domain.model.OrderId;
 import com.fleetbite.order.domain.model.OrderStatus;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.model.Location;
@@ -135,7 +134,7 @@ class OrderControllerTest {
 	@Test
 	void updateOrder_shouldReturn200() throws Exception {
 		OrderResult result = sampleResult();
-		when(updateOrderUseCase.execute(eq(OrderId.of(result.id())), any(UpdateOrderCommand.class)))
+		when(updateOrderUseCase.execute(eq(result.id()), any(UpdateOrderCommand.class)))
 				.thenReturn(result);
 
 		mockMvc.perform(put("/api/v1/orders/{id}", result.id())
@@ -170,7 +169,7 @@ class OrderControllerTest {
 	@Test
 	void updateOrder_shouldReturn404WhenMissing() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(updateOrderUseCase.execute(eq(OrderId.of(id)), any(UpdateOrderCommand.class)))
+		when(updateOrderUseCase.execute(eq(id), any(UpdateOrderCommand.class)))
 				.thenThrow(new ResourceNotFoundException("Order", id));
 
 		mockMvc.perform(put("/api/v1/orders/{id}", id)
@@ -183,7 +182,7 @@ class OrderControllerTest {
 	@Test
 	void updateOrder_shouldReturn409WhenNotEditable() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(updateOrderUseCase.execute(eq(OrderId.of(id)), any(UpdateOrderCommand.class)))
+		when(updateOrderUseCase.execute(eq(id), any(UpdateOrderCommand.class)))
 				.thenThrow(new OrderNotEditableException(OrderStatus.PREPARING));
 
 		mockMvc.perform(put("/api/v1/orders/{id}", id)
@@ -196,19 +195,19 @@ class OrderControllerTest {
 	@Test
 	void deleteOrder_shouldReturn204() throws Exception {
 		UUID id = UUID.randomUUID();
-		doNothing().when(deleteOrderUseCase).execute(OrderId.of(id));
+		doNothing().when(deleteOrderUseCase).execute(id);
 
 		mockMvc.perform(delete("/api/v1/orders/{id}", id))
 				.andExpect(status().isNoContent());
 
-		verify(deleteOrderUseCase).execute(OrderId.of(id));
+		verify(deleteOrderUseCase).execute(id);
 	}
 
 	@Test
 	void deleteOrder_shouldReturn404WhenMissing() throws Exception {
 		UUID id = UUID.randomUUID();
 		doThrow(new ResourceNotFoundException("Order", id))
-				.when(deleteOrderUseCase).execute(OrderId.of(id));
+				.when(deleteOrderUseCase).execute(id);
 
 		mockMvc.perform(delete("/api/v1/orders/{id}", id))
 				.andExpect(status().isNotFound())
@@ -219,7 +218,7 @@ class OrderControllerTest {
 	void deleteOrder_shouldReturn409WhenNotDeletable() throws Exception {
 		UUID id = UUID.randomUUID();
 		doThrow(new OrderNotDeletableException(OrderStatus.CONFIRMED))
-				.when(deleteOrderUseCase).execute(OrderId.of(id));
+				.when(deleteOrderUseCase).execute(id);
 
 		mockMvc.perform(delete("/api/v1/orders/{id}", id))
 				.andExpect(status().isConflict())
@@ -241,7 +240,7 @@ class OrderControllerTest {
 	@Test
 	void getOrderById_shouldReturn200WhenFound() throws Exception {
 		OrderResult result = sampleResult();
-		when(getOrderByIdUseCase.execute(OrderId.of(result.id()))).thenReturn(result);
+		when(getOrderByIdUseCase.execute(result.id())).thenReturn(result);
 
 		mockMvc.perform(get("/api/v1/orders/{id}", result.id()))
 				.andExpect(status().isOk())
@@ -251,7 +250,7 @@ class OrderControllerTest {
 	@Test
 	void confirm_shouldReturn200() throws Exception {
 		OrderResult result = sampleResult();
-		when(confirmOrderUseCase.execute(any(OrderId.class))).thenReturn(result);
+		when(confirmOrderUseCase.execute(any(UUID.class))).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/orders/{id}/confirm", result.id()))
 				.andExpect(status().isOk())
@@ -261,7 +260,7 @@ class OrderControllerTest {
 	@Test
 	void confirm_shouldReturn409OnInvalidTransition() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(confirmOrderUseCase.execute(any(OrderId.class)))
+		when(confirmOrderUseCase.execute(any(UUID.class)))
 				.thenThrow(new InvalidOrderTransitionException(OrderStatus.CONFIRMED, OrderStatus.CONFIRMED));
 
 		mockMvc.perform(post("/api/v1/orders/{id}/confirm", id))
@@ -272,7 +271,7 @@ class OrderControllerTest {
 	@Test
 	void ready_shouldReturn200() throws Exception {
 		OrderResult result = sampleResult();
-		when(markOrderReadyUseCase.execute(any(OrderId.class))).thenReturn(result);
+		when(markOrderReadyUseCase.execute(any(UUID.class))).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/orders/{id}/ready", result.id()))
 				.andExpect(status().isOk());
@@ -281,7 +280,7 @@ class OrderControllerTest {
 	@Test
 	void cancel_shouldReturn200WithOptionalReason() throws Exception {
 		OrderResult result = sampleResult();
-		when(cancelOrderUseCase.execute(any(OrderId.class), any(CancelOrderCommand.class))).thenReturn(result);
+		when(cancelOrderUseCase.execute(any(UUID.class), any(CancelOrderCommand.class))).thenReturn(result);
 
 		mockMvc.perform(post("/api/v1/orders/{id}/cancel", result.id())
 						.contentType(MediaType.APPLICATION_JSON)
@@ -294,7 +293,7 @@ class OrderControllerTest {
 	@Test
 	void cancel_shouldReturn400WhenReasonBlank() throws Exception {
 		UUID id = UUID.randomUUID();
-		when(cancelOrderUseCase.execute(any(OrderId.class), any(CancelOrderCommand.class)))
+		when(cancelOrderUseCase.execute(any(UUID.class), any(CancelOrderCommand.class)))
 				.thenThrow(new InvalidOrderDataException("reason must not be blank when provided"));
 
 		mockMvc.perform(post("/api/v1/orders/{id}/cancel", id)
@@ -309,7 +308,7 @@ class OrderControllerTest {
 	@Test
 	void history_shouldReturn200() throws Exception {
 		UUID orderId = UUID.randomUUID();
-		when(getOrderHistoryUseCase.execute(OrderId.of(orderId))).thenReturn(List.of(
+		when(getOrderHistoryUseCase.execute(orderId)).thenReturn(List.of(
 				new OrderHistoryResult(
 						UUID.randomUUID(),
 						OrderHistoryEventType.ORDER_CREATED,
@@ -328,7 +327,7 @@ class OrderControllerTest {
 	@Test
 	void history_shouldReturn404WhenOrderMissing() throws Exception {
 		UUID orderId = UUID.randomUUID();
-		when(getOrderHistoryUseCase.execute(OrderId.of(orderId)))
+		when(getOrderHistoryUseCase.execute(orderId))
 				.thenThrow(new ResourceNotFoundException("Order", orderId));
 
 		mockMvc.perform(get("/api/v1/orders/{id}/history", orderId))
@@ -350,7 +349,7 @@ class OrderControllerTest {
 
 	private static OrderResult sampleResult() {
 		Order order = Order.create(
-				OrderId.generate(),
+				UUID.randomUUID(),
 				OrderCode.of("ORD-2026-ABCDEF12"),
 				"Ana Torres",
 				"999999999",

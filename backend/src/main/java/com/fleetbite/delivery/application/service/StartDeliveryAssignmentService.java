@@ -1,12 +1,13 @@
 package com.fleetbite.delivery.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.application.dto.AssignmentResult;
 import com.fleetbite.delivery.application.port.in.StartDeliveryAssignmentUseCase;
 import com.fleetbite.delivery.application.port.out.DeliveryAssignmentRepositoryPort;
 import com.fleetbite.delivery.domain.exception.InvalidAssignmentTransitionException;
 import com.fleetbite.delivery.domain.model.AssignmentStatus;
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.domain.model.Order;
@@ -38,13 +39,13 @@ public final class StartDeliveryAssignmentService implements StartDeliveryAssign
 	}
 
 	@Override
-	public AssignmentResult execute(DeliveryAssignmentId assignmentId) {
+	public AssignmentResult execute(UUID assignmentId) {
 		Objects.requireNonNull(assignmentId, "assignmentId is required");
 
 		DeliveryAssignment assignment = assignmentRepositoryPort.findById(assignmentId)
-				.orElseThrow(() -> new ResourceNotFoundException("DeliveryAssignment", assignmentId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("DeliveryAssignment", assignmentId));
 		Order order = orderRepositoryPort.findById(assignment.orderId())
-				.orElseThrow(() -> new ResourceNotFoundException("Order", assignment.orderId().value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Order", assignment.orderId()));
 
 		if (assignment.status() != AssignmentStatus.ACCEPTED) {
 			throw new InvalidAssignmentTransitionException(

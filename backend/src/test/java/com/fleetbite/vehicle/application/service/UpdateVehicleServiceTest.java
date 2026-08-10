@@ -1,12 +1,13 @@
 package com.fleetbite.vehicle.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.dto.UpdateVehicleCommand;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.exception.DuplicateVehiclePlateException;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import com.fleetbite.vehicle.domain.model.VehicleType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ class UpdateVehicleServiceTest {
 
 	@Test
 	void execute_shouldUpdateDetails() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		when(vehicleRepositoryPort.findById(vehicle.id())).thenReturn(Optional.of(vehicle));
 		when(vehicleRepositoryPort.existsByPlateAndIdNot("XYZ-999", vehicle.id())).thenReturn(false);
 		when(vehicleRepositoryPort.update(any(Vehicle.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -62,7 +63,7 @@ class UpdateVehicleServiceTest {
 
 	@Test
 	void execute_shouldRejectDuplicatePlate() {
-		Vehicle vehicle = Vehicle.create(VehicleId.generate(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
+		Vehicle vehicle = Vehicle.create(UUID.randomUUID(), "ABC-123", VehicleType.MOTORCYCLE, CREATED);
 		when(vehicleRepositoryPort.findById(vehicle.id())).thenReturn(Optional.of(vehicle));
 		when(vehicleRepositoryPort.existsByPlateAndIdNot("XYZ-999", vehicle.id())).thenReturn(true);
 
@@ -75,7 +76,7 @@ class UpdateVehicleServiceTest {
 
 	@Test
 	void execute_shouldThrowNotFound() {
-		VehicleId id = VehicleId.generate();
+		UUID id = UUID.randomUUID();
 		when(vehicleRepositoryPort.findById(id)).thenReturn(Optional.empty());
 
 		assertThrows(

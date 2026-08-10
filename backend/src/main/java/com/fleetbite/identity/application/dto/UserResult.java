@@ -38,7 +38,7 @@ public final class UserResult {
 	public static UserResult from(User user) {
 		Objects.requireNonNull(user, "user is required");
 		return new UserResult(
-				user.id().value(),
+				user.id(),
 				user.email(),
 				user.fullName(),
 				user.role(),

@@ -1,8 +1,8 @@
 package com.fleetbite.delivery.application.port.out;
 
+import java.util.UUID;
+
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
-import com.fleetbite.delivery.domain.model.DeliveryAssignmentId;
-import com.fleetbite.order.domain.model.OrderId;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,11 +13,11 @@ public interface DeliveryAssignmentRepositoryPort {
 
 	DeliveryAssignment update(DeliveryAssignment assignment);
 
-	Optional<DeliveryAssignment> findById(DeliveryAssignmentId id);
+	Optional<DeliveryAssignment> findById(UUID id);
 
 	List<DeliveryAssignment> findAll();
 
-	boolean existsActiveByOrderId(OrderId orderId);
+	boolean existsActiveByOrderId(UUID orderId);
 
-	Optional<DeliveryAssignment> findActiveByOrderId(OrderId orderId);
+	Optional<DeliveryAssignment> findActiveByOrderId(UUID orderId);
 }

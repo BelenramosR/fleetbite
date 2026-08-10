@@ -1,33 +1,33 @@
 package com.fleetbite.driver.domain.model;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.domain.exception.DriverNotDeletableException;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.driver.domain.exception.InvalidDriverTransitionException;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.shared.domain.model.Location;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public final class Driver {
 
-	private final DriverId id;
-	private final UserId userId;
+	private final UUID id;
+	private final UUID userId;
 	private String phone;
 	private DriverStatus status;
 	private Location currentLocation;
-	private VehicleId vehicleId;
+	private UUID vehicleId;
 	private final OffsetDateTime createdAt;
 	private OffsetDateTime updatedAt;
 
 	private Driver(
-			DriverId id,
-			UserId userId,
+			UUID id,
+			UUID userId,
 			String phone,
 			DriverStatus status,
 			Location currentLocation,
-			VehicleId vehicleId,
+			UUID vehicleId,
 			OffsetDateTime createdAt,
 			OffsetDateTime updatedAt) {
 		this.id = id;
@@ -41,8 +41,8 @@ public final class Driver {
 	}
 
 	public static Driver create(
-			DriverId id,
-			UserId userId,
+			UUID id,
+			UUID userId,
 			String phone,
 			Location currentLocation,
 			OffsetDateTime createdAt) {
@@ -67,12 +67,12 @@ public final class Driver {
 	}
 
 	public static Driver reconstitute(
-			DriverId id,
-			UserId userId,
+			UUID id,
+			UUID userId,
 			String phone,
 			DriverStatus status,
 			Location currentLocation,
-			VehicleId vehicleId,
+			UUID vehicleId,
 			OffsetDateTime createdAt,
 			OffsetDateTime updatedAt) {
 		if (id == null) {
@@ -116,7 +116,7 @@ public final class Driver {
 		this.updatedAt = now;
 	}
 
-	public void assignVehicle(VehicleId vehicleId, OffsetDateTime now) {
+	public void assignVehicle(UUID vehicleId, OffsetDateTime now) {
 		requireTimestamp(now);
 		if (vehicleId == null) {
 			throw new InvalidDriverDataException("vehicleId is required");
@@ -214,11 +214,11 @@ public final class Driver {
 		return phone.trim();
 	}
 
-	public DriverId id() {
+	public UUID id() {
 		return id;
 	}
 
-	public UserId userId() {
+	public UUID userId() {
 		return userId;
 	}
 
@@ -234,7 +234,7 @@ public final class Driver {
 		return currentLocation;
 	}
 
-	public VehicleId vehicleId() {
+	public UUID vehicleId() {
 		return vehicleId;
 	}
 

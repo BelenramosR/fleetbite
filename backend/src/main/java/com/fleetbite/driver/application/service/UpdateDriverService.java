@@ -1,5 +1,7 @@
 package com.fleetbite.driver.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.driver.application.dto.DriverResult;
 import com.fleetbite.driver.application.dto.UpdateDriverCommand;
 import com.fleetbite.driver.application.port.in.UpdateDriverUseCase;
@@ -7,7 +9,6 @@ import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.exception.DuplicateDriverPhoneException;
 import com.fleetbite.driver.domain.exception.InvalidDriverDataException;
 import com.fleetbite.driver.domain.model.Driver;
-import com.fleetbite.driver.domain.model.DriverId;
 import com.fleetbite.identity.application.port.out.UserRepositoryPort;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
@@ -34,12 +35,12 @@ public final class UpdateDriverService implements UpdateDriverUseCase {
 	}
 
 	@Override
-	public DriverResult execute(DriverId driverId, UpdateDriverCommand command) {
+	public DriverResult execute(UUID driverId, UpdateDriverCommand command) {
 		Objects.requireNonNull(driverId, "driverId is required");
 		Objects.requireNonNull(command, "command is required");
 
 		Driver driver = driverRepositoryPort.findById(driverId)
-				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Driver", driverId));
 
 		String phone = requireTrimmed(command.phone(), "phone");
 		if (driverRepositoryPort.existsByPhoneAndIdNot(phone, driverId)) {

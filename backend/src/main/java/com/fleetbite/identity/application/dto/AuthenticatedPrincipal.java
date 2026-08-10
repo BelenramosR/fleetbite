@@ -1,7 +1,8 @@
 package com.fleetbite.identity.application.dto;
 
-import com.fleetbite.identity.domain.model.UserId;
+import java.util.UUID;
+
 import com.fleetbite.identity.domain.model.UserRole;
 
-public record AuthenticatedPrincipal(UserId userId, String email, UserRole role) {
+public record AuthenticatedPrincipal(UUID userId, String email, UserRole role) {
 }

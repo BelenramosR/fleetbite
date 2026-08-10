@@ -1,5 +1,7 @@
 package com.fleetbite.vehicle.application.service;
 
+import java.util.UUID;
+
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.dto.UpdateVehicleCommand;
@@ -9,7 +11,6 @@ import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.exception.DuplicateVehiclePlateException;
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleDataException;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -26,7 +27,7 @@ public final class UpdateVehicleService implements UpdateVehicleUseCase {
 	}
 
 	@Override
-	public VehicleResult execute(VehicleId vehicleId, UpdateVehicleCommand command) {
+	public VehicleResult execute(UUID vehicleId, UpdateVehicleCommand command) {
 		Objects.requireNonNull(vehicleId, "vehicleId is required");
 		Objects.requireNonNull(command, "command is required");
 		if (command.type() == null) {
@@ -34,7 +35,7 @@ public final class UpdateVehicleService implements UpdateVehicleUseCase {
 		}
 
 		Vehicle vehicle = vehicleRepositoryPort.findById(vehicleId)
-				.orElseThrow(() -> new ResourceNotFoundException("Vehicle", vehicleId.value()));
+				.orElseThrow(() -> new ResourceNotFoundException("Vehicle", vehicleId));
 
 		String plate = requireTrimmed(command.plate(), "plate");
 		if (vehicleRepositoryPort.existsByPlateAndIdNot(plate, vehicleId)) {

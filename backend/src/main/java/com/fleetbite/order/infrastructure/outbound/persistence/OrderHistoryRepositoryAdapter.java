@@ -1,8 +1,9 @@
 package com.fleetbite.order.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.order.application.port.out.OrderHistoryRepositoryPort;
 import com.fleetbite.order.domain.model.OrderHistoryEvent;
-import com.fleetbite.order.domain.model.OrderId;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -28,9 +29,9 @@ public class OrderHistoryRepositoryAdapter implements OrderHistoryRepositoryPort
 	}
 
 	@Override
-	public List<OrderHistoryEvent> findByOrderId(OrderId orderId) {
+	public List<OrderHistoryEvent> findByOrderId(UUID orderId) {
 		Objects.requireNonNull(orderId, "orderId is required");
-		return springDataOrderHistoryRepository.findByOrderIdOrderByCreatedAtAsc(orderId.value()).stream()
+		return springDataOrderHistoryRepository.findByOrderIdOrderByCreatedAtAsc(orderId).stream()
 				.map(orderHistoryPersistenceMapper::toDomain)
 				.toList();
 	}

@@ -1,7 +1,8 @@
 package com.fleetbite.vehicle.application.port.out;
 
+import java.util.UUID;
+
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,13 +13,13 @@ public interface VehicleRepositoryPort {
 
 	Vehicle update(Vehicle vehicle);
 
-	Optional<Vehicle> findById(VehicleId id);
+	Optional<Vehicle> findById(UUID id);
 
 	List<Vehicle> findAll();
 
-	void deleteById(VehicleId id);
+	void deleteById(UUID id);
 
 	boolean existsByPlate(String plate);
 
-	boolean existsByPlateAndIdNot(String plate, VehicleId id);
+	boolean existsByPlateAndIdNot(String plate, UUID id);
 }

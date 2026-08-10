@@ -1,8 +1,9 @@
 package com.fleetbite.vehicle.application.port.in;
 
-import com.fleetbite.vehicle.domain.model.VehicleId;
+import java.util.UUID;
+
 
 public interface DeleteVehicleUseCase {
 
-	void execute(VehicleId vehicleId);
+	void execute(UUID vehicleId);
 }

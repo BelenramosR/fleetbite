@@ -3,7 +3,6 @@ package com.fleetbite.identity.infrastructure.outbound.security;
 import com.fleetbite.identity.application.dto.AuthenticatedPrincipal;
 import com.fleetbite.identity.application.port.out.TokenProviderPort;
 import com.fleetbite.identity.domain.exception.AuthenticationFailedException;
-import com.fleetbite.identity.domain.model.UserId;
 import com.fleetbite.identity.domain.model.UserRole;
 import com.fleetbite.identity.infrastructure.jwt.JwtProperties;
 import io.jsonwebtoken.Claims;
@@ -39,7 +38,7 @@ public class JwtTokenProvider implements TokenProviderPort {
 	}
 
 	@Override
-	public String generate(UserId userId, String email, UserRole role) {
+	public String generate(UUID userId, String email, UserRole role) {
 		Objects.requireNonNull(userId, "userId is required");
 		Objects.requireNonNull(email, "email is required");
 		Objects.requireNonNull(role, "role is required");
@@ -48,7 +47,7 @@ public class JwtTokenProvider implements TokenProviderPort {
 		Instant expiresAt = now.plusSeconds(jwtProperties.getExpirationSeconds());
 
 		return Jwts.builder()
-				.subject(userId.value().toString())
+				.subject(userId.toString())
 				.claim("email", email)
 				.claim("role", role.name())
 				.issuedAt(Date.from(now))
@@ -73,7 +72,7 @@ public class JwtTokenProvider implements TokenProviderPort {
 			if (email == null || roleName == null) {
 				throw new AuthenticationFailedException();
 			}
-			return new AuthenticatedPrincipal(UserId.of(userId), email, UserRole.valueOf(roleName));
+			return new AuthenticatedPrincipal(userId, email, UserRole.valueOf(roleName));
 		}
 		catch (IllegalArgumentException | JwtException exception) {
 			throw new AuthenticationFailedException();

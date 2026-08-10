@@ -1,5 +1,7 @@
 package com.fleetbite.identity.domain.model;
 
+import java.util.UUID;
+
 import com.fleetbite.identity.domain.exception.InvalidUserDataException;
 import com.fleetbite.identity.domain.exception.UserInactiveException;
 
@@ -12,7 +14,7 @@ public final class User {
 
 	private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
-	private final UserId id;
+	private final UUID id;
 	private final String email;
 	private String passwordHash;
 	private String fullName;
@@ -22,7 +24,7 @@ public final class User {
 	private OffsetDateTime updatedAt;
 
 	private User(
-			UserId id,
+			UUID id,
 			String email,
 			String passwordHash,
 			String fullName,
@@ -41,7 +43,7 @@ public final class User {
 	}
 
 	public static User create(
-			UserId id,
+			UUID id,
 			String email,
 			String passwordHash,
 			String fullName,
@@ -68,7 +70,7 @@ public final class User {
 	}
 
 	public static User reconstitute(
-			UserId id,
+			UUID id,
 			String email,
 			String passwordHash,
 			String fullName,
@@ -158,7 +160,7 @@ public final class User {
 		return value.trim();
 	}
 
-	public UserId id() {
+	public UUID id() {
 		return id;
 	}
 

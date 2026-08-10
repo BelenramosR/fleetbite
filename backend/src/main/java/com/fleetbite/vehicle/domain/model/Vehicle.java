@@ -1,5 +1,7 @@
 package com.fleetbite.vehicle.domain.model;
 
+import java.util.UUID;
+
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleDataException;
 import com.fleetbite.vehicle.domain.exception.InvalidVehicleTransitionException;
 import com.fleetbite.vehicle.domain.exception.VehicleNotAssignableException;
@@ -10,7 +12,7 @@ import java.util.Objects;
 
 public final class Vehicle {
 
-	private final VehicleId id;
+	private final UUID id;
 	private String plate;
 	private VehicleType type;
 	private VehicleStatus status;
@@ -18,7 +20,7 @@ public final class Vehicle {
 	private OffsetDateTime updatedAt;
 
 	private Vehicle(
-			VehicleId id,
+			UUID id,
 			String plate,
 			VehicleType type,
 			VehicleStatus status,
@@ -33,7 +35,7 @@ public final class Vehicle {
 	}
 
 	public static Vehicle create(
-			VehicleId id,
+			UUID id,
 			String plate,
 			VehicleType type,
 			OffsetDateTime createdAt) {
@@ -56,7 +58,7 @@ public final class Vehicle {
 	}
 
 	public static Vehicle reconstitute(
-			VehicleId id,
+			UUID id,
 			String plate,
 			VehicleType type,
 			VehicleStatus status,
@@ -175,7 +177,7 @@ public final class Vehicle {
 		return value.trim();
 	}
 
-	public VehicleId id() {
+	public UUID id() {
 		return id;
 	}
 

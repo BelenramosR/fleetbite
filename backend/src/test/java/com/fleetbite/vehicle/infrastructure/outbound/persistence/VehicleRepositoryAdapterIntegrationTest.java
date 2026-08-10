@@ -1,9 +1,10 @@
 package com.fleetbite.vehicle.infrastructure.outbound.persistence;
 
+import java.util.UUID;
+
 import com.fleetbite.shared.domain.time.BusinessTime;
 import com.fleetbite.vehicle.application.port.out.VehicleRepositoryPort;
 import com.fleetbite.vehicle.domain.model.Vehicle;
-import com.fleetbite.vehicle.domain.model.VehicleId;
 import com.fleetbite.vehicle.domain.model.VehicleStatus;
 import com.fleetbite.vehicle.domain.model.VehicleType;
 import org.junit.jupiter.api.Test;
@@ -62,14 +63,14 @@ class VehicleRepositoryAdapterIntegrationTest {
 
 	@Test
 	void findById_shouldReturnEmptyWhenMissing() {
-		assertTrue(vehicleRepositoryPort.findById(VehicleId.generate()).isEmpty());
+		assertTrue(vehicleRepositoryPort.findById(UUID.randomUUID()).isEmpty());
 	}
 
 	@Test
 	void findAll_shouldReturnVehiclesOrderedByCreatedAt() {
 		Vehicle first = vehicleRepositoryPort.save(sampleVehicle("AAA-111"));
 		Vehicle second = Vehicle.create(
-				VehicleId.generate(),
+				UUID.randomUUID(),
 				"BBB-222",
 				VehicleType.CAR,
 				CREATED_AT.plusMinutes(1));
@@ -85,14 +86,14 @@ class VehicleRepositoryAdapterIntegrationTest {
 	@Test
 	void update_shouldModifyExistingRowAndIncrementVersion() {
 		Vehicle saved = vehicleRepositoryPort.save(sampleVehicle("CCC-333"));
-		Long versionBefore = springDataVehicleRepository.findById(saved.id().value()).orElseThrow().getVersion();
+		Long versionBefore = springDataVehicleRepository.findById(saved.id()).orElseThrow().getVersion();
 
 		saved.sendToMaintenance(CREATED_AT.plusMinutes(5));
 		Vehicle updated = vehicleRepositoryPort.update(saved);
 
 		assertEquals(VehicleStatus.MAINTENANCE, updated.status());
 		assertEquals(1, springDataVehicleRepository.count());
-		Long versionAfter = springDataVehicleRepository.findById(saved.id().value()).orElseThrow().getVersion();
+		Long versionAfter = springDataVehicleRepository.findById(saved.id()).orElseThrow().getVersion();
 		assertEquals(versionBefore + 1, versionAfter);
 	}
 
@@ -125,6 +126,6 @@ class VehicleRepositoryAdapterIntegrationTest {
 	}
 
 	private static Vehicle sampleVehicle(String plate) {
-		return Vehicle.create(VehicleId.generate(), plate, VehicleType.MOTORCYCLE, CREATED_AT);
+		return Vehicle.create(UUID.randomUUID(), plate, VehicleType.MOTORCYCLE, CREATED_AT);
 	}
 }
