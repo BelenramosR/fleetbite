@@ -1,124 +1,128 @@
 # FleetBite
 
-Monorepo del core transaccional (backend Java 21 / Spring Boot + PostgreSQL 17).
+FleetBite es una aplicación para gestionar pedidos, repartidores, asignaciones y vehículos.
+El repositorio contiene:
+
+- backend: Java 21, Spring Boot y PostgreSQL 17;
+- frontend: React, TypeScript y Vite;
+- arquitectura hexagonal organizada por módulos funcionales.
+
+Este README corresponde a la ejecución local de la rama `main`.
 
 ## Requisitos
 
-- Docker Desktop
-- JDK 21 (solo para ejecución local con Maven / tests)
+- Docker Desktop;
+- Node.js 22;
+- pnpm 10, incluido mediante Corepack;
+- JDK 21 únicamente si se ejecutará el backend con Maven.
 
----
+## Inicio rápido local
 
-## Running with Docker (recomendado)
+### 1. Configurar las variables del backend
 
-Levanta **backend + PostgreSQL** de forma reproducible.
-
-### 1. Variables de entorno
-
-```powershell
-copy .env.example .env
-```
-
-Edita `.env` y cambia al menos:
-
-- `POSTGRES_PASSWORD` / `SPRING_DATASOURCE_PASSWORD`
-- `JWT_SECRET` (≥ 256 bits recomendado)
-
-No subas `.env` al repositorio (está en `.gitignore`).
-
-### 2. Arrancar
-
-Desde la raíz del repo:
+Desde la raíz del repositorio:
 
 ```powershell
-docker compose up --build
+Copy-Item .env.example .env
 ```
 
-En segundo plano:
+Edita `.env` y reemplaza, como mínimo:
+
+```env
+POSTGRES_PASSWORD=una-clave-local
+SPRING_DATASOURCE_PASSWORD=una-clave-local
+JWT_SECRET=un-secreto-aleatorio-de-al-menos-32-bytes
+```
+
+Las dos contraseñas de PostgreSQL deben coincidir. Para generar un secreto JWT local seguro
+desde PowerShell:
+
+```powershell
+[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+```
+
+No subas `.env` al repositorio.
+
+### 2. Levantar PostgreSQL y el backend
+
+Desde la raíz:
 
 ```powershell
 docker compose up --build -d
 ```
 
-### 3. URLs
-
-| Recurso   | URL                                              |
-|-----------|--------------------------------------------------|
-| Health    | http://localhost:8080/actuator/health            |
-| Swagger   | http://localhost:8080/swagger-ui/index.html      |
-| OpenAPI   | http://localhost:8080/v3/api-docs                |
-| API       | http://localhost:8080/api/v1                     |
-
-Postgres queda en `localhost:5432` (útil para DBeaver/psql en desarrollo).
-
-Dentro de Docker, el backend usa el hostname `postgres` (no `localhost`).
-
-### 4. Comandos útiles
+Comprueba el estado:
 
 ```powershell
-docker compose logs -f backend
-docker compose logs -f postgres
 docker compose ps
-docker compose down
-docker compose down -v
+docker compose logs -f backend
 ```
 
-- `docker compose down` — detiene contenedores y **conserva** el volumen `fleetbite_postgres_data`.
-- `docker compose down -v` — detiene y **elimina** el volumen (reset total de BD).
+### 3. Levantar el frontend
 
-Flyway aplica V1–V10 al iniciar el backend; no hace falta ejecutar SQL manual.
-
-### 5. Nota para un futuro EC2
-
-El mismo Compose puede reutilizarse con secrets por env. En ese escenario PostgreSQL **no** debería exponerse públicamente; el backend quedaría detrás de reverse proxy / HTTPS. (No implementado en esta fase.)
-
----
-
-## Ejecución local (sin contenedor backend)
-
-Útil para desarrollo rápido del código Java.
-
-### 1. Solo PostgreSQL
+En otra terminal:
 
 ```powershell
-docker compose up -d postgres
+cd frontend
+corepack enable
+pnpm install
+pnpm dev
 ```
 
-Credenciales por defecto del `.env` / compose (DB/user `fleetbite`).
+Abre la aplicación en:
 
-### 2. Backend con Maven
+```text
+http://localhost:8443
+```
+
+En desarrollo, el frontend solicita rutas como `/api/v1/orders`. Vite redirige automáticamente
+esas llamadas al backend local:
+
+```text
+React en http://localhost:8443
+        -> /api/v1
+Proxy de Vite
+        -> http://localhost:8080/api/v1
+```
+
+Por eso no es necesario colocar manualmente la URL del backend para trabajar en local. Para
+usar otro backend durante el desarrollo se puede definir antes de ejecutar Vite:
 
 ```powershell
-cd backend
-.\mvnw.cmd spring-boot:run
+$env:VITE_BACKEND_PROXY_TARGET="http://localhost:8080"
+pnpm dev
 ```
 
-Usa `application.yaml` con `jdbc:postgresql://localhost:5432/fleetbite`.
+## URLs locales
 
-### 3. Tests
+| Recurso | URL |
+|---|---|
+| Frontend | http://localhost:8443 |
+| Backend | http://localhost:8080 |
+| API REST | http://localhost:8080/api/v1 |
+| Health | http://localhost:8080/actuator/health |
+| Swagger UI | http://localhost:8080/swagger-ui/index.html |
+| OpenAPI | http://localhost:8080/v3/api-docs |
+| PostgreSQL | `127.0.0.1:5432` |
 
-```powershell
-cd backend
-.\mvnw.cmd clean test
-```
+## Autenticación JWT
 
-Incluye `HexagonalArchitectureTest` (jMolecules + ArchUnit): verifica estereotipos hexagonales y que `domain` / `application` no dependan de `infrastructure` ni de Spring.
+### Qué se corrigió
 
----
+El backend ya no contiene un secreto JWT público de respaldo. `JWT_SECRET` es obligatorio y
+debe tener al menos 32 caracteres. Si no está definido o es demasiado corto, Spring Boot no
+inicia. Esto evita que una instalación olvidada pueda firmar tokens con una clave conocida.
 
-## Usuarios seed (login)
+El secreto se utiliza únicamente para firmar y verificar access tokens. No se devuelve al
+frontend, no debe escribirse en Git y debe ser distinto en cada ambiente.
 
-Password de todos: `Fleetbite1!`
+### Inicio de sesión
 
-| Email                        | Rol                  |
-|------------------------------|----------------------|
-| `admin@fleetbite.local`      | ADMIN                |
-| `dispatcher@fleetbite.local` | DISPATCHER           |
-| `operator@fleetbite.local`   | RESTAURANT_OPERATOR  |
-| `driver@fleetbite.local`     | DRIVER               |
+El cliente envía correo y contraseña:
 
 ```http
 POST /api/v1/auth/login
+Content-Type: application/json
 ```
 
 ```json
@@ -128,11 +132,113 @@ POST /api/v1/auth/login
 }
 ```
 
----
+Si las credenciales son correctas, el backend devuelve:
 
-## Si Flyway falla por datos viejos
+- un access token JWT;
+- su tiempo de expiración;
+- un refresh token opaco.
+
+El JWT incluye la identidad y el rol del usuario. Spring Security verifica su firma y
+expiración en cada endpoint protegido, carga la autenticación y aplica los permisos del rol.
+
+### Uso desde el frontend
+
+La implementación actual guarda ambos tokens en `localStorage`. En cada solicitud protegida
+envía:
+
+```http
+Authorization: Bearer <access-token>
+```
+
+No se utilizan cookies de sesión en esta versión. HTTPS protege los tokens durante el
+transporte en un despliegue público, pero no convierte `localStorage` en una cookie HttpOnly.
+
+### Expiración, renovación y cierre de sesión
+
+Los valores predeterminados son:
+
+```env
+JWT_EXPIRATION=3600
+JWT_REFRESH_EXPIRATION=604800
+```
+
+- El access token dura 3600 segundos, es decir, una hora.
+- El refresh token dura 604800 segundos, es decir, siete días.
+- El backend guarda solamente el hash SHA-256 del refresh token en PostgreSQL.
+- Cuando el access token vence, el frontend llama a `/auth/refresh`.
+- El refresh token anterior se revoca y el backend entrega un par nuevo: existe rotación.
+- Al cerrar sesión, `/auth/logout` revoca el refresh token.
+- Un usuario inactivo no puede renovar su sesión.
+
+El endpoint de login también cuenta con un límite configurable por IP:
+
+```env
+LOGIN_RATE_LIMIT_MAX_ATTEMPTS=10
+LOGIN_RATE_LIMIT_WINDOW_SECONDS=60
+```
+
+## Usuarios iniciales
+
+Todos utilizan temporalmente la contraseña `Fleetbite1!` para la demostración local.
+
+| Correo | Rol |
+|---|---|
+| `admin@fleetbite.local` | `ADMIN` |
+| `dispatcher@fleetbite.local` | `DISPATCHER` |
+| `operator@fleetbite.local` | `RESTAURANT_OPERATOR` |
+| `driver@fleetbite.local` | `DRIVER` |
+
+Estas credenciales son datos de desarrollo y no deben reutilizarse en un sistema productivo.
+
+## Backend local sin contenedor
+
+Se puede contenerizar solamente PostgreSQL:
+
+```powershell
+docker compose up -d postgres
+cd backend
+$env:JWT_SECRET="coloca-aqui-un-secreto-local-de-al-menos-32-caracteres"
+.\mvnw.cmd spring-boot:run
+```
+
+En este modo el backend usa `jdbc:postgresql://localhost:5432/fleetbite`.
+
+## Pruebas y compilación
+
+Backend:
+
+```powershell
+cd backend
+.\mvnw.cmd clean verify
+```
+
+Este comando ejecuta las pruebas unitarias, de integración, arquitectura hexagonal y la
+verificación de cobertura JaCoCo.
+
+Frontend:
+
+```powershell
+cd frontend
+pnpm build
+```
+
+## Datos y contenedores
+
+```powershell
+docker compose logs -f backend
+docker compose logs -f postgres
+docker compose down
+```
+
+`docker compose down` conserva los datos porque PostgreSQL utiliza el volumen
+`fleetbite_postgres_data`.
+
+Para reiniciar completamente la base de datos local:
 
 ```powershell
 docker compose down -v
-docker compose up --build
+docker compose up --build -d
 ```
+
+El segundo comando elimina previamente el volumen, por lo que borra los datos locales. Flyway
+reconstruye el esquema y vuelve a cargar los datos iniciales al arrancar.
