@@ -21,6 +21,8 @@ export interface Order {
   customerName: string;
   customerPhone: string;
   deliveryAddress: string;
+  deliveryLatitude: number;
+  deliveryLongitude: number;
   totalAmount: number;
   /** Legacy / otras pantallas; en Pedidos la prioridad se deriva del SLA. */
   priority: OrderPriority;

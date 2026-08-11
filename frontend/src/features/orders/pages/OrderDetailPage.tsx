@@ -64,6 +64,7 @@ const CARD =
 
 const EMPTY_ORDER: Order = {
   id: "", code: "", customerName: "", customerPhone: "", deliveryAddress: "",
+  deliveryLatitude: 0, deliveryLongitude: 0,
   totalAmount: 0, priority: "NORMAL", status: "CREATED", slaStatus: "ON_TIME",
   slaMinutesRemaining: 0, promisedDeliveryAt: "", createdAt: "",
 };
@@ -504,6 +505,8 @@ export default function OrderDetailPage({ orderId, onBack }: Props) {
           <div className="col-span-1 md:col-span-2 xl:col-span-5 xl:row-span-2 order-4 md:order-4 xl:order-2 min-h-[320px] xl:min-h-0">
             <DeliveryMapPreview
               deliveryAddress={order.deliveryAddress}
+              deliveryLatitude={order.deliveryLatitude}
+              deliveryLongitude={order.deliveryLongitude}
               status={order.status}
               driverName={order.driverName}
               fill

@@ -30,7 +30,8 @@ function mapOrder(o: OrderResponse): Order {
   const slaStatus: SlaStatus = minutes < 0 ? "BREACHED" : minutes <= 20 ? "AT_RISK" : "ON_TIME";
   return {
     id: o.id, code: o.code, customerName: o.customerName, customerPhone: o.customerPhone,
-    deliveryAddress: o.deliveryAddress, totalAmount: Number(o.totalAmount), priority: o.priority,
+    deliveryAddress: o.deliveryAddress, deliveryLatitude: o.deliveryLatitude,
+    deliveryLongitude: o.deliveryLongitude, totalAmount: Number(o.totalAmount), priority: o.priority,
     status: o.status, slaStatus, slaMinutesRemaining: minutes,
     promisedDeliveryAt: o.promisedDeliveryAt, createdAt: o.createdAt,
     deliveredAt: o.deliveredAt ?? undefined,

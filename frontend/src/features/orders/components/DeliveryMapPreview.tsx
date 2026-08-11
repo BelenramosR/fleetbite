@@ -4,7 +4,6 @@ import L from "leaflet";
 import { Bike, ExternalLink, MapPin, Store } from "lucide-react";
 import {
   RESTAURANT,
-  coordsForAddress,
   haversineKm,
   googleDirectionsUrl,
 } from "@/shared/constants";
@@ -65,6 +64,8 @@ function FitBounds({ points }: { points: [number, number][] }) {
 
 interface DeliveryMapPreviewProps {
   deliveryAddress: string;
+  deliveryLatitude: number;
+  deliveryLongitude: number;
   status?: OrderStatus;
   driverName?: string;
   /** Rellena la celda del bento (altura flexible). */
@@ -74,19 +75,24 @@ interface DeliveryMapPreviewProps {
 
 export default function DeliveryMapPreview({
   deliveryAddress,
+  deliveryLatitude,
+  deliveryLongitude,
   status,
   driverName,
   fill = false,
   className = "",
 }: DeliveryMapPreviewProps) {
-  const delivery = useMemo(() => coordsForAddress(deliveryAddress), [deliveryAddress]);
+  const delivery = useMemo<[number, number]>(
+    () => [deliveryLatitude, deliveryLongitude],
+    [deliveryLatitude, deliveryLongitude],
+  );
   const restaurant: [number, number] = [RESTAURANT.lat, RESTAURANT.lng];
   const distanceKm = haversineKm(
     { lat: RESTAURANT.lat, lng: RESTAURANT.lng },
     { lat: delivery[0], lng: delivery[1] },
   );
   const etaMin = Math.max(8, Math.round((distanceKm / 22) * 60));
-  const directionsUrl = googleDirectionsUrl(deliveryAddress);
+  const directionsUrl = googleDirectionsUrl(`${deliveryLatitude},${deliveryLongitude}`);
 
   const progress = status ? driverProgress(status) : null;
   const showDriver = progress !== null && Boolean(driverName);
