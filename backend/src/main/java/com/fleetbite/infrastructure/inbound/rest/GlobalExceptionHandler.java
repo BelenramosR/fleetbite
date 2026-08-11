@@ -32,6 +32,8 @@ import com.fleetbite.vehicle.domain.exception.VehicleNotAssignableException;
 import com.fleetbite.vehicle.domain.exception.VehicleNotDeletableException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -46,6 +48,7 @@ import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ApiResponse<Void>> handleValidation(
@@ -74,6 +77,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiResponse<Void>> handleAuthenticationFailed(
 			AuthenticationFailedException exception,
 			HttpServletRequest request) {
+		log.warn("Authentication failed from client {}", request.getRemoteAddr());
 		return build(HttpStatus.UNAUTHORIZED, exception.getCode(), exception.getMessage());
 	}
 
@@ -116,6 +120,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiResponse<Void>> handleOptimisticLock(
 			OptimisticLockingFailureException exception,
 			HttpServletRequest request) {
+		log.warn("Optimistic locking conflict on {} {}", request.getMethod(), request.getRequestURI());
 		return build(
 				HttpStatus.CONFLICT,
 				"OPTIMISTIC_LOCK_CONFLICT",
@@ -171,6 +176,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiResponse<Void>> handleUnexpected(
 			Exception exception,
 			HttpServletRequest request) {
+		log.error("Unexpected error handling {} {}", request.getMethod(), request.getRequestURI(), exception);
 		return build(
 				HttpStatus.INTERNAL_SERVER_ERROR,
 				"INTERNAL_ERROR",

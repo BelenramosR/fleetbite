@@ -99,7 +99,7 @@ class OrderControllerTest {
 
 	@Test
 	void listOrders_shouldReturn200WithItems() throws Exception {
-		when(orderQueryUseCase.findAll()).thenReturn(List.of(sampleResult()));
+		when(orderQueryUseCase.findPage(0, 100)).thenReturn(List.of(sampleResult()));
 
 		mockMvc.perform(get("/api/v1/orders"))
 				.andExpect(status().isOk())
@@ -109,7 +109,7 @@ class OrderControllerTest {
 
 	@Test
 	void listOrders_shouldReturnEmptyArray() throws Exception {
-		when(orderQueryUseCase.findAll()).thenReturn(List.of());
+		when(orderQueryUseCase.findPage(0, 100)).thenReturn(List.of());
 
 		mockMvc.perform(get("/api/v1/orders"))
 				.andExpect(status().isOk())

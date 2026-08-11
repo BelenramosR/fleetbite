@@ -10,7 +10,7 @@ public interface OrderQueryUseCase {
 
 	OrderResult getById(UUID orderId);
 
-	List<OrderResult> findAll();
+	List<OrderResult> findPage(int page, int size);
 
 	List<OrderHistoryResult> getHistory(UUID orderId);
 }

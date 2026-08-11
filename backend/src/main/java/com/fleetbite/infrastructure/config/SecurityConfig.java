@@ -2,12 +2,14 @@ package com.fleetbite.infrastructure.config;
 
 import com.fleetbite.identity.application.port.out.TokenProviderPort;
 import com.fleetbite.identity.infrastructure.security.JwtAuthenticationFilter;
+import com.fleetbite.identity.infrastructure.security.LoginRateLimitFilter;
 import com.fleetbite.identity.infrastructure.jwt.JwtProperties;
 import com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -18,7 +20,13 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.util.List;
+import java.time.Clock;
 
 @Configuration
 @EnableConfigurationProperties(JwtProperties.class)
@@ -31,11 +39,23 @@ public class SecurityConfig {
 	}
 
 	@Bean
+	LoginRateLimitFilter loginRateLimitFilter(
+			JsonMapper jsonMapper,
+			Clock clock,
+			@Value("${fleetbite.security.login-rate-limit.max-attempts:10}") int maxAttempts,
+			@Value("${fleetbite.security.login-rate-limit.window-seconds:60}") long windowSeconds) {
+		return new LoginRateLimitFilter(jsonMapper, clock, maxAttempts, windowSeconds);
+	}
+
+	@Bean
 	SecurityFilterChain securityFilterChain(
 			HttpSecurity http,
 			JwtAuthenticationFilter jwtAuthenticationFilter,
-			JsonMapper jsonMapper) throws Exception {
+			LoginRateLimitFilter loginRateLimitFilter,
+			JsonMapper jsonMapper,
+			CorsConfigurationSource corsConfigurationSource) throws Exception {
 		http
+				.cors(cors -> cors.configurationSource(corsConfigurationSource))
 				.csrf(AbstractHttpConfigurer::disable)
 				.httpBasic(AbstractHttpConfigurer::disable)
 				.formLogin(AbstractHttpConfigurer::disable)
@@ -62,8 +82,25 @@ public class SecurityConfig {
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint(authenticationEntryPoint(jsonMapper))
 						.accessDeniedHandler(accessDeniedHandler(jsonMapper)))
+				.addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
+	}
+
+	@Bean
+	CorsConfigurationSource corsConfigurationSource(
+			@Value("${fleetbite.security.cors.allowed-origin}") String allowedOrigin) {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOrigins(List.of(allowedOrigin));
+		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+		configuration.setExposedHeaders(List.of("Location"));
+		configuration.setAllowCredentials(false);
+		configuration.setMaxAge(3600L);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/api/**", configuration);
+		return source;
 	}
 
 	private AuthenticationEntryPoint authenticationEntryPoint(JsonMapper jsonMapper) {

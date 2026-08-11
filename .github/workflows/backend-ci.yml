@@ -1,0 +1,46 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, deploy]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Verify tests, architecture and coverage
+        working-directory: backend
+        env:
+          JWT_SECRET: fleetbite-ci-only-jwt-secret-at-least-32-bytes
+        run: ./mvnw --batch-mode --no-transfer-progress clean verify
+
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco
+          if-no-files-found: ignore

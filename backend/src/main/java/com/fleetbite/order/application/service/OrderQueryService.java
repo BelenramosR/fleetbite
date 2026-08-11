@@ -32,8 +32,14 @@ public final class OrderQueryService implements OrderQueryUseCase {
 	}
 
 	@Override
-	public List<OrderResult> findAll() {
-		return orderRepositoryPort.findAll().stream()
+	public List<OrderResult> findPage(int page, int size) {
+		if (page < 0) {
+			throw new IllegalArgumentException("page must be zero or greater");
+		}
+		if (size < 1 || size > 100) {
+			throw new IllegalArgumentException("size must be between 1 and 100");
+		}
+		return orderRepositoryPort.findPage(page, size).stream()
 				.map(OrderResult::from)
 				.toList();
 	}

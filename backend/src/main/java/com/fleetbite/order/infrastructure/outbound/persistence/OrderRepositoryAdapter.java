@@ -6,6 +6,7 @@ import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.domain.model.Order;
 import com.fleetbite.shared.application.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -58,8 +59,9 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
 	}
 
 	@Override
-	public List<Order> findAll() {
-		return springDataOrderRepository.findAll(Sort.by(Sort.Direction.ASC, "createdAt")).stream()
+	public List<Order> findPage(int page, int size) {
+		return springDataOrderRepository.findAll(
+				PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))).stream()
 				.map(orderPersistenceMapper::toDomain)
 				.toList();
 	}

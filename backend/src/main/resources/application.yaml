@@ -20,6 +20,9 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+server:
+  forward-headers-strategy: framework
+
 management:
   endpoints:
     web:
@@ -34,8 +37,19 @@ fleetbite:
       longitude: ${RESTAURANT_LONGITUDE:-76.9737017}
   security:
     jwt:
-      secret: ${JWT_SECRET:local-dev-only-fleetbite-jwt-secret-32b}
+      secret: ${JWT_SECRET}
       # Access JWT lifetime (seconds)
       expiration-seconds: ${JWT_EXPIRATION:3600}
       # Opaque refresh token lifetime (seconds); default 7 days
       refresh-expiration-seconds: ${JWT_REFRESH_EXPIRATION:604800}
+    cors:
+      allowed-origin: ${FRONTEND_ALLOWED_ORIGIN:http://localhost:8443}
+    login-rate-limit:
+      max-attempts: ${LOGIN_RATE_LIMIT_MAX_ATTEMPTS:10}
+      window-seconds: ${LOGIN_RATE_LIMIT_WINDOW_SECONDS:60}
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}

@@ -1,0 +1,15 @@
+fleetbite:
+  security:
+    jwt:
+      secret: fleetbite-test-only-jwt-secret-at-least-32-bytes
+    cors:
+      allowed-origin: http://localhost:8443
+    login-rate-limit:
+      max-attempts: 1000
+      window-seconds: 60
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

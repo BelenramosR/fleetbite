@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -75,8 +76,10 @@ public class OrderController {
 			@ApiResponse(responseCode = "403", description = "Forbidden",
 					content = @Content(schema = @Schema(implementation = com.fleetbite.shared.infrastructure.inbound.rest.ApiResponse.class)))
 	})
-	public List<OrderResponse> listOrders() {
-		return orderQueryUseCase.findAll().stream()
+	public List<OrderResponse> listOrders(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "100") int size) {
+		return orderQueryUseCase.findPage(page, size).stream()
 				.map(orderHttpMapper::toResponse)
 				.toList();
 	}

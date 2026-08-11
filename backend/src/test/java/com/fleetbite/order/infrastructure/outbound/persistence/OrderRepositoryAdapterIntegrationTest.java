@@ -84,11 +84,11 @@ class OrderRepositoryAdapterIntegrationTest {
 				PROMISED_AT.plusMinutes(1));
 		orderRepositoryPort.save(second);
 
-		List<Order> all = orderRepositoryPort.findAll();
+		List<Order> all = orderRepositoryPort.findPage(0, 100);
 
 		assertEquals(2, all.size());
-		assertEquals(first.id(), all.get(0).id());
-		assertEquals(second.id(), all.get(1).id());
+		assertEquals(second.id(), all.get(0).id());
+		assertEquals(first.id(), all.get(1).id());
 	}
 
 	@Test

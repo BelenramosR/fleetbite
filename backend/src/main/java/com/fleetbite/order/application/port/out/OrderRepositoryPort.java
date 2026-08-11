@@ -21,7 +21,7 @@ public interface OrderRepositoryPort {
 
 	Optional<Order> findById(UUID id);
 
-	List<Order> findAll();
+	List<Order> findPage(int page, int size);
 
 	void deleteById(UUID id);
 }

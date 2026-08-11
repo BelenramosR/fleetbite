@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - fleetbite_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -34,6 +34,10 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800}
+      FRONTEND_ALLOWED_ORIGIN: ${FRONTEND_ALLOWED_ORIGIN:-http://localhost:8443}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      LOGIN_RATE_LIMIT_MAX_ATTEMPTS: ${LOGIN_RATE_LIMIT_MAX_ATTEMPTS:-10}
+      LOGIN_RATE_LIMIT_WINDOW_SECONDS: ${LOGIN_RATE_LIMIT_WINDOW_SECONDS:-60}
     ports:
       - "8080:8080"
     networks:

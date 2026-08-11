@@ -73,9 +73,9 @@ class OrderQueryServiceTest {
 	@Test
 	void findAllReturnsMappedOrders() {
 		Order order = sampleOrder();
-		when(orderRepositoryPort.findAll()).thenReturn(List.of(order));
+		when(orderRepositoryPort.findPage(0, 100)).thenReturn(List.of(order));
 
-		List<OrderResult> results = orderQueryService.findAll();
+		List<OrderResult> results = orderQueryService.findPage(0, 100);
 
 		assertEquals(1, results.size());
 		assertEquals(order.id(), results.getFirst().id());
@@ -83,8 +83,8 @@ class OrderQueryServiceTest {
 
 	@Test
 	void findAllReturnsEmptyList() {
-		when(orderRepositoryPort.findAll()).thenReturn(List.of());
-		assertTrue(orderQueryService.findAll().isEmpty());
+		when(orderRepositoryPort.findPage(0, 100)).thenReturn(List.of());
+		assertTrue(orderQueryService.findPage(0, 100).isEmpty());
 	}
 
 	@Test
