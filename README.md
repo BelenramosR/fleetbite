@@ -1,24 +1,53 @@
 # FleetBite
 
-FleetBite es una aplicación para gestionar pedidos, repartidores, asignaciones y vehículos.
-El repositorio contiene:
+Sistema web para gestionar pedidos, asignaciones de reparto, conductores y vehículos.
 
-- backend: Java 21, Spring Boot y PostgreSQL 17;
-- frontend: React, TypeScript y Vite;
-- arquitectura hexagonal organizada por módulos funcionales.
+## Stack
 
-Este README corresponde a la ejecución local de la rama `main`.
+- Java 21 y Spring Boot
+- PostgreSQL 17 y Flyway
+- React, TypeScript y Vite
+- Docker Compose
+- Spring Security con JWT
+- MapStruct y Lombok
+- JUnit, ArchUnit, jMolecules y JaCoCo
+
+## Arquitectura
+
+El backend utiliza arquitectura hexagonal y está dividido en los módulos funcionales
+`order`, `delivery`, `driver`, `vehicle` e `identity`.
+
+```text
+HTTP / REST                 PostgreSQL
+     |                          ^
+     v                          |
+Inbound adapters -> Application ports/use cases -> Outbound ports
+                         |
+                         v
+                       Domain
+```
+
+Cada módulo separa:
+
+- `domain`: reglas, agregados y value objects sin dependencias de Spring;
+- `application`: casos de uso y puertos de entrada/salida;
+- `infrastructure`: controladores REST, seguridad, configuración y persistencia JPA.
+
+Se eligió esta arquitectura porque mantiene la lógica de negocio independiente del framework
+y de PostgreSQL, reduce el acoplamiento entre módulos y facilita probar los casos de uso sin
+levantar toda la aplicación. ArchUnit y jMolecules verifican automáticamente que `domain` y
+`application` no dependan de `infrastructure`.
 
 ## Requisitos
 
-- Docker Desktop;
-- Node.js 22;
-- pnpm 10, incluido mediante Corepack;
-- JDK 21 únicamente si se ejecutará el backend con Maven.
+- Docker Desktop
+- Node.js 22
+- Corepack/pnpm 10
+- JDK 21, solo si se ejecutará el backend fuera de Docker
 
-## Inicio rápido local
+## Ejecución local recomendada
 
-### 1. Configurar las variables del backend
+### 1. Preparar variables
 
 Desde la raíz del repositorio:
 
@@ -26,37 +55,38 @@ Desde la raíz del repositorio:
 Copy-Item .env.example .env
 ```
 
-Edita `.env` y reemplaza, como mínimo:
+Edita `.env` y configura al menos:
 
 ```env
 POSTGRES_PASSWORD=una-clave-local
 SPRING_DATASOURCE_PASSWORD=una-clave-local
-JWT_SECRET=un-secreto-aleatorio-de-al-menos-32-bytes
+JWT_SECRET=un-secreto-aleatorio-de-al-menos-32-caracteres
 ```
 
-Las dos contraseñas de PostgreSQL deben coincidir. Para generar un secreto JWT local seguro
-desde PowerShell:
+`POSTGRES_PASSWORD` y `SPRING_DATASOURCE_PASSWORD` deben tener el mismo valor. Puedes generar
+un secreto JWT con:
 
 ```powershell
 [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
 ```
 
-No subas `.env` al repositorio.
+El backend no tiene un secreto JWT de respaldo: si `JWT_SECRET` falta o es demasiado corto,
+la aplicación no inicia. El archivo `.env` no debe subirse a Git.
 
-### 2. Levantar PostgreSQL y el backend
-
-Desde la raíz:
+### 2. Levantar backend y PostgreSQL
 
 ```powershell
 docker compose up --build -d
+docker compose ps
 ```
 
-Comprueba el estado:
+Comprueba que el backend esté disponible:
 
 ```powershell
-docker compose ps
-docker compose logs -f backend
+Invoke-RestMethod http://localhost:8080/actuator/health
 ```
+
+Resultado esperado: estado `UP`.
 
 ### 3. Levantar el frontend
 
@@ -69,56 +99,44 @@ pnpm install
 pnpm dev
 ```
 
-Abre la aplicación en:
+Abre:
 
 ```text
 http://localhost:8443
 ```
 
-En desarrollo, el frontend solicita rutas como `/api/v1/orders`. Vite redirige automáticamente
-esas llamadas al backend local:
-
-```text
-React en http://localhost:8443
-        -> /api/v1
-Proxy de Vite
-        -> http://localhost:8080/api/v1
-```
-
-Por eso no es necesario colocar manualmente la URL del backend para trabajar en local. Para
-usar otro backend durante el desarrollo se puede definir antes de ejecutar Vite:
-
-```powershell
-$env:VITE_BACKEND_PROXY_TARGET="http://localhost:8080"
-pnpm dev
-```
+Vite redirige `/api/**` a `http://localhost:8080`, por lo que no hace falta modificar el
+frontend para conectarlo con el backend local.
 
 ## URLs locales
 
 | Recurso | URL |
 |---|---|
-| Frontend | http://localhost:8443 |
+| Aplicación web | http://localhost:8443 |
 | Backend | http://localhost:8080 |
-| API REST | http://localhost:8080/api/v1 |
+| API base | http://localhost:8080/api/v1 |
 | Health | http://localhost:8080/actuator/health |
 | Swagger UI | http://localhost:8080/swagger-ui/index.html |
-| OpenAPI | http://localhost:8080/v3/api-docs |
+| OpenAPI JSON | http://localhost:8080/v3/api-docs |
 | PostgreSQL | `127.0.0.1:5432` |
 
-## Autenticación JWT
+Swagger es la referencia ejecutable para consultar contratos, request bodies, respuestas y
+códigos HTTP de todos los endpoints.
 
-### Qué se corrigió
+## Usuarios de demostración
 
-El backend ya no contiene un secreto JWT público de respaldo. `JWT_SECRET` es obligatorio y
-debe tener al menos 32 caracteres. Si no está definido o es demasiado corto, Spring Boot no
-inicia. Esto evita que una instalación olvidada pueda firmar tokens con una clave conocida.
+Contraseña común: `Fleetbite1!`
 
-El secreto se utiliza únicamente para firmar y verificar access tokens. No se devuelve al
-frontend, no debe escribirse en Git y debe ser distinto en cada ambiente.
+| Correo | Rol |
+|---|---|
+| `admin@fleetbite.local` | `ADMIN` |
+| `dispatcher@fleetbite.local` | `DISPATCHER` |
+| `operator@fleetbite.local` | `RESTAURANT_OPERATOR` |
+| `driver@fleetbite.local` | `DRIVER` |
 
-### Inicio de sesión
+## Autenticación de endpoints
 
-El cliente envía correo y contraseña:
+Obtén los tokens mediante:
 
 ```http
 POST /api/v1/auth/login
@@ -132,88 +150,103 @@ Content-Type: application/json
 }
 ```
 
-Si las credenciales son correctas, el backend devuelve:
-
-- un access token JWT;
-- su tiempo de expiración;
-- un refresh token opaco.
-
-El JWT incluye la identidad y el rol del usuario. Spring Security verifica su firma y
-expiración en cada endpoint protegido, carga la autenticación y aplica los permisos del rol.
-
-### Uso desde el frontend
-
-La implementación actual guarda ambos tokens en `localStorage`. En cada solicitud protegida
-envía:
+Para invocar un endpoint protegido incluye:
 
 ```http
-Authorization: Bearer <access-token>
+Authorization: Bearer <accessToken>
 ```
 
-No se utilizan cookies de sesión en esta versión. HTTPS protege los tokens durante el
-transporte en un despliegue público, pero no convierte `localStorage` en una cookie HttpOnly.
+El access token dura una hora por defecto. El refresh token dura siete días, se almacena
+hasheado en PostgreSQL y rota cuando se llama a `/api/v1/auth/refresh`. El logout revoca el
+refresh token mediante `/api/v1/auth/logout`.
 
-### Expiración, renovación y cierre de sesión
+## Endpoints principales
 
-Los valores predeterminados son:
+Todos parten de `http://localhost:8080/api/v1`.
 
-```env
-JWT_EXPIRATION=3600
-JWT_REFRESH_EXPIRATION=604800
+### Autenticación
+
+| Método | Ruta | Función | Acceso |
+|---|---|---|---|
+| POST | `/auth/login` | Iniciar sesión | Público |
+| POST | `/auth/refresh` | Renovar y rotar tokens | Público con refresh token |
+| POST | `/auth/logout` | Revocar refresh token | Público con refresh token |
+
+### Pedidos
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET / POST | `/orders` | Listar o crear pedidos |
+| GET / PUT / DELETE | `/orders/{id}` | Consultar, actualizar o eliminar |
+| POST | `/orders/{id}/confirm` | Confirmar pedido |
+| POST | `/orders/{id}/start-preparation` | Iniciar preparación |
+| POST | `/orders/{id}/ready` | Marcar listo para recoger |
+| POST | `/orders/{id}/cancel` | Cancelar pedido |
+| GET | `/orders/{id}/history` | Consultar historial |
+| POST | `/orders/{id}/assign` | Asignar manualmente |
+| POST | `/orders/{id}/auto-assign` | Asignar al conductor disponible más cercano al local |
+
+Los pedidos pueden ser operados por `ADMIN`, `RESTAURANT_OPERATOR` y `DISPATCHER`. Las
+asignaciones manual y automática corresponden a `ADMIN` y `DISPATCHER`.
+
+### Flujo propio del driver
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET | `/drivers/me` | Consultar el perfil autenticado |
+| PATCH | `/drivers/me/location` | Actualizar ubicación propia |
+| POST | `/drivers/me/online` | Quedar disponible |
+| POST | `/drivers/me/offline` | Quedar fuera de línea |
+| GET | `/driver/assignments/active` | Consultar asignación activa |
+| GET | `/driver/assignments/summary` | Consultar resumen del driver |
+| POST | `/driver/assignments/{id}/accept` | Aceptar asignación propia |
+| POST | `/driver/assignments/{id}/reject` | Rechazar asignación propia |
+| POST | `/driver/assignments/{id}/pickup` | Confirmar recojo |
+| POST | `/driver/assignments/{id}/start-delivery` | Iniciar traslado al cliente |
+| POST | `/driver/assignments/{id}/complete` | Confirmar entrega |
+
+Estas rutas exigen rol `DRIVER`. El backend obtiene el usuario desde el JWT y bloquea el
+acceso o modificación de asignaciones pertenecientes a otro conductor.
+
+### Administración y operación
+
+| Recurso | Rutas base | Roles principales |
+|---|---|---|
+| Usuarios | `/users` | `ADMIN` |
+| Conductores | `/drivers` | `ADMIN`, `DISPATCHER` |
+| Vehículos | `/vehicles` | `ADMIN`, `DISPATCHER` |
+| Asignaciones operativas | `/assignments` | `ADMIN`, `DISPATCHER` |
+
+Los recursos incluyen operaciones CRUD y acciones de estado. Revisa Swagger para conocer los
+cuerpos exactos y todas las variantes.
+
+## Respuesta HTTP estándar
+
+La API utiliza un envelope consistente:
+
+```json
+{
+  "code": "SUCCESS",
+  "success": true,
+  "data": {},
+  "errors": []
+}
 ```
 
-- El access token dura 3600 segundos, es decir, una hora.
-- El refresh token dura 604800 segundos, es decir, siete días.
-- El backend guarda solamente el hash SHA-256 del refresh token en PostgreSQL.
-- Cuando el access token vence, el frontend llama a `/auth/refresh`.
-- El refresh token anterior se revoca y el backend entrega un par nuevo: existe rotación.
-- Al cerrar sesión, `/auth/logout` revoca el refresh token.
-- Un usuario inactivo no puede renovar su sesión.
+Los errores de validación, dominio, autenticación, autorización, conflicto y recursos no
+encontrados se transforman centralmente mediante `@RestControllerAdvice`.
 
-El endpoint de login también cuenta con un límite configurable por IP:
+## Pruebas
 
-```env
-LOGIN_RATE_LIMIT_MAX_ATTEMPTS=10
-LOGIN_RATE_LIMIT_WINDOW_SECONDS=60
-```
-
-## Usuarios iniciales
-
-Todos utilizan temporalmente la contraseña `Fleetbite1!` para la demostración local.
-
-| Correo | Rol |
-|---|---|
-| `admin@fleetbite.local` | `ADMIN` |
-| `dispatcher@fleetbite.local` | `DISPATCHER` |
-| `operator@fleetbite.local` | `RESTAURANT_OPERATOR` |
-| `driver@fleetbite.local` | `DRIVER` |
-
-Estas credenciales son datos de desarrollo y no deben reutilizarse en un sistema productivo.
-
-## Backend local sin contenedor
-
-Se puede contenerizar solamente PostgreSQL:
-
-```powershell
-docker compose up -d postgres
-cd backend
-$env:JWT_SECRET="coloca-aqui-un-secreto-local-de-al-menos-32-caracteres"
-.\mvnw.cmd spring-boot:run
-```
-
-En este modo el backend usa `jdbc:postgresql://localhost:5432/fleetbite`.
-
-## Pruebas y compilación
-
-Backend:
+Backend completo:
 
 ```powershell
 cd backend
 .\mvnw.cmd clean verify
 ```
 
-Este comando ejecuta las pruebas unitarias, de integración, arquitectura hexagonal y la
-verificación de cobertura JaCoCo.
+Incluye pruebas unitarias, integración con PostgreSQL, reglas arquitectónicas y cobertura
+JaCoCo.
 
 Frontend:
 
@@ -222,7 +255,7 @@ cd frontend
 pnpm build
 ```
 
-## Datos y contenedores
+## Comandos útiles
 
 ```powershell
 docker compose logs -f backend
@@ -230,15 +263,19 @@ docker compose logs -f postgres
 docker compose down
 ```
 
-`docker compose down` conserva los datos porque PostgreSQL utiliza el volumen
-`fleetbite_postgres_data`.
-
-Para reiniciar completamente la base de datos local:
+`docker compose down` conserva la base de datos. Para borrar todos los datos locales y hacer
+que Flyway reconstruya el esquema:
 
 ```powershell
 docker compose down -v
 docker compose up --build -d
 ```
 
-El segundo comando elimina previamente el volumen, por lo que borra los datos locales. Flyway
-reconstruye el esquema y vuelve a cargar los datos iniciales al arrancar.
+## Problemas frecuentes
+
+- Backend no inicia: verifica `JWT_SECRET` y que las dos contraseñas PostgreSQL coincidan.
+- Puerto ocupado: comprueba los puertos `5432`, `8080` y `8443`.
+- Datos antiguos: ejecuta `docker compose down -v` únicamente si aceptas borrar la BD local.
+- Frontend sin API: confirma que el health del backend responda antes de abrir el frontend.
+- Respuesta `401`: inicia sesión y envía el access token como Bearer.
+- Respuesta `403`: el usuario está autenticado, pero su rol o identidad no permite la acción.
