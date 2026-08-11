@@ -279,3 +279,163 @@ docker compose up --build -d
 - Frontend sin API: confirma que el health del backend responda antes de abrir el frontend.
 - Respuesta `401`: inicia sesión y envía el access token como Bearer.
 - Respuesta `403`: el usuario está autenticado, pero su rol o identidad no permite la acción.
+
+## Cómo funciona el despliegue
+
+La versión pública utiliza servicios administrados y conserva el mismo código de `main`:
+
+```text
+Navegador
+   |
+   | HTTPS
+   v
+Vercel: React + Vite
+   |
+   | HTTPS + Authorization: Bearer <JWT>
+   v
+Google Cloud Run: Spring Boot en Docker
+   |
+   | JDBC + SSL
+   v
+Neon: PostgreSQL 17
+```
+
+### Tecnologías utilizadas
+
+- **Vercel** publica los archivos estáticos generados por Vite y entrega HTTPS.
+- **Google Cloud Build** construye la imagen usando `backend/Dockerfile`.
+- **Artifact Registry** almacena la imagen Docker versionada.
+- **Google Cloud Run** ejecuta Spring Boot y expone una URL HTTPS pública.
+- **Google Secret Manager** entrega credenciales y el secreto JWT al contenedor.
+- **Neon** ofrece PostgreSQL administrado con conexión SSL y suspensión por inactividad.
+- **Flyway** crea o actualiza automáticamente el esquema cuando inicia el backend.
+
+Cloud Run está configurado con mínimo cero y máximo una instancia. Cuando no recibe tráfico
+puede escalar a cero; la primera solicitud posterior vuelve a iniciar automáticamente el
+backend y puede tardar algunos segundos.
+
+### Cómo se evita modificar el frontend
+
+El cliente HTTP ya selecciona su URL mediante una variable de Vite:
+
+```ts
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
+```
+
+En local no se define `VITE_API_BASE_URL`: el frontend usa `/api/v1` y el proxy de Vite lo
+redirige a `http://localhost:8080`.
+
+En Vercel se configura:
+
+```env
+VITE_API_BASE_URL=https://<servicio-cloud-run>/api/v1
+```
+
+Vite incorpora ese valor durante el build. Así el mismo código funciona en local y producción
+sin reemplazar URLs dentro de archivos `.ts` o `.tsx`.
+
+### Variables y secretos del backend
+
+Para preparar el despliegue se utiliza un archivo local `.env.cloudrun` que está ignorado por
+Git. Contiene únicamente los valores que después se registran en Secret Manager:
+
+```env
+SPRING_DATASOURCE_URL=jdbc:postgresql://<host-neon>/<database>?sslmode=require
+SPRING_DATASOURCE_USERNAME=<usuario-neon>
+SPRING_DATASOURCE_PASSWORD=<password-neon>
+```
+
+El secreto JWT se genera de forma independiente con al menos 32 bytes aleatorios. En Google
+Secret Manager se crearon cuatro secretos:
+
+```text
+fleetbite-db-url
+fleetbite-db-username
+fleetbite-db-password
+fleetbite-jwt-secret
+```
+
+La cuenta de Cloud Run tiene permiso de lectura únicamente sobre esos cuatro secretos. Los
+valores nunca se copian al repositorio, al Dockerfile ni a la imagen.
+
+El resto de la configuración se establece como variables normales de Cloud Run:
+
+```env
+SPRING_PROFILES_ACTIVE=docker
+FRONTEND_ALLOWED_ORIGIN=https://<proyecto-vercel>.vercel.app
+SWAGGER_ENABLED=true
+JWT_EXPIRATION=3600
+JWT_REFRESH_EXPIRATION=604800
+LOGIN_RATE_LIMIT_MAX_ATTEMPTS=10
+LOGIN_RATE_LIMIT_WINDOW_SECONDS=60
+```
+
+`FRONTEND_ALLOWED_ORIGIN` es importante: permite que el backend atienda al frontend publicado
+sin abrir CORS para cualquier página. Debe coincidir exactamente con el dominio estable de
+Vercel y no debe terminar en `/`.
+
+### Pasos realizados para levantar el backend
+
+1. Crear un proyecto en Google Cloud y seleccionar una región.
+2. Habilitar Cloud Run, Cloud Build, Artifact Registry y Secret Manager.
+3. Crear un repositorio Docker en Artifact Registry.
+4. Crear PostgreSQL 17 en Neon y copiar su cadena JDBC con `sslmode=require`.
+5. Registrar URL, usuario, contraseña y secreto JWT en Secret Manager.
+6. Conceder a la cuenta de ejecución acceso solamente a esos secretos.
+7. Construir y publicar la imagen desde la raíz del repositorio:
+
+```powershell
+gcloud builds submit backend `
+  --tag us-central1-docker.pkg.dev/<project-id>/<repository>/backend:latest `
+  --project <project-id>
+```
+
+8. Desplegar la imagen en Cloud Run y asociar variables y secretos:
+
+```powershell
+gcloud run deploy <service-name> `
+  --image us-central1-docker.pkg.dev/<project-id>/<repository>/backend:latest `
+  --region us-central1 `
+  --allow-unauthenticated `
+  --min-instances 0 `
+  --max-instances 1 `
+  --cpu 1 `
+  --memory 1Gi `
+  --set-env-vars "SPRING_PROFILES_ACTIVE=docker,SWAGGER_ENABLED=true,FRONTEND_ALLOWED_ORIGIN=https://<proyecto-vercel>.vercel.app" `
+  --set-secrets "SPRING_DATASOURCE_URL=fleetbite-db-url:latest,SPRING_DATASOURCE_USERNAME=fleetbite-db-username:latest,SPRING_DATASOURCE_PASSWORD=fleetbite-db-password:latest,JWT_SECRET=fleetbite-jwt-secret:latest" `
+  --project <project-id>
+```
+
+La primera ejecución conecta con Neon y aplica todas las migraciones pendientes de Flyway.
+
+### Pasos realizados para levantar el frontend
+
+1. Crear o vincular un proyecto de Vercel desde la carpeta `frontend`.
+2. Configurar `VITE_API_BASE_URL` para el ambiente Production.
+3. Ejecutar el despliegue:
+
+```powershell
+cd frontend
+npx vercel --prod
+```
+
+4. Copiar el dominio estable asignado por Vercel.
+5. Actualizar `FRONTEND_ALLOWED_ORIGIN` en Cloud Run con ese dominio.
+6. Volver a desplegar o crear una nueva revisión de Cloud Run.
+
+### Verificación posterior
+
+Después de publicar se debe comprobar:
+
+```text
+GET https://<servicio-cloud-run>/actuator/health
+GET https://<servicio-cloud-run>/v3/api-docs
+GET https://<proyecto-vercel>.vercel.app
+```
+
+También se debe realizar un login desde el frontend, revisar que el navegador envíe
+`Authorization: Bearer`, y completar al menos el flujo de creación, asignación, aceptación,
+recojo y entrega de un pedido.
+
+Las URLs concretas, recursos creados y estado de las migraciones del ambiente de presentación
+se documentan en `docs/VERCEL_CLOUD_RUN_DEPLOYMENT.md` dentro de la rama `deploy`.
