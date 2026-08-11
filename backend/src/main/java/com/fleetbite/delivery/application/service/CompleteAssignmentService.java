@@ -8,6 +8,7 @@ import com.fleetbite.delivery.domain.exception.InvalidAssignmentTransitionExcept
 import com.fleetbite.delivery.domain.model.DeliveryAssignment;
 import com.fleetbite.driver.application.port.out.DriverRepositoryPort;
 import com.fleetbite.driver.domain.model.Driver;
+import com.fleetbite.driver.domain.model.DriverStatus;
 import com.fleetbite.order.application.port.out.OrderRepositoryPort;
 import com.fleetbite.order.application.service.OrderHistoryRecorder;
 import com.fleetbite.order.domain.model.Order;
@@ -60,7 +61,11 @@ public final class CompleteAssignmentService {
 		OffsetDateTime now = BusinessTime.toBusinessTime(clock.instant());
 		assignment.complete(now);
 		order.deliver(now);
-		driver.markAvailable(now);
+		// Completing the owned delivery must remain possible even if stale/external state
+		// already released the driver. The final state is AVAILABLE in both cases.
+		if (driver.status() != DriverStatus.AVAILABLE) {
+			driver.markAvailable(now);
+		}
 
 		DeliveryAssignment updated = assignmentRepositoryPort.update(assignment);
 		orderRepositoryPort.update(order);

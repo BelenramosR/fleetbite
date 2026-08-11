@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DriverAssignment } from "@/shared/types";
-import {
-  acceptAssignment,
-  advanceAssignment,
-  fetchActiveAssignment,
-  rejectAssignment,
-} from "@/services/api/mocks/driverAssignments";
+import { acceptMyAssignment, completeMyAssignment, getMyActiveAssignment,
+  pickupMyAssignment, rejectMyAssignment, startMyDelivery } from "@/features/drivers/services/driverApi";
 
 const SEEN_KEY = "fleetbite:driver:seen-assignment-ids";
 const POLL_MS = 8_000;
@@ -60,7 +56,7 @@ export function useDriverAssignmentPoll(driverId: string | undefined) {
       return;
     }
     try {
-      const active = await fetchActiveAssignment(driverId);
+      const active = await getMyActiveAssignment();
       setAssignment(active);
       setError("");
 
@@ -91,15 +87,15 @@ export function useDriverAssignmentPoll(driverId: string | undefined) {
 
   async function accept() {
     if (!driverId || !assignment || assignment.status !== "PENDING") return;
-    const updated = await acceptAssignment(driverId, assignment.id);
-    setAssignment(updated);
+    await acceptMyAssignment(assignment.id);
+    await refresh();
     setOfferOpen(false);
     setUnreadPending(false);
   }
 
-  async function reject() {
+  async function reject(reason = "Rechazado por el driver") {
     if (!driverId || !assignment || assignment.status !== "PENDING") return;
-    await rejectAssignment(driverId, assignment.id);
+    await rejectMyAssignment(assignment.id, reason);
     setAssignment(null);
     setOfferOpen(false);
     setUnreadPending(false);
@@ -109,11 +105,11 @@ export function useDriverAssignmentPoll(driverId: string | undefined) {
     next: "PICKED_UP" | "IN_TRANSIT" | "COMPLETED" | "FAILED",
   ) {
     if (!driverId || !assignment) return;
-    if (assignment.driverId !== driverId) {
-      throw new Error("No puedes operar asignaciones de otro motorizado");
-    }
-    const updated = await advanceAssignment(driverId, next);
-    setAssignment(updated);
+    if (next === "FAILED") throw new Error("El backend todavía no admite reportar entrega fallida");
+    if (next === "PICKED_UP") await pickupMyAssignment(assignment.id);
+    if (next === "IN_TRANSIT") await startMyDelivery(assignment.id);
+    if (next === "COMPLETED") await completeMyAssignment(assignment.id);
+    await refresh();
   }
 
   function openOffer() {

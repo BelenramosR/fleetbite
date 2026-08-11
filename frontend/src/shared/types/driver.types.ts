@@ -19,4 +19,7 @@ export interface Driver {
   distanceKm?: number;
   deliveriesToday: number;
   lastLocationAt: string;
+  currentLatitude?: number;
+  currentLongitude?: number;
+  assignedVehicleId?: string;
 }

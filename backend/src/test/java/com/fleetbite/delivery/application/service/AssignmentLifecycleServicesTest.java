@@ -170,6 +170,30 @@ class AssignmentLifecycleServicesTest {
 	}
 
 	@Test
+	void complete_shouldSucceedWhenDriverWasAlreadyAvailable() {
+		Order order = assignedOrder();
+		order.pickUp(CREATED.plusMinutes(12));
+		order.startDelivery(CREATED.plusMinutes(13));
+		Driver driver = availableDriver();
+		DeliveryAssignment assignment = DeliveryAssignment.create(
+				UUID.randomUUID(), order.id(), driver.id(), CREATED.plusMinutes(10));
+		assignment.accept(CREATED.plusMinutes(11));
+		assignment.markPickedUp(CREATED.plusMinutes(12));
+		when(assignmentRepositoryPort.findById(assignment.id())).thenReturn(Optional.of(assignment));
+		when(orderRepositoryPort.findById(order.id())).thenReturn(Optional.of(order));
+		when(driverRepositoryPort.findById(driver.id())).thenReturn(Optional.of(driver));
+		when(assignmentRepositoryPort.update(any())).thenAnswer(i -> i.getArgument(0));
+		when(orderRepositoryPort.update(any())).thenAnswer(i -> i.getArgument(0));
+		when(driverRepositoryPort.update(any())).thenAnswer(i -> i.getArgument(0));
+
+		var result = completeService.execute(assignment.id());
+
+		assertEquals(AssignmentStatus.COMPLETED, result.status());
+		assertEquals(OrderStatus.DELIVERED, order.status());
+		assertEquals(DriverStatus.AVAILABLE, driver.status());
+	}
+
+	@Test
 	void accept_shouldAcceptPendingAssignment() {
 		DeliveryAssignment assignment = DeliveryAssignment.create(
 				UUID.randomUUID(),
@@ -211,6 +235,14 @@ class AssignmentLifecycleServicesTest {
 				CREATED);
 		driver.goOnline(CREATED.plusMinutes(1));
 		driver.markBusy(CREATED.plusMinutes(2));
+		return driver;
+	}
+
+	private static Driver availableDriver() {
+		Driver driver = Driver.create(
+				UUID.randomUUID(), UUID.randomUUID(), "999888777",
+				new Location(-12.10, -77.03), CREATED);
+		driver.goOnline(CREATED.plusMinutes(1));
 		return driver;
 	}
 }

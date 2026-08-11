@@ -1,6 +1,7 @@
-import { Bike, Car, Check, ChevronLeft, MapPin, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bike, Car, Check, ChevronLeft, LoaderCircle, MapPin, Zap } from "lucide-react";
 import type { Driver, VehicleType } from "@/shared/types";
-import { mockDrivers } from "@/services/api/mocks/mockData";
+import { listAvailableDrivers } from "@/features/orders/services/orderApi";
 
 const VEHICLE_LABEL: Record<VehicleType, string> = {
   MOTORCYCLE: "Moto",
@@ -14,23 +15,36 @@ function VehicleIcon({ type }: { type: VehicleType }) {
 }
 
 /** Disponibles rankeados por cercanía al local (menor distanceKm primero). */
-export function rankAvailableDrivers(drivers: Driver[] = mockDrivers): Driver[] {
+export function rankAvailableDrivers(drivers: Driver[]): Driver[] {
   return drivers
     .filter((d) => d.status === "AVAILABLE" && d.distanceKm != null)
     .sort((a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99));
 }
 
-export function closestAvailableDriver(drivers: Driver[] = mockDrivers): Driver | null {
-  return rankAvailableDrivers(drivers)[0] ?? null;
-}
-
 interface AssignDriverPanelProps {
   onBack: () => void;
-  onAssign: (driver: Driver) => void;
+  onAssign: (driver: Driver) => Promise<void>;
 }
 
 export default function AssignDriverPanel({ onBack, onAssign }: AssignDriverPanelProps) {
-  const ranked = rankAvailableDrivers();
+  const [ranked, setRanked] = useState<Driver[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void listAvailableDrivers().then((drivers) => { if (active) setRanked(rankAvailableDrivers(drivers)); })
+      .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "No se pudieron cargar los repartidores."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  async function select(driver: Driver) {
+    setAssigningId(driver.id); setError("");
+    try { await onAssign(driver); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "No se pudo crear la asignación."); setAssigningId(null); }
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-3">
@@ -51,7 +65,11 @@ export default function AssignDriverPanel({ onBack, onAssign }: AssignDriverPane
         </div>
       </div>
 
-      {ranked.length === 0 ? (
+      {loading ? (
+        <p className="my-auto flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground"><LoaderCircle className="h-4 w-4 animate-spin" />Cargando repartidores…</p>
+      ) : error ? (
+        <p className="my-auto py-6 text-center text-xs text-red-600">{error}</p>
+      ) : ranked.length === 0 ? (
         <p className="text-xs text-muted-foreground my-auto text-center py-6">
           No hay repartidores disponibles ahora.
         </p>
@@ -63,7 +81,8 @@ export default function AssignDriverPanel({ onBack, onAssign }: AssignDriverPane
               <li key={driver.id}>
                 <button
                   type="button"
-                  onClick={() => onAssign(driver)}
+                  onClick={() => void select(driver)}
+                  disabled={assigningId !== null}
                   className={`w-full text-left rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${
                     isTop
                       ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
@@ -106,7 +125,7 @@ export default function AssignDriverPanel({ onBack, onAssign }: AssignDriverPane
                         </span>
                       </div>
                     </div>
-                    <Check className="w-4 h-4 shrink-0 text-muted-foreground" />
+                    {assigningId === driver.id ? <LoaderCircle className="w-4 h-4 shrink-0 animate-spin text-primary" /> : <Check className="w-4 h-4 shrink-0 text-muted-foreground" />}
                   </div>
                 </button>
               </li>

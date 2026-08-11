@@ -22,4 +22,6 @@ public interface DeliveryAssignmentRepositoryPort {
 	Optional<DeliveryAssignment> findActiveByOrderId(UUID orderId);
 
 	Optional<DeliveryAssignment> findActiveByDriverId(UUID driverId);
+
+	List<DeliveryAssignment> findAllByDriverId(UUID driverId);
 }

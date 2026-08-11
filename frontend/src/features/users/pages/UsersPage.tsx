@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { TableSkeleton } from "@/shared/components/skeleton";
 import { Toast } from "@/shared/components/toast";
-import { mockUsers } from "@/services/api/mocks/mockData";
+import type { ToastTone } from "@/shared/components/toast";
+import { createAdminUser, listAdminUsers, setAdminUserStatus, updateAdminUser } from "@/features/users/services/userApi";
 import type { User as UserType, UserRole } from "@/shared/types";
 
 const ROLE_CFG: Record<UserRole, { label: string; bg: string; text: string }> = {
@@ -39,7 +40,7 @@ const ROLE_FILTERS: { label: string; roles: UserRole[] | null }[] = [
   { label: 'Motorizados', roles: ['DRIVER'] },
 ];
 
-const EMPTY_FORM = { fullName: '', email: '', role: 'DRIVER' as UserRole, status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' };
+const EMPTY_FORM = { fullName: '', email: '', password: '', phone: '', role: 'DRIVER' as UserRole, status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' };
 
 export default function UsersPage() {
   const [loading, setLoading] = useState(true);
@@ -51,43 +52,51 @@ export default function UsersPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [toast, setToast] = useState('');
+  const [toastTone, setToastTone] = useState<ToastTone>('success');
   const [confirmToggle, setConfirmToggle] = useState<UserType | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => { setUsers(mockUsers); setLoading(false); }, 700);
-    return () => clearTimeout(t);
+    let active = true;
+    async function refresh() {
+      try { const result = await listAdminUsers(); if (active) { setUsers(result); setSelected((current) => current ? result.find((user) => user.id === current.id) ?? null : null); } }
+      catch (cause) { if (active) showToast(cause instanceof Error ? cause.message : 'No se pudieron cargar los usuarios.', 'error'); }
+      finally { if (active) setLoading(false); }
+    }
+    void refresh();
+    const id = window.setInterval(() => void refresh(), 15_000);
+    return () => { active = false; window.clearInterval(id); };
   }, []);
 
-  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000); }
+  function showToast(msg: string, tone: ToastTone = 'success') { setToastTone(tone); setToast(msg); setTimeout(() => setToast(''), 3000); }
 
   function openCreate() { setForm(EMPTY_FORM); setEditId(null); setShowModal(true); }
 
   function openEdit(u: UserType) {
-    setForm({ fullName: u.fullName, email: u.email, role: u.role, status: u.status });
+    setForm({ fullName: u.fullName, email: u.email, password: '', phone: u.phone ?? '', role: u.role, status: u.status });
     setEditId(u.id);
     setShowModal(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.fullName || !form.email) return;
-    if (editId) {
-      setUsers((prev) => prev.map((u) => u.id === editId ? { ...u, ...form } : u));
-      if (selected?.id === editId) setSelected((prev) => prev ? { ...prev, ...form } : null);
-      showToast('Usuario actualizado');
-    } else {
-      const newU: UserType = { id: `usr-${Date.now()}`, ...form, createdAt: new Date().toISOString() };
-      setUsers((prev) => [newU, ...prev]);
-      showToast('Usuario creado');
-    }
-    setShowModal(false);
+    if (!editId && form.password.length < 8) { showToast('La contraseña debe tener al menos 8 caracteres.', 'error'); return; }
+    try {
+      if (editId) await updateAdminUser(editId, form);
+      else await createAdminUser(form);
+      const refreshed = await listAdminUsers(); setUsers(refreshed);
+      if (editId) setSelected(refreshed.find((user) => user.id === editId) ?? null);
+      showToast(editId ? 'Usuario actualizado' : 'Usuario creado'); setShowModal(false);
+    } catch (cause) { showToast(cause instanceof Error ? cause.message : 'No se pudo guardar el usuario.', 'error'); }
   }
 
-  function handleToggleStatus(user: UserType) {
+  async function handleToggleStatus(user: UserType) {
     const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, status: newStatus } : u));
-    if (selected?.id === user.id) setSelected((prev) => prev ? { ...prev, status: newStatus } : null);
-    setConfirmToggle(null);
-    showToast(newStatus === 'ACTIVE' ? 'Usuario activado' : 'Usuario desactivado');
+    try {
+      await setAdminUserStatus(user.id, newStatus === 'ACTIVE');
+      const refreshed = await listAdminUsers(); setUsers(refreshed);
+      if (selected?.id === user.id) setSelected(refreshed.find((item) => item.id === user.id) ?? null);
+      setConfirmToggle(null); showToast(newStatus === 'ACTIVE' ? 'Usuario activado' : 'Usuario desactivado');
+    } catch (cause) { showToast(cause instanceof Error ? cause.message : 'No se pudo cambiar el estado.', 'error'); }
   }
 
   const filtered = users.filter((u) => {
@@ -369,6 +378,8 @@ export default function UsersPage() {
                   <label className="text-[10px] font-mono tracking-widest block mb-1" style={{ color: 'var(--muted-foreground)' }}>CONTRASEÑA INICIAL</label>
                   <input
                     type="password"
+                    value={form.password}
+                    onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
                     placeholder="••••••••"
                     className="w-full px-3 py-2 rounded border text-sm outline-none"
                     style={{ background: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
@@ -378,13 +389,24 @@ export default function UsersPage() {
                 </div>
               )}
 
+              {form.role === 'DRIVER' && (
+                <div>
+                  <label className="text-[10px] font-mono tracking-widest block mb-1" style={{ color: 'var(--muted-foreground)' }}>TELÉFONO DEL MOTORIZADO</label>
+                  <input type="tel" value={form.phone} onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+                    placeholder="+51 999 000 111" className="w-full px-3 py-2 rounded border text-sm outline-none"
+                    style={{ background: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }} />
+                  <p className="mt-1 text-[10px] text-muted-foreground">Obligatorio para que el driver pueda ponerse disponible.</p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-mono tracking-widest block mb-1" style={{ color: 'var(--muted-foreground)' }}>ROL</label>
                   <select
                     value={form.role}
+                    disabled={Boolean(editId)}
                     onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as UserRole }))}
-                    className="w-full px-3 py-2 rounded border text-sm outline-none cursor-pointer"
+                    className="w-full px-3 py-2 rounded border text-sm outline-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                     style={{ background: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
                     onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--primary)')}
                     onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
@@ -417,7 +439,7 @@ export default function UsersPage() {
                 Cancelar
               </button>
               <button
-                onClick={handleSave}
+                onClick={() => void handleSave()}
                 className="flex-1 py-2 rounded text-sm font-semibold cursor-pointer"
                 style={{ background: 'var(--primary)', color: 'var(--primary-foreground)' }}
                 onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.opacity = '0.85'}
@@ -447,7 +469,7 @@ export default function UsersPage() {
                 Cancelar
               </button>
               <button
-                onClick={() => handleToggleStatus(confirmToggle)}
+                onClick={() => void handleToggleStatus(confirmToggle)}
                 className="flex-1 py-2 rounded text-sm font-semibold cursor-pointer"
                 style={{ background: confirmToggle.status === 'ACTIVE' ? '#dc2626' : '#15803d', color: '#fff' }}
                 onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.opacity = '0.85'}
@@ -460,7 +482,7 @@ export default function UsersPage() {
         </div>
       )}
 
-      {toast && <Toast message={toast} onClose={() => setToast("")} />}
+      {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast("")} />}
     </div>
   );
 }

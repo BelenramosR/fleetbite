@@ -4,7 +4,9 @@ import L from "leaflet";
 import { List, Map, Bike, ArrowRight, Store } from "lucide-react";
 import { DriverStatusBadge } from "@/shared/components/badges";
 import { TableSkeleton } from "@/shared/components/skeleton";
-import { mockDrivers } from "@/services/api/mocks/mockData";
+import { Toast } from "@/shared/components/toast";
+import type { ToastTone } from "@/shared/components/toast";
+import { listDispatchDrivers, setDispatchDriverAvailability } from "@/features/drivers/services/dispatchDriverApi";
 import { RESTAURANT } from "@/shared/constants";
 import type { Driver, DriverStatus } from "@/shared/types";
 
@@ -16,16 +18,6 @@ L.Icon.Default.mergeOptions({
 });
 
 const RESTAURANT_LOCATION: [number, number] = [RESTAURANT.lat, RESTAURANT.lng];
-
-/** Posiciones demo alrededor del local Surco (Olguín). */
-const DRIVER_POSITIONS: Record<string, [number, number]> = {
-  "drv-001": [RESTAURANT.lat - 0.0042, RESTAURANT.lng - 0.0058],
-  "drv-002": [RESTAURANT.lat + 0.0031, RESTAURANT.lng + 0.0024],
-  "drv-003": [RESTAURANT.lat - 0.0065, RESTAURANT.lng + 0.0041],
-  "drv-004": [RESTAURANT.lat + 0.0052, RESTAURANT.lng - 0.0035],
-  "drv-005": [RESTAURANT.lat - 0.0088, RESTAURANT.lng - 0.0022],
-  "drv-006": [RESTAURANT.lat + 0.0018, RESTAURANT.lng + 0.0062],
-};
 
 const STATUS_DOT: Record<DriverStatus, string> = {
   AVAILABLE: "#16a34a",
@@ -94,10 +86,26 @@ export default function DriversPage() {
   const [selected, setSelected] = useState<Driver | null>(null);
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
   const [view, setView] = useState<'table' | 'map'>('table');
+  const [error, setError] = useState('');
+  const [toast, setToast] = useState('');
+  const [toastTone, setToastTone] = useState<ToastTone>('success');
 
   useEffect(() => {
-    const t = setTimeout(() => { setDrivers(mockDrivers); setLoading(false); }, 750);
-    return () => clearTimeout(t);
+    let active = true;
+    async function refresh() {
+      try {
+        const result = await listDispatchDrivers();
+        if (active) {
+          setDrivers(result); setError('');
+          setSelected((current) => current ? result.find((item) => item.id === current.id) ?? null : null);
+        }
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los motorizados.');
+      } finally { if (active) setLoading(false); }
+    }
+    void refresh();
+    const id = window.setInterval(() => void refresh(), 15_000);
+    return () => { active = false; window.clearInterval(id); };
   }, []);
 
   const filtered = drivers.filter((d) => {
@@ -107,8 +115,24 @@ export default function DriversPage() {
 
   function selectDriver(driver: Driver) {
     setSelected((prev) => (prev?.id === driver.id ? null : driver));
-    const pos = DRIVER_POSITIONS[driver.id];
-    if (pos) setFlyTo(pos);
+    if (driver.currentLatitude != null && driver.currentLongitude != null) {
+      setFlyTo([driver.currentLatitude, driver.currentLongitude]);
+    }
+  }
+
+  async function changeAvailability(driver: Driver, online: boolean) {
+    setError('');
+    try {
+      await setDispatchDriverAvailability(driver.id, online);
+      const refreshed = await listDispatchDrivers();
+      setDrivers(refreshed);
+      setSelected(refreshed.find((item) => item.id === driver.id) ?? null);
+      setToastTone('success');
+      setToast(online ? 'Motorizado activado correctamente.' : 'Motorizado desactivado correctamente.');
+    } catch (cause) {
+      setToastTone('error');
+      setToast(cause instanceof Error ? cause.message : 'No se pudo actualizar el motorizado.');
+    }
   }
 
   return (
@@ -188,7 +212,9 @@ export default function DriversPage() {
 
               {/* Driver markers */}
               {drivers.map((driver) => {
-                const pos = DRIVER_POSITIONS[driver.id];
+                const pos = driver.currentLatitude != null && driver.currentLongitude != null
+                  ? [driver.currentLatitude, driver.currentLongitude] as [number, number]
+                  : null;
                 if (!pos) return null;
                 return (
                   <Marker
@@ -316,6 +342,8 @@ export default function DriversPage() {
 
             {loading ? (
               <TableSkeleton rows={6} />
+            ) : error ? (
+              <div className="py-16 text-center"><p className="text-sm text-red-600">{error}</p></div>
             ) : filtered.length === 0 ? (
               <div className="py-16 text-center">
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Sin resultados.</p>
@@ -407,10 +435,7 @@ export default function DriversPage() {
                       style={{ borderColor: '#bbf7d0', color: '#15803d', background: '#f0fdf4' }}
                       onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.background = '#dcfce7'}
                       onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.background = '#f0fdf4'}
-                      onClick={() => {
-                        setDrivers((prev) => prev.map((d) => d.id === selected.id ? { ...d, status: 'AVAILABLE' } : d));
-                        setSelected((prev) => prev ? { ...prev, status: 'AVAILABLE' } : null);
-                      }}
+                      onClick={() => void changeAvailability(selected, true)}
                     >
                       <span className="inline-flex items-center justify-center gap-1.5">
                         Activar motorizado <ArrowRight className="w-3 h-3" />
@@ -423,10 +448,7 @@ export default function DriversPage() {
                       style={{ borderColor: '#fecaca', color: '#b91c1c', background: '#fef2f2' }}
                       onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.background = '#fee2e2'}
                       onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.background = '#fef2f2'}
-                      onClick={() => {
-                        setDrivers((prev) => prev.map((d) => d.id === selected.id ? { ...d, status: 'OFFLINE' } : d));
-                        setSelected((prev) => prev ? { ...prev, status: 'OFFLINE' } : null);
-                      }}
+                      onClick={() => void changeAvailability(selected, false)}
                     >
                       <span className="inline-flex items-center justify-center gap-1.5">
                         Desactivar <ArrowRight className="w-3 h-3" />
@@ -455,6 +477,7 @@ export default function DriversPage() {
           </div>
         </div>
       )}
+      {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast('')} />}
     </div>
   );
 }

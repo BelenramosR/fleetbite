@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import { TableSkeleton } from "@/shared/components/skeleton";
 import { Toast } from "@/shared/components/toast";
-import { mockVehicles, mockDrivers } from "@/services/api/mocks/mockData";
+import type { ToastTone } from "@/shared/components/toast";
+import { assignVehicle, deleteVehicle, listFleetData, saveVehicle, setVehicleLifecycle, unassignVehicle } from "@/features/fleet/services/fleetApi";
 import type { Vehicle, VehicleStatus, VehicleType, Driver } from "@/shared/types";
 
 const STATUS_CFG: Record<VehicleStatus, { label: string; bg: string; text: string; dot: string }> = {
@@ -70,16 +71,24 @@ export default function FleetPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [assignTarget, setAssignTarget] = useState<Vehicle | null>(null);
   const [selectedDriverId, setSelectedDriverId] = useState<string>("");
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [toastTone, setToastTone] = useState<ToastTone>('success');
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setVehicles(mockVehicles.map((v) => ({ ...v })));
-      setLoading(false);
-    }, 700);
-    return () => clearTimeout(t);
+    let active = true;
+    async function refresh() {
+      try {
+        const data = await listFleetData();
+        if (active) { setVehicles(data.vehicles); setDrivers(data.drivers); setSelected((current) => current ? data.vehicles.find((vehicle) => vehicle.id === current.id) ?? null : null); }
+      } catch (cause) { if (active) showToast(cause instanceof Error ? cause.message : 'No se pudo cargar la flota.', 'error'); }
+      finally { if (active) setLoading(false); }
+    }
+    void refresh(); const id = window.setInterval(() => void refresh(), 15_000);
+    return () => { active = false; window.clearInterval(id); };
   }, []);
 
-  function showToast(msg: string) {
+  function showToast(msg: string, tone: ToastTone = 'success') {
+    setToastTone(tone);
     setToast(msg);
     setTimeout(() => setToast(""), 3000);
   }
@@ -93,76 +102,25 @@ export default function FleetPage() {
     setSelectedDriverId(vehicle.driverId ?? "");
   }
 
-  function handleAssignDriver() {
+  async function handleAssignDriver() {
     if (!assignTarget || !selectedDriverId) return;
-    const driver = mockDrivers.find((d) => d.id === selectedDriverId);
+    const driver = drivers.find((d) => d.id === selectedDriverId);
     if (!driver) return;
-
-    setVehicles((prev) =>
-      prev.map((v) => {
-        // Liberar el vehículo si el motorizado ya tenía otro asignado
-        if (v.driverId === driver.id && v.id !== assignTarget.id) {
-          return {
-            ...v,
-            driverId: undefined,
-            driverName: undefined,
-            status: v.status === "IN_USE" ? "AVAILABLE" : v.status,
-          };
-        }
-        if (v.id === assignTarget.id) {
-          return {
-            ...v,
-            driverId: driver.id,
-            driverName: driver.name,
-            status: "IN_USE",
-          };
-        }
-        return v;
-      }),
-    );
-
-    const updated: Vehicle = {
-      ...assignTarget,
-      driverId: driver.id,
-      driverName: driver.name,
-      status: "IN_USE",
-    };
-    setSelected((prev) => (prev?.id === assignTarget.id ? updated : prev));
-    setAssignTarget(null);
-    setSelectedDriverId("");
-    showToast(`Vehículo ${assignTarget.plate} asignado a ${driver.name}`);
+    try {
+      await assignVehicle(driver.id, assignTarget.id); const data = await listFleetData();
+      setVehicles(data.vehicles); setDrivers(data.drivers); setSelected(data.vehicles.find((vehicle) => vehicle.id === assignTarget.id) ?? null);
+      setAssignTarget(null); setSelectedDriverId(""); showToast(`Vehículo ${assignTarget.plate} asignado a ${driver.name}`);
+    } catch (cause) { showToast(cause instanceof Error ? cause.message : 'No se pudo asignar el vehículo.', 'error'); }
   }
 
-  function handleUnassignDriver(vehicle: Vehicle) {
+  async function handleUnassignDriver(vehicle: Vehicle) {
     if (!vehicle.driverId) return;
     const name = vehicle.driverName;
-    setVehicles((prev) =>
-      prev.map((v) =>
-        v.id === vehicle.id
-          ? {
-              ...v,
-              driverId: undefined,
-              driverName: undefined,
-              status: v.status === "IN_USE" ? "AVAILABLE" : v.status,
-            }
-          : v,
-      ),
-    );
-    setSelected((prev) =>
-      prev?.id === vehicle.id
-        ? {
-            ...prev,
-            driverId: undefined,
-            driverName: undefined,
-            status: prev.status === "IN_USE" ? "AVAILABLE" : prev.status,
-          }
-        : prev,
-    );
-    showToast(
-      name
-        ? `Motorizado ${name} desasignado de ${vehicle.plate}`
-        : `Vehículo ${vehicle.plate} sin motorizado`,
-    );
+    try {
+      await unassignVehicle(vehicle.driverId); const data = await listFleetData(); setVehicles(data.vehicles); setDrivers(data.drivers);
+      setSelected(data.vehicles.find((item) => item.id === vehicle.id) ?? null);
+      showToast(name ? `Motorizado ${name} desasignado de ${vehicle.plate}` : `Vehículo ${vehicle.plate} sin motorizado`);
+    } catch (cause) { showToast(cause instanceof Error ? cause.message : 'No se pudo desasignar el vehículo.', 'error'); }
   }
 
   /** Drivers elegibles: no suspendidos; prioriza sin vehículo o el ya asignado a este. */
@@ -170,8 +128,8 @@ export default function FleetPage() {
     const assignedDriverIds = new Set(
       vehicles.filter((v) => v.driverId && v.id !== vehicle.id).map((v) => v.driverId!),
     );
-    return mockDrivers
-      .filter((d) => d.status !== "SUSPENDED")
+    return drivers
+      .filter((d) => d.status !== "SUSPENDED" && (!d.assignedVehicleId || d.assignedVehicleId === vehicle.id))
       .slice()
       .sort((a, b) => {
         const aBusy = assignedDriverIds.has(a.id) ? 1 : 0;
@@ -193,25 +151,27 @@ export default function FleetPage() {
     setShowModal(true);
   }
 
-  function handleSave() {
-    if (!form.plate || !form.brand || !form.model) return;
-    if (editId) {
-      setVehicles((prev) => prev.map((v) => v.id === editId ? { ...v, ...form } : v));
-      if (selected?.id === editId) setSelected((prev) => prev ? { ...prev, ...form } : null);
-      showToast('Vehículo actualizado');
-    } else {
-      const newV: Vehicle = { id: `veh-${Date.now()}`, ...form };
-      setVehicles((prev) => [newV, ...prev]);
-      showToast('Vehículo registrado');
-    }
-    setShowModal(false);
+  async function handleSave() {
+    if (!form.plate) return;
+    try {
+      await saveVehicle(editId, form.plate, form.type); const data = await listFleetData(); setVehicles(data.vehicles); setDrivers(data.drivers);
+      showToast(editId ? 'Vehículo actualizado' : 'Vehículo registrado'); setShowModal(false);
+    } catch (cause) { showToast(cause instanceof Error ? cause.message : 'No se pudo guardar el vehículo.', 'error'); }
   }
 
-  function handleDelete(id: string) {
-    setVehicles((prev) => prev.filter((v) => v.id !== id));
-    if (selected?.id === id) setSelected(null);
-    setConfirmDelete(null);
-    showToast('Vehículo eliminado');
+  async function handleDelete(id: string) {
+    try { await deleteVehicle(id); const data = await listFleetData(); setVehicles(data.vehicles); setDrivers(data.drivers); if (selected?.id === id) setSelected(null); setConfirmDelete(null); showToast('Vehículo eliminado'); }
+    catch (cause) { showToast(cause instanceof Error ? cause.message : 'No se pudo eliminar el vehículo.', 'error'); }
+  }
+
+  async function changeLifecycle(vehicle: Vehicle, action: "maintenance" | "activate" | "deactivate") {
+    try {
+      if (vehicle.driverId) await unassignVehicle(vehicle.driverId);
+      await setVehicleLifecycle(vehicle.id, action);
+      const data = await listFleetData(); setVehicles(data.vehicles); setDrivers(data.drivers);
+      setSelected(data.vehicles.find((item) => item.id === vehicle.id) ?? null);
+      showToast(action === 'maintenance' ? 'Vehículo enviado a mantenimiento' : action === 'activate' ? 'Vehículo activado' : 'Vehículo desactivado');
+    } catch (cause) { showToast(cause instanceof Error ? cause.message : 'No se pudo cambiar el estado del vehículo.', 'error'); }
   }
 
   const filtered = vehicles.filter((v) => {
@@ -518,31 +478,7 @@ export default function FleetPage() {
                 {selected.status !== "MAINTENANCE" && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setVehicles((prev) =>
-                        prev.map((v) =>
-                          v.id === selected.id
-                            ? {
-                                ...v,
-                                status: "MAINTENANCE",
-                                driverId: undefined,
-                                driverName: undefined,
-                              }
-                            : v,
-                        ),
-                      );
-                      setSelected((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              status: "MAINTENANCE",
-                              driverId: undefined,
-                              driverName: undefined,
-                            }
-                          : null,
-                      );
-                      showToast("Vehículo enviado a mantenimiento");
-                    }}
+                    onClick={() => void changeLifecycle(selected, 'maintenance')}
                     className="w-full py-2 rounded border text-xs font-medium cursor-pointer"
                     style={{
                       borderColor: "#fde68a",
@@ -559,6 +495,18 @@ export default function FleetPage() {
                     <span className="inline-flex items-center justify-center gap-1.5">
                       Enviar a mantenimiento <ArrowRight className="w-3 h-3" />
                     </span>
+                  </button>
+                )}
+                {(selected.status === "MAINTENANCE" || selected.status === "INACTIVE") && (
+                  <button type="button" onClick={() => void changeLifecycle(selected, 'activate')}
+                    className="w-full py-2 rounded border text-xs font-medium cursor-pointer border-green-200 bg-green-50 text-green-700">
+                    Activar vehículo
+                  </button>
+                )}
+                {selected.status === "AVAILABLE" && (
+                  <button type="button" onClick={() => void changeLifecycle(selected, 'deactivate')}
+                    className="w-full py-2 rounded border text-xs font-medium cursor-pointer border-red-200 bg-red-50 text-red-700">
+                    Desactivar vehículo
                   </button>
                 )}
               </div>
@@ -595,9 +543,7 @@ export default function FleetPage() {
 
             <div className="grid grid-cols-2 gap-4">
               {([
-                { key: 'plate', label: 'PLACA', placeholder: 'MF-1234', span: 1 },
-                { key: 'brand', label: 'MARCA', placeholder: 'Honda', span: 1 },
-                { key: 'model', label: 'MODELO', placeholder: 'Wave 110', span: 2 },
+                { key: 'plate', label: 'PLACA', placeholder: 'MF-1234', span: 2 },
               ] as { key: keyof typeof form; label: string; placeholder: string; span: number }[]).map((f) => (
                 <div key={f.key} className={f.span === 2 ? 'col-span-2' : ''}>
                   <label className="text-[10px] font-mono tracking-widest block mb-1" style={{ color: 'var(--muted-foreground)' }}>{f.label}</label>
@@ -630,22 +576,6 @@ export default function FleetPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="text-[10px] font-mono tracking-widest block mb-1" style={{ color: 'var(--muted-foreground)' }}>ESTADO</label>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as VehicleStatus }))}
-                  className="w-full px-3 py-2 rounded border text-sm outline-none cursor-pointer"
-                  style={{ background: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--primary)')}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-                >
-                  <option value="AVAILABLE">Disponible</option>
-                  <option value="IN_USE">En uso</option>
-                  <option value="MAINTENANCE">Mantenimiento</option>
-                  <option value="INACTIVE">Inactivo</option>
-                </select>
-              </div>
             </div>
 
             <div className="flex gap-2 pt-1">
@@ -832,7 +762,7 @@ export default function FleetPage() {
         </div>
       )}
 
-      {toast && <Toast message={toast} onClose={() => setToast("")} />}
+      {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast("")} />}
     </div>
   );
 }

@@ -13,10 +13,16 @@ import {
 } from "lucide-react";
 import { DashboardSkeleton } from "@/shared/components/skeleton";
 import { OrderStatusBadge } from "@/shared/components/badges";
-import { mockMetrics, mockOrders } from "@/services/api/mocks/mockData";
+import { getDashboardData } from "@/features/dashboard/services/dashboardApi";
 import { calculateSla, slaTone } from "@/features/orders/lib/calculateSla";
 import type { NavExtra, Page } from "@/app/router";
-import type { Order } from "@/shared/types";
+import type { DashboardMetrics, Order } from "@/shared/types";
+
+const EMPTY_METRICS: DashboardMetrics = {
+  activeOrders: 0, waitingForDriver: 0, inTransit: 0, slaAtRisk: 0, slaBreach: 0,
+  availableDrivers: 0, busyDrivers: 0, avgAssignmentMinutes: 0, avgDeliveryMinutes: 0,
+  slaCompliancePercent: 100, fleetUtilizationPercent: 0,
+};
 
 type Tone = "neutral" | "accent" | "danger";
 
@@ -117,15 +123,28 @@ interface DashboardPageProps {
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const [loading, setLoading] = useState(true);
-  const [now] = useState(() => new Date());
+  const [now, setNow] = useState(() => new Date());
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [metrics, setMetrics] = useState<DashboardMetrics>(EMPTY_METRICS);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 1100);
-    return () => clearTimeout(t);
+    let active = true;
+    async function refresh() {
+      try {
+        const data = await getDashboardData();
+        if (active) { setOrders(data.orders); setMetrics(data.metrics); setNow(new Date()); setError(""); }
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : "No se pudo actualizar el dashboard.");
+      } finally { if (active) setLoading(false); }
+    }
+    void refresh();
+    const id = window.setInterval(() => void refresh(), 15_000);
+    return () => { active = false; window.clearInterval(id); };
   }, []);
 
   const quickQueue = useMemo(() => {
-    return mockOrders
+    return orders
       .filter(
         (o) =>
           o.status === "WAITING_FOR_DRIVER" ||
@@ -135,15 +154,15 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       )
       .sort((a, b) => dispatchPriority(a, now) - dispatchPriority(b, now))
       .slice(0, 5);
-  }, [now]);
+  }, [now, orders]);
 
   if (loading) return <DashboardSkeleton />;
 
-  const m = mockMetrics;
+  const m = metrics;
   const goToOrders = (ordersFilter: NavExtra["ordersFilter"]) =>
     onNavigate("orders", { ordersFilter });
 
-  const readyCount = mockOrders.filter((o) => o.status === "READY").length;
+  const readyCount = orders.filter((o) => o.status === "READY").length;
 
   const alerts: Alert[] = [];
 
@@ -201,6 +220,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
   return (
     <div className="space-y-4 sm:space-y-5">
+      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3">
         <MetricCard
           label="PEDIDOS ACTIVOS"

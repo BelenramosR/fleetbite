@@ -37,9 +37,8 @@ export function calculateSla(order: SlaOrder, currentTime: Date): SlaResult {
     if (deliveredMs <= promisedMs) {
       return { label: "A tiempo", priority: "NORMAL", status: "ON_TIME" };
     }
-    const late = minutesBetween(promisedMs, deliveredMs);
     return {
-      label: `+${late}m tarde`,
+      label: "Con demora",
       priority: "CRITICAL",
       status: "BREACHED",
     };

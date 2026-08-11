@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, Bike, Check, Smartphone, Sparkles, UserRoundSearch, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bike, Check, LoaderCircle, Smartphone, Sparkles, UserRoundSearch, X } from "lucide-react";
 import { OrderStatusBadge, SlaBadge, PriorityBadge } from "@/shared/components/badges";
 import { DetailSkeleton } from "@/shared/components/skeleton";
 import { Toast } from "@/shared/components/toast";
-import { mockOrders, mockTimeline } from "@/services/api/mocks/mockData";
-import type { Driver, OrderStatus } from "@/shared/types";
+import type { ToastTone } from "@/shared/components/toast";
+import type { Driver, Order, OrderStatus, TimelineEvent } from "@/shared/types";
+import { assignOrderAutomatically, assignOrderManually, getAssignedDriverLabel, getOrder, getOrderHistory, transitionOrder } from "@/features/orders/services/orderApi";
 import DeliveryMapPreview from "@/features/orders/components/DeliveryMapPreview";
-import AssignDriverPanel, {
-  closestAvailableDriver,
-} from "@/features/orders/components/AssignDriverPanel";
+import AssignDriverPanel from "@/features/orders/components/AssignDriverPanel";
 
 /** Acciones del panel ops/admin (sin asignación; esa tiene flujo propio). */
 const ADMIN_ACTIONS: Partial<Record<OrderStatus, { label: string; next: OrderStatus }[]>> = {
+  CREATED: [{ label: "Confirmar pedido", next: "CONFIRMED" }],
   CONFIRMED: [{ label: "Iniciar preparación", next: "PREPARING" }],
   PREPARING: [{ label: "Marcar como listo", next: "READY" }],
 };
@@ -62,6 +62,12 @@ const STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
 const CARD =
   "rounded-xl border border-border bg-card overflow-hidden min-w-0";
 
+const EMPTY_ORDER: Order = {
+  id: "", code: "", customerName: "", customerPhone: "", deliveryAddress: "",
+  totalAmount: 0, priority: "NORMAL", status: "CREATED", slaStatus: "ON_TIME",
+  slaMinutesRemaining: 0, promisedDeliveryAt: "", createdAt: "",
+};
+
 interface Props {
   orderId: string;
   onBack: () => void;
@@ -69,19 +75,32 @@ interface Props {
 
 export default function OrderDetailPage({ orderId, onBack }: Props) {
   const [loading, setLoading] = useState(true);
-  const [order, setOrder] = useState(mockOrders.find((o) => o.id === orderId) ?? mockOrders[0]);
+  const [order, setOrder] = useState<Order>(EMPTY_ORDER);
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [confirming, setConfirming] = useState<OrderStatus | null>(null);
   const [assignMode, setAssignMode] = useState<"menu" | "manual" | "auto">("menu");
   const [autoDriver, setAutoDriver] = useState<Driver | null>(null);
   const [toast, setToast] = useState("");
+  const [toastTone, setToastTone] = useState<ToastTone>("success");
+  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     setAssignMode("menu");
     setAutoDriver(null);
     setConfirming(null);
-    const t = setTimeout(() => setLoading(false), 700);
-    return () => clearTimeout(t);
+    let active = true;
+    async function refresh() {
+      try {
+        const [result, history, driverName] = await Promise.all([getOrder(orderId), getOrderHistory(orderId), getAssignedDriverLabel(orderId)]);
+        if (active) { setOrder({ ...result, driverName }); setTimeline(history); }
+      } catch (cause) {
+        if (active) { setToastTone("error"); setToast(cause instanceof Error ? cause.message : "No se pudo cargar el pedido"); }
+      } finally { if (active) setLoading(false); }
+    }
+    void refresh();
+    const id = window.setInterval(() => void refresh(), 10_000);
+    return () => { active = false; window.clearInterval(id); };
   }, [orderId]);
 
   const actions = ADMIN_ACTIONS[order.status] ?? [];
@@ -89,35 +108,47 @@ export default function OrderDetailPage({ orderId, onBack }: Props) {
   const driverPhase = DRIVER_PHASE[order.status];
   const confirmingAction = actions.find((a) => a.next === confirming);
 
-  function assignDriver(driver: Driver, via: "auto" | "manual") {
-    setOrder((prev) => ({
-      ...prev,
-      status: "ASSIGNED",
-      driverName: driver.name,
-      driverId: driver.id,
-    }));
+  async function refreshAssignment(driverName: string, driverId: string) {
+    const [updatedOrder, history] = await Promise.all([getOrder(order.id), getOrderHistory(order.id)]);
+    setOrder({ ...updatedOrder, driverName, driverId });
+    setTimeline(history);
     setAssignMode("menu");
     setAutoDriver(null);
     setConfirming(null);
-    setToast(
-      via === "auto"
-        ? `Asignado automáticamente a ${driver.name}`
-        : `Asignado manualmente a ${driver.name}`,
-    );
+  }
+
+  async function assignDriver(driver: Driver) {
+    await assignOrderManually(order.id, driver.id);
+    await refreshAssignment(driver.name, driver.id);
+    setToast(`Asignado manualmente a ${driver.name}`);
+    setToastTone("success");
     setTimeout(() => setToast(""), 3200);
   }
 
-  function handleAction(next: OrderStatus) {
-    setOrder((prev) => ({ ...prev, status: next }));
-    setConfirming(null);
-    setToast(`Estado actualizado a ${STATUS_LABEL[next] ?? next}`);
-    setTimeout(() => setToast(""), 3200);
+  async function handleAction(next: OrderStatus) {
+    try {
+      setOrder(await transitionOrder(order.id, next));
+      setTimeline(await getOrderHistory(order.id));
+      setConfirming(null);
+      setToast(`Estado actualizado a ${STATUS_LABEL[next] ?? next}`);
+      setToastTone("success");
+      setTimeout(() => setToast(""), 3200);
+    } catch (cause) {
+      setToastTone("error"); setToast(cause instanceof Error ? cause.message : "No se pudo actualizar el estado");
+    }
   }
 
-  function openAutoAssign() {
-    const closest = closestAvailableDriver();
-    setAutoDriver(closest);
-    setAssignMode("auto");
+  async function openAutoAssign() {
+    setAssigning(true);
+    try {
+      const result = await assignOrderAutomatically(order.id);
+      await refreshAssignment(result.driverName, result.driverId);
+      setToast(`Asignado automáticamente a ${result.driverName}`);
+      setToastTone("success");
+      setTimeout(() => setToast(""), 3200);
+    } catch (cause) {
+      setToastTone("error"); setToast(cause instanceof Error ? cause.message : "No se pudo asignar automáticamente.");
+    } finally { setAssigning(false); }
   }
 
   const currentStep = STATUS_SEQUENCE.indexOf(order.status);
@@ -158,7 +189,9 @@ export default function OrderDetailPage({ orderId, onBack }: Props) {
             <div className="flex flex-wrap items-center gap-2">
               <OrderStatusBadge status={order.status} />
               <PriorityBadge priority={order.priority} />
-              <SlaBadge status={order.slaStatus} minutesRemaining={order.slaMinutesRemaining} />
+              {!(["DELIVERED", "CANCELLED", "FAILED_DELIVERY"] as OrderStatus[]).includes(order.status) && (
+                <SlaBadge status={order.slaStatus} minutesRemaining={order.slaMinutesRemaining} />
+              )}
             </div>
           </div>
 
@@ -294,7 +327,7 @@ export default function OrderDetailPage({ orderId, onBack }: Props) {
               ) : needsAssignment && assignMode === "manual" ? (
                 <AssignDriverPanel
                   onBack={() => setAssignMode("menu")}
-                  onAssign={(driver) => assignDriver(driver, "manual")}
+                  onAssign={assignDriver}
                 />
               ) : needsAssignment && assignMode === "auto" ? (
                 <div
@@ -339,7 +372,7 @@ export default function OrderDetailPage({ orderId, onBack }: Props) {
                     {autoDriver && (
                       <button
                         type="button"
-                        onClick={() => assignDriver(autoDriver, "auto")}
+                        onClick={() => void openAutoAssign()}
                         className="flex-1 py-2.5 rounded-lg text-xs font-semibold cursor-pointer inline-flex items-center justify-center gap-1.5 bg-primary text-primary-foreground"
                       >
                         <Check className="w-3.5 h-3.5" />
@@ -353,12 +386,13 @@ export default function OrderDetailPage({ orderId, onBack }: Props) {
                   <div className="space-y-2.5 flex-1">
                     <button
                       type="button"
-                      onClick={openAutoAssign}
+                      onClick={() => void openAutoAssign()}
+                      disabled={assigning}
                       className="w-full flex items-center justify-between gap-2 px-3.5 py-3 rounded-xl border text-left text-sm font-medium cursor-pointer transition-colors border-primary/35 text-primary hover:bg-primary/10"
                     >
                       <span className="inline-flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 shrink-0" />
-                        Asignar automáticamente
+                        {assigning ? <LoaderCircle className="w-4 h-4 shrink-0 animate-spin" /> : <Sparkles className="w-4 h-4 shrink-0" />}
+                        {assigning ? "Asignando…" : "Asignar automáticamente"}
                       </span>
                       <ArrowRight className="w-4 h-4 shrink-0" />
                     </button>
@@ -420,7 +454,7 @@ export default function OrderDetailPage({ orderId, onBack }: Props) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleAction(confirming)}
+                      onClick={() => void handleAction(confirming)}
                       className="flex-1 py-2.5 rounded-lg text-xs font-semibold cursor-pointer inline-flex items-center justify-center gap-1.5"
                       style={
                         confirming === "FAILED_DELIVERY"
@@ -487,8 +521,8 @@ export default function OrderDetailPage({ orderId, onBack }: Props) {
               </div>
             </div>
             <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0">
-              {mockTimeline.map((evt, i) => {
-                const isLast = i === mockTimeline.length - 1;
+              {timeline.map((evt, i) => {
+                const isLast = i === timeline.length - 1;
                 const time = new Date(evt.createdAt).toLocaleTimeString("es-PE", {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -519,7 +553,7 @@ export default function OrderDetailPage({ orderId, onBack }: Props) {
         </div>
       )}
 
-      {toast && <Toast message={toast} tone="success" onClose={() => setToast("")} />}
+      {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast("")} />}
     </div>
   );
 }

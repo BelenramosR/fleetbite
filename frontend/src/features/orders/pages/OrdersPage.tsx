@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Package, Search } from "lucide-react";
 import { OrderStatusBadge, SlaBadge, PriorityBadge } from "@/shared/components/badges";
 import { TableSkeleton } from "@/shared/components/skeleton";
-import { mockOrders } from "@/services/api/mocks/mockData";
+import { listOrders } from "@/features/orders/services/orderApi";
 import type { OrderStatus, Order } from "@/shared/types";
 import type { OrdersFilter } from "@/app/router";
 import {
@@ -64,9 +64,10 @@ function formatOrderTime(iso: string): string {
 interface OrdersPageProps {
   onSelectOrder: (id: string) => void;
   initialFilter?: OrdersFilter;
+  refreshKey?: number;
 }
 
-export default function OrdersPage({ onSelectOrder, initialFilter }: OrdersPageProps) {
+export default function OrdersPage({ onSelectOrder, initialFilter, refreshKey = 0 }: OrdersPageProps) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [search, setSearch] = useState("");
@@ -75,12 +76,15 @@ export default function OrdersPage({ onSelectOrder, initialFilter }: OrdersPageP
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setOrders(mockOrders);
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(t);
-  }, []);
+    let active = true;
+    async function refresh() {
+      try { const data = await listOrders(); if (active) setOrders(data); }
+      finally { if (active) setLoading(false); }
+    }
+    void refresh();
+    const id = window.setInterval(() => void refresh(), 15_000);
+    return () => { active = false; window.clearInterval(id); };
+  }, [refreshKey]);
 
   useEffect(() => {
     if (!initialFilter) {

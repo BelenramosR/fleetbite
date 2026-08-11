@@ -1,13 +1,16 @@
 package com.fleetbite.delivery.application.port.in;
 
 import com.fleetbite.delivery.application.dto.AssignmentResult;
+import com.fleetbite.delivery.application.dto.DriverActiveAssignmentResult;
+import com.fleetbite.delivery.application.dto.DriverAssignmentSummaryResult;
 import com.fleetbite.delivery.application.dto.RejectAssignmentCommand;
 
 import java.util.UUID;
 
 public interface DriverAssignmentUseCase {
 
-	AssignmentResult getActive(UUID userId);
+	DriverActiveAssignmentResult getActive(UUID userId);
+	DriverAssignmentSummaryResult getSummary(UUID userId);
 	AssignmentResult accept(UUID userId, UUID assignmentId);
 	AssignmentResult reject(UUID userId, UUID assignmentId, RejectAssignmentCommand command);
 	AssignmentResult pickup(UUID userId, UUID assignmentId);

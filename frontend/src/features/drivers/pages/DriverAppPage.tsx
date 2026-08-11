@@ -14,16 +14,14 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { Toast } from "@/shared/components/toast";
+import { Toast, type ToastTone } from "@/shared/components/toast";
 import {
   RESTAURANT,
   googleDirectionsUrl,
   googleMapsNavigateUrl,
 } from "@/shared/constants";
-import { mockDrivers } from "@/services/api/mocks/mockData";
-import {
-  fetchDriverDayStats,
-} from "@/services/api/mocks/driverAssignments";
+import { getMyDriverProfile, setMyAvailability, updateMyLocation } from "@/features/drivers/services/driverApi";
+import { getMyAssignmentSummary } from "@/features/drivers/services/driverApi";
 import type { Driver, DriverDayStats, DriverStatus } from "@/shared/types";
 import type { SessionUser } from "@/features/auth/lib/access";
 import type { Page } from "@/app/router";
@@ -63,6 +61,7 @@ export default function DriverAppPage({ user, page, onNavigate, onLogout }: Driv
   const {
     assignment,
     loading,
+    error: assignmentError,
     offerOpen,
     unreadPending,
     accept,
@@ -72,11 +71,10 @@ export default function DriverAppPage({ user, page, onNavigate, onLogout }: Driv
     closeOffer,
   } = useDriverAssignmentPoll(driverId || undefined);
 
-  const [driver, setDriver] = useState<Driver | null>(
-    () => mockDrivers.find((d) => d.id === driverId) ?? null,
-  );
+  const [driver, setDriver] = useState<Driver | null>(null);
   const [stats, setStats] = useState<DriverDayStats | null>(null);
   const [toast, setToast] = useState("");
+  const [toastTone, setToastTone] = useState<ToastTone>("success");
   const [busy, setBusy] = useState(false);
   const [showFail, setShowFail] = useState(false);
   const [failReason, setFailReason] = useState("");
@@ -86,11 +84,18 @@ export default function DriverAppPage({ user, page, onNavigate, onLogout }: Driv
 
   useEffect(() => {
     if (!driverId) return;
-    void fetchDriverDayStats(driverId).then(setStats);
+    void getMyDriverProfile().then((profile) => {
+      setDriver(profile);
+      if (profile.currentLatitude !== undefined) setLat(profile.currentLatitude);
+      if (profile.currentLongitude !== undefined) setLng(profile.currentLongitude);
+      setLocUpdatedAt(profile.lastLocationAt);
+    }).catch(() => setToast("No se pudo cargar tu perfil"));
+    void getMyAssignmentSummary().then(setStats);
   }, [driverId, assignment?.status]);
 
-  function flash(msg: string) {
+  function flash(msg: string, tone: ToastTone = "success") {
     setToast(msg);
+    setToastTone(tone);
     setTimeout(() => setToast(""), 2800);
   }
 
@@ -101,7 +106,7 @@ export default function DriverAppPage({ user, page, onNavigate, onLogout }: Driv
       flash("Pedido aceptado — ve al local");
       onNavigate("driver-assignment");
     } catch (e) {
-      flash(e instanceof Error ? e.message : "No se pudo aceptar");
+      flash(e instanceof Error ? e.message : "No se pudo aceptar", "error");
     } finally {
       setBusy(false);
     }
@@ -110,11 +115,11 @@ export default function DriverAppPage({ user, page, onNavigate, onLogout }: Driv
   async function handleReject() {
     setBusy(true);
     try {
-      await reject();
+      await reject(failReason || "Rechazado por el driver");
       setDriver((d) => (d ? { ...d, status: "AVAILABLE", activeOrderId: undefined, activeOrderCode: undefined } : d));
       flash("Asignación rechazada");
     } catch (e) {
-      flash(e instanceof Error ? e.message : "No se pudo rechazar");
+      flash(e instanceof Error ? e.message : "No se pudo rechazar", "error");
     } finally {
       setBusy(false);
     }
@@ -143,31 +148,44 @@ export default function DriverAppPage({ user, page, onNavigate, onLogout }: Driv
               }
             : d,
         );
-        void fetchDriverDayStats(driverId).then(setStats);
+        void getMyAssignmentSummary().then(setStats);
       }
     } catch (e) {
-      flash(e instanceof Error ? e.message : "Acción no permitida");
+      flash(e instanceof Error ? e.message : "Acción no permitida", "error");
     } finally {
       setBusy(false);
       setShowFail(false);
     }
   }
 
-  function toggleAvailability() {
+  async function toggleAvailability() {
     if (!driver) return;
-    if (assignment && assignment.status !== "PENDING") {
+    if (assignment) {
       flash("No puedes cambiar disponibilidad con un pedido activo");
       return;
     }
     const nextStatus: DriverStatus = driver.status === "AVAILABLE" ? "OFFLINE" : "AVAILABLE";
-    setDriver({ ...driver, status: nextStatus });
+    try {
+      setDriver(await setMyAvailability(nextStatus === "AVAILABLE"));
+    } catch (cause) {
+      flash(cause instanceof Error ? cause.message : "No se pudo cambiar la disponibilidad", "error");
+      return;
+    }
     flash(nextStatus === "AVAILABLE" ? "Ahora estás disponible" : "Pasaste a fuera de línea");
   }
 
-  function updateLocation() {
+  async function updateLocation() {
     const jitter = () => (Math.random() - 0.5) * 0.008;
-    setLat(RESTAURANT.lat + jitter());
-    setLng(RESTAURANT.lng + jitter());
+    const nextLat = RESTAURANT.lat + jitter();
+    const nextLng = RESTAURANT.lng + jitter();
+    try {
+      setDriver(await updateMyLocation(nextLat, nextLng));
+    } catch (cause) {
+      flash(cause instanceof Error ? cause.message : "No se pudo actualizar la ubicación", "error");
+      return;
+    }
+    setLat(nextLat);
+    setLng(nextLng);
     setLocUpdatedAt(new Date().toISOString());
     flash("Ubicación actualizada");
   }
@@ -360,6 +378,12 @@ export default function DriverAppPage({ user, page, onNavigate, onLogout }: Driv
                   {loading && !assignment && (
                     <div className="rounded-xl border border-border bg-card px-4 py-8 text-center">
                       <p className="text-sm text-muted-foreground">Buscando asignación activa…</p>
+                    </div>
+                  )}
+
+                  {assignmentError && !assignment && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {assignmentError}. Verifica que el backend esté actualizado.
                     </div>
                   )}
 
@@ -725,7 +749,7 @@ export default function DriverAppPage({ user, page, onNavigate, onLogout }: Driv
         </div>
       )}
 
-      {toast && <Toast message={toast} onClose={() => setToast("")} />}
+      {toast && <Toast message={toast} tone={toastTone} onClose={() => setToast("")} />}
     </div>
   );
 }
@@ -777,7 +801,7 @@ function AssignmentSummaryCard({
         </span>
         <span className="inline-flex items-center gap-1 text-muted-foreground">
           <Clock className="w-3.5 h-3.5" />
-          SLA {sla}m
+          {sla < 0 ? "SLA vencido" : `SLA ${sla}m`}
         </span>
         <span className="font-mono font-semibold text-foreground">S/ {amount.toFixed(2)}</span>
       </div>

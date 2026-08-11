@@ -7,4 +7,5 @@ export interface User {
   role: UserRole;
   status: "ACTIVE" | "INACTIVE";
   createdAt: string;
+  phone?: string;
 }

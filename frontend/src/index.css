@@ -67,6 +67,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Leaflet usa panes internos con z-index altos. Encapsular el contenedor evita que
+   esos panes cubran modales globales como la confirmación de cierre de sesión. */
+.leaflet-container {
+  position: relative;
+  z-index: 0;
+}
+
 /* Scrollbar */
 * {
   scrollbar-width: thin;

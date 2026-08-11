@@ -19,7 +19,7 @@ const TONE = {
     border: "rgba(185 28 28 / 0.35)",
     bg: "#fef2f2",
     text: "#991b1b",
-    icon: AlertTriangle,
+    icon: X,
   },
   warning: {
     border: "rgba(180 83 9 / 0.35)",

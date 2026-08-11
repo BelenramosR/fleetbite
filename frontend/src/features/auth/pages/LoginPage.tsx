@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ArrowRight, Bike } from "lucide-react";
-import { resolveSessionByEmail, type SessionUser } from "@/features/auth/lib/access";
+import type { SessionUser } from "@/features/auth/lib/access";
+import { login } from "@/features/auth/services/authApi";
+import { ApiClientError } from "@/services/api";
 
 interface LoginPageProps {
   onLogin: (user: SessionUser) => void;
@@ -12,7 +14,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!email || !password) {
@@ -20,15 +22,18 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      const user = resolveSessionByEmail(email);
+    try {
+      const user = await login(email, password);
       setLoading(false);
-      if (!user) {
-        setError("Usuario no encontrado o inactivo.");
-        return;
-      }
       onLogin(user);
-    }, 700);
+    } catch (cause) {
+      setLoading(false);
+      setError(
+        cause instanceof ApiClientError
+          ? cause.message
+          : "No se pudo conectar con el backend. Verifica que esté iniciado.",
+      );
+    }
   };
 
   return (

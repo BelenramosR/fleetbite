@@ -113,10 +113,12 @@ public class DeliveryAssignmentApplicationConfig {
 	DriverAssignmentUseCase driverAssignmentUseCase(
 			DriverRepositoryPort drivers,
 			DeliveryAssignmentRepositoryPort assignments,
+			OrderRepositoryPort orders,
 			AssignmentWorkflowUseCase workflow,
+			Clock clock,
 			PlatformTransactionManager transactions) {
 		return DeliveryTransactionProxyFactory.readWrite(
 				DriverAssignmentUseCase.class,
-				new DriverAssignmentService(drivers, assignments, workflow), transactions);
+				new DriverAssignmentService(drivers, assignments, orders, workflow, clock), transactions);
 	}
 }

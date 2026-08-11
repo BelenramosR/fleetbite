@@ -14,11 +14,16 @@ import FleetPage from "@/features/fleet/pages/FleetPage";
 import UsersPage from "@/features/users/pages/UsersPage";
 import ReportsPage from "@/features/reports/pages/ReportsPage";
 import SettingsPage from "@/features/settings/pages/SettingsPage";
+import { logout, restoreSession } from "@/features/auth/services/authApi";
 
 export default function App() {
-  const [session, setSession] = useState<SessionUser | null>(null);
-  const [nav, setNav] = useState<NavState>({ page: "dashboard" });
+  const [session, setSession] = useState<SessionUser | null>(() => restoreSession());
+  const [nav, setNav] = useState<NavState>(() => {
+    const restored = restoreSession();
+    return { page: restored ? homePageForRole(restored.role) : "dashboard" };
+  });
   const [showNewOrder, setShowNewOrder] = useState(false);
+  const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
   function handleLogin(user: SessionUser) {
     setSession(user);
@@ -26,6 +31,7 @@ export default function App() {
   }
 
   function handleLogout() {
+    void logout();
     setSession(null);
     setNav({ page: "dashboard" });
     setShowNewOrder(false);
@@ -70,6 +76,7 @@ export default function App() {
 
         {nav.page === "orders" && (
           <OrdersPage
+            refreshKey={ordersRefreshKey}
             onSelectOrder={(id) =>
               navigate("order-detail", {
                 selectedOrderId: id,
@@ -99,6 +106,7 @@ export default function App() {
           onClose={() => setShowNewOrder(false)}
           onCreated={() => {
             setShowNewOrder(false);
+            setOrdersRefreshKey((value) => value + 1);
             navigate("orders");
           }}
         />
